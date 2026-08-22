@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Momir Basic{% endblock %}
+{% block content %}
+    <h1>Momir Basic</h1>
+    <p>Test Page.</p>
+    <div class="controls">
+        <label for="cmc">Converted Mana Cost</label>
+        <input id="cmc" type="number" name="cmc" value="1" min="0">
+        <button hx-get="/card-by-cmc"
+                hx-include="[name='cmc']"
+                hx-target="#test-result">Test</button>
+        <img src="/static/images/momir.webp" alt="Momir" class="momir-image">
+    </div>
+    <div id="test-result"></div>
+    {{ super() }}
+{% endblock %}

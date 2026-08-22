@@ -1,0 +1,1 @@
+A wrapper around the Scryfall API and the reqwest package.
