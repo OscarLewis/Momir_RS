@@ -7,6 +7,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
+use scryfall_oracle::{bulk_data::BulkData, client::ScryfallClient};
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use serde::Deserialize;
 use std::time::Duration;
@@ -91,10 +92,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         db,
     };
 
+    let scryfall = ScryfallClient::new()?;
+
+    let bulk_data = BulkData::list(&scryfall)
+        .await
+        .expect("failed to fetch bulk data");
+
+    debug!("{:#?}", bulk_data);
+
     let app = Router::new()
         .route("/", get(index))
         .route("/card-by-cmc", get(card_by_cmc))
-        .nest_service("/static", ServeDir::new("static"))
+        .nest_service("/static", ServeDir::new("momir_rs/static"))
         .with_state(shared_state);
 
     let listener = TcpListener::bind("0.0.0.0:8080").await?;

@@ -1,9 +1,12 @@
 use std::fs;
 
 pub(crate) fn compile_scss() -> Result<(), Box<dyn std::error::Error>> {
-    let css = grass::from_path("static/scss/style.scss", &grass::Options::default())?;
+    let css = grass::from_path(
+        "momir_rs/static/scss/style.scss",
+        &grass::Options::default(),
+    )?;
 
-    fs::write("static/style.css", css)?;
+    fs::write("momir_rs/static/style.css", css)?;
 
     Ok(())
 }
