@@ -194,14 +194,15 @@ impl OracleCards {
         let oracle_cards_bulk = bulk_data
             .iter()
             .find(|bulk_data| bulk_data.data_type == "oracle_cards")
-            .ok_or(BulkDataError::OracleCardsNotFound)?;
+            .ok_or(BulkDataError::OracleCardsNotFound)?
+            .clone();
 
         let target_dir = match cache_dir {
             Some(path) => path.clone(),
             None => PathBuf::from(ORACLE_CACHE_DIR),
         };
 
-        download_bulk_data(&client, &oracle_cards_bulk.jsonl_download_uri, target_dir).await?;
+        write_data(target_dir, oracle_cards_bulk, &client).await?;
         // Download/write oracle_cards here...
         // TODO Finish and test this
         Ok(())
