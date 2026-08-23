@@ -1,0 +1,15 @@
+{
+    "externalFormatters.languages": {
+        "html": {
+            "command": "askama_fmt",
+            "arguments": [
+                "--stdin-filepath",
+                "${file}"
+            ]
+        }
+    },
+    "[html]": {
+        "editor.defaultFormatter": "SteefH.external-formatters",
+        "editor.formatOnSave": true
+    }
+}
