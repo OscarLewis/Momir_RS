@@ -10,7 +10,7 @@ body {
 
 .content {
   width: min(800px, 100% - 2rem);
-  margin: 4rem 0;
+  margin: 6rem 0;
 }
 
 h1 {
@@ -20,8 +20,6 @@ h1 {
 
 p {
   color: #c8d0e1;
-  margin-top: 0;
-  margin-bottom: 2rem;
 }
 
 input,
@@ -75,18 +73,85 @@ button:active {
 }
 
 .controls {
+  position: relative;
   display: flex;
   align-items: flex-end;
-  gap: 0.5rem;
+  min-height: 44px;
+  padding-right: 280px;
 }
 .controls label {
   font-weight: 600;
-  margin-right: 0.25rem;
+  margin-right: 0.35rem;
   margin-bottom: 0.65rem;
 }
 
 .momir-image {
+  position: absolute;
+  right: 0;
+  bottom: 0;
   width: 260px;
   height: auto;
-  margin-left: auto;
+}
+@media (width < 640px) {
+  .momir-image {
+    display: none;
+  }
+}
+
+.message-item {
+  color: #ffffff;
+}
+.message-item a {
+  color: #f8f0df;
+  text-decoration: none;
+}
+.message-item a:hover {
+  text-decoration: underline;
+}
+.message-item a:visited {
+  color: #d0d0d0;
+}
+
+.latest-card {
+  display: none;
+  margin-top: 1rem;
+}
+.latest-card h3 {
+  margin: 0 0 0.25rem 0;
+}
+.latest-card.has-card {
+  display: flex;
+  flex-direction: column;
+}
+.latest-card p {
+  margin: 0;
+}
+.latest-card a {
+  color: #f8f0df;
+  text-decoration: none;
+}
+.latest-card a:hover {
+  text-decoration: underline;
+}
+.latest-card a:visited {
+  color: #d0d0d0;
+}
+
+.latest-card-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.latest-card-image {
+  width: 200px;
+  height: auto;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }

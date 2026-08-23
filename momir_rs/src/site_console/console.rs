@@ -3,19 +3,25 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use scryfall_oracle::bulk_data::oracle_cards::OracleScryfallCard;
 use tokio::sync::broadcast;
 
 #[derive(Clone, Debug)]
-pub struct ConsoleMessage {
-    pub sender: String,
-    pub body: String,
+pub enum ConsoleMessage {
+    Text {
+        sender: String,
+        body: String,
+    },
+    Card {
+        sender: String,
+        card: OracleScryfallCard,
+    },
 }
 
 #[derive(Clone)]
 pub struct SiteConsole {
     games: Arc<RwLock<HashMap<String, broadcast::Sender<ConsoleMessage>>>>,
 }
-
 impl SiteConsole {
     pub fn new() -> Self {
         Self {
@@ -37,7 +43,6 @@ impl SiteConsole {
 
     pub fn send(&self, game_id: &str, message: ConsoleMessage) {
         let tx = self.sender(game_id);
-
         let _ = tx.send(message);
     }
 

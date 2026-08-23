@@ -14,13 +14,14 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
+use rand::RngExt;
 use scryfall_oracle::{bulk_data::oracle_cards::OracleCards, client::ScryfallClient};
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use serde::Deserialize;
 use std::{path::PathBuf, time::Duration};
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
-use tracing::debug;
+use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
 
 pub(crate) mod database;
@@ -111,9 +112,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    if let Some(card) = oracle.random_creature_by_cmc(1.0) {
+    let rand_cmc = rand::rng().random_range(1..=16) as f64;
+
+    if let Some(card) = oracle.random_creature_by_cmc(rand_cmc) {
         debug!(
-            cmc = 1.0,
+            rand_cmc,
             card_name = %card.name,
             scryfall_id = %card.id,
             "Random creature of the day"
@@ -138,7 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = TcpListener::bind("0.0.0.0:8080").await?;
 
     let addr = listener.local_addr()?;
-    debug!(%addr, "Server startup complete");
+    info!(%addr, "Server startup complete");
 
     axum::serve(listener, app).await?;
 
@@ -154,7 +157,7 @@ async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> 
 
     state.console.send(
         &game_id,
-        ConsoleMessage {
+        ConsoleMessage::Text {
             sender: "System".to_string(),
             body: "Game initialized.".to_string(),
         },
@@ -174,27 +177,30 @@ struct CardByCMCParams {
 async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<AppState>) {
     let card = state.oracle.random_creature_by_cmc(params.cmc.into());
 
-    let body = match card {
+    let message = match card {
         Some(card) => {
             let cmc = card.cmc.expect("card selected by CMC must have a CMC");
+
             debug!(
-                card_name = card.name,
+                card_name = %card.name,
                 card_cmc = cmc,
-                card_id = card.id,
-                "Momir Generated a card"
+                card_id = %card.id,
+                "Momir generated a card"
             );
-            format!("Generated '{}' ({}) (CMC {})", card.name, card.id, cmc,)
+
+            ConsoleMessage::Card {
+                sender: "Momir".to_string(),
+                card: card.clone(),
+            }
         }
-        None => format!("No creature found for CMC {}", params.cmc),
+
+        None => ConsoleMessage::Text {
+            sender: "Momir".to_string(),
+            body: format!("No creature found for CMC {}", params.cmc),
+        },
     };
 
-    state.console.send(
-        &params.game_id,
-        ConsoleMessage {
-            sender: "Momir".to_string(),
-            body,
-        },
-    );
+    state.console.send(&params.game_id, message);
 }
 async fn websocket(
     ws: WebSocketUpgrade,
@@ -209,14 +215,14 @@ async fn handle_socket(mut socket: WebSocket, game_id: String, console: SiteCons
 
     console.send(
         &game_id,
-        ConsoleMessage {
+        ConsoleMessage::Text {
             sender: "System".to_string(),
             body: "WebSocket connected.".to_string(),
         },
     );
 
     while let Ok(message) = rx.recv().await {
-        let rendered = match render_message(&message.sender, &message.body) {
+        let rendered = match render_message(&message) {
             Ok(rendered) => rendered,
             Err(err) => {
                 tracing::error!(%err, "Failed to render console message");
@@ -233,10 +239,9 @@ async fn handle_socket(mut socket: WebSocket, game_id: String, console: SiteCons
 #[derive(Template)]
 #[template(path = "message_fragment.html")]
 struct MessageFragmentTemplate<'a> {
-    sender: &'a str,
-    body: &'a str,
+    message: &'a ConsoleMessage,
 }
 
-fn render_message(sender: &str, body: &str) -> Result<String, askama::Error> {
-    MessageFragmentTemplate { sender, body }.render()
+fn render_message(message: &ConsoleMessage) -> Result<String, askama::Error> {
+    MessageFragmentTemplate { message }.render()
 }

@@ -1,5 +1,68 @@
 <div id="message-list" hx-swap-oob="beforeend">
     <div class="message-item">
-        <strong>{{ sender }}:</strong> {{ body }}
+        {% match message %}
+            {% when ConsoleMessage::Text { sender, body } %}
+                <strong>{{ sender }}:</strong> {{ body }}
+            {% when ConsoleMessage::Card { sender, card } %}
+                <strong>{{ sender }}:</strong>
+                Generated
+                '
+                <a href="{{ card.scryfall_uri }}" target="_blank" rel="noopener noreferrer">{{ card.name }}</a>
+                '
+                ({{ card.id }})
+                {% match card.cmc %}
+                    {% when Some with (cmc) %}
+                        (CMC {{ cmc }})
+                    {% when None %}
+                {% endmatch %}
+        {% endmatch %}
     </div>
 </div>
+{% match message %}
+    {% when ConsoleMessage::Card { sender, card } %}
+        <div id="latest-card" class="latest-card has-card" hx-swap-oob="outerHTML">
+            <h3>Card Info:</h3>
+            <div class="latest-card-content">
+                <div class="card-details">
+                    <p>
+                        <a href="{{ card.scryfall_uri }}" target="_blank" rel="noopener noreferrer">{{ card.name }}</a>
+                    </p>
+                    {% match card.mana_cost %}
+                        {% when Some with (mana_cost) %}
+                            <p>Cost: {{ mana_cost }}</p>
+                        {% when None %}
+                    {% endmatch %}
+                    {% match card.cmc %}
+                        {% when Some with (cmc) %}
+                            <p>CMC: {{ cmc }}</p>
+                        {% when None %}
+                    {% endmatch %}
+                    {% match card.type_line %}
+                        {% when Some with (type_line) %}
+                            <p>{{ type_line }}</p>
+                        {% when None %}
+                    {% endmatch %}
+                    {% match card.oracle_text %}
+                        {% when Some with (oracle_text) %}
+                            <p>{{ oracle_text }}</p>
+                        {% when None %}
+                    {% endmatch %}
+                    {% match (&card.power, &card.toughness) %}
+                        {% when (Some(power), Some(toughness)) %}
+                            <p>Power/Toughness: {{ power }}/{{ toughness }}</p>
+                        {% when _ %}
+                    {% endmatch %}
+                </div>
+                {% match card.image_uris %}
+                    {% when Some with (image_uris) %}
+                        {% match image_uris.art_crop %}
+                            {% when Some with (art_crop) %}
+                                <img class="latest-card-image" src="{{ art_crop }}" alt="{{ card.name }}">
+                            {% when None %}
+                        {% endmatch %}
+                    {% when None %}
+                {% endmatch %}
+            </div>
+        </div>
+    {% when ConsoleMessage::Text { .. } %}
+{% endmatch %}
