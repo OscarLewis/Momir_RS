@@ -12,6 +12,7 @@ grass = "0.13.4"
 log = "0.4.33"
 native-tls = "0.2.18"
 notify = "8.2.0"
+rand = "0.10.2"
 reqwest = "0.13.4"
 scryfall_oracle = { version = "0.1.0", path = "../scryfall_oracle" }
 sea-orm = { version = "2.0.2", features = [

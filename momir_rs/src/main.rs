@@ -7,10 +7,10 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
-use scryfall_oracle::{bulk_data::BulkData, client::ScryfallClient};
+use scryfall_oracle::{bulk_data::oracle_cards::OracleCards, client::ScryfallClient};
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use serde::Deserialize;
-use std::time::Duration;
+use std::{path::PathBuf, time::Duration};
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tracing::debug;
@@ -59,10 +59,9 @@ struct AppState {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Init Logging
     tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("momir_rs=debug,sea_orm=debug")),
-        )
+        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug")
+        }))
         .init();
 
     // Compile SCSS styles
@@ -93,12 +92,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let scryfall = ScryfallClient::new()?;
+    let cache_path = PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
+    let oracle = OracleCards::new(&scryfall, Some(&cache_path)).await?;
+    if let Some(cards) = oracle.cards.as_ref() {
+        debug!(
+            num_cards_in_oracle_map = cards.len(),
+            "Number of 'Creature' cards found in Oracle Card Bulk Data export"
+        );
+    }
 
-    let bulk_data = BulkData::list(&scryfall)
-        .await
-        .expect("failed to fetch bulk data");
-
-    debug!("{:#?}", bulk_data);
+    if let Some(card) = oracle.random_creature_by_cmc(1.0) {
+        debug!(
+            cmc = 1.0,
+            card_name = %card.name,
+            scryfall_id = %card.id,
+            "Random creature selected"
+        );
+    }
 
     let app = Router::new()
         .route("/", get(index))

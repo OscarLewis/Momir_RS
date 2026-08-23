@@ -1,31 +1,9 @@
-use serde::Deserialize;
-
-use crate::ScryfallClient;
+use crate::{
+    ScryfallClient,
+    bulk_data::{BulkData, BulkDataResponse},
+};
 
 const BULK_DATA_URL: &str = "https://api.scryfall.com/bulk-data";
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct BulkData {
-    pub object: String,
-    pub id: String,
-
-    #[serde(rename = "type")]
-    pub data_type: String,
-
-    pub updated_at: String,
-    pub uri: String,
-    pub name: String,
-    pub description: String,
-    pub jsonl_download_uri: String,
-    pub compressed_size: u64,
-}
-
-#[derive(Debug, Deserialize)]
-struct BulkDataResponse {
-    object: String,
-    has_more: bool,
-    data: Vec<BulkData>,
-}
 
 impl BulkData {
     pub async fn list(client: &ScryfallClient) -> Result<Vec<BulkData>, reqwest::Error> {
