@@ -1,8 +1,15 @@
-use crate::scss::compile_scss;
+use crate::{
+    game_manager::GameManager,
+    scss::compile_scss,
+    site_console::{ConsoleMessage, SiteConsole},
+};
 use askama::Template;
 use axum::{
     Router,
-    extract::Query,
+    extract::{
+        Path, Query, State,
+        ws::{Message, WebSocket, WebSocketUpgrade},
+    },
     http::StatusCode,
     response::{Html, IntoResponse, Response},
     routing::get,
@@ -15,12 +22,17 @@ use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tracing::debug;
 use tracing_subscriber::EnvFilter;
+
 pub(crate) mod database;
+pub(crate) mod game_manager;
 pub(crate) mod scss;
+pub(crate) mod site_console;
 
 #[derive(Template)]
 #[template(path = "index.html")]
-struct IndexHtmlTemplate {}
+struct IndexHtmlTemplate {
+    game_id: String,
+}
 
 #[derive(Debug)]
 enum AppError {
@@ -53,6 +65,9 @@ impl IntoResponse for AppError {
 struct AppState {
     _scryfall_app_name: String,
     db: DatabaseConnection,
+    game_manager: GameManager,
+    console: SiteConsole,
+    oracle: OracleCards,
 }
 
 #[tokio::main]
@@ -86,11 +101,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check database connection
     check_database(&db).await;
 
-    let shared_state = AppState {
-        _scryfall_app_name: "momir_basic_rs/v0.1".to_string(),
-        db,
-    };
-
     let scryfall = ScryfallClient::new()?;
     let cache_path = PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
     let oracle = OracleCards::new(&scryfall, Some(&cache_path)).await?;
@@ -106,13 +116,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             cmc = 1.0,
             card_name = %card.name,
             scryfall_id = %card.id,
-            "Random creature selected"
+            "Random creature of the day"
         );
     }
+
+    let shared_state = AppState {
+        _scryfall_app_name: "momir_basic_rs/v0.1".to_string(),
+        db,
+        game_manager: GameManager::new(),
+        console: SiteConsole::new(),
+        oracle,
+    };
 
     let app = Router::new()
         .route("/", get(index))
         .route("/card-by-cmc", get(card_by_cmc))
+        .route("/ws/messages/{game_id}", get(websocket))
         .nest_service("/static", ServeDir::new("momir_rs/static"))
         .with_state(shared_state);
 
@@ -130,8 +149,18 @@ async fn check_database(db: &DatabaseConnection) {
     assert!(db.ping().await.is_ok());
 }
 
-async fn index() -> Result<Html<String>, AppError> {
-    let template = IndexHtmlTemplate {};
+async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> {
+    let game_id = state.game_manager.new_game();
+
+    state.console.send(
+        &game_id,
+        ConsoleMessage {
+            sender: "System".to_string(),
+            body: "Game initialized.".to_string(),
+        },
+    );
+
+    let template = IndexHtmlTemplate { game_id };
 
     Ok(Html(template.render()?))
 }
@@ -139,8 +168,75 @@ async fn index() -> Result<Html<String>, AppError> {
 #[derive(Deserialize)]
 struct CardByCMCParams {
     cmc: i32,
+    game_id: String,
 }
 
-async fn card_by_cmc(Query(params): Query<CardByCMCParams>) -> String {
-    format!("You sent: {}", params.cmc)
+async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<AppState>) {
+    let card = state.oracle.random_creature_by_cmc(params.cmc.into());
+
+    let body = match card {
+        Some(card) => {
+            let cmc = card.cmc.expect("card selected by CMC must have a CMC");
+            debug!(
+                card_name = card.name,
+                card_cmc = cmc,
+                card_id = card.id,
+                "Momir Generated a card"
+            );
+            format!("Generated '{}' ({}) (CMC {})", card.name, card.id, cmc,)
+        }
+        None => format!("No creature found for CMC {}", params.cmc),
+    };
+
+    state.console.send(
+        &params.game_id,
+        ConsoleMessage {
+            sender: "Momir".to_string(),
+            body,
+        },
+    );
+}
+async fn websocket(
+    ws: WebSocketUpgrade,
+    Path(game_id): Path<String>,
+    State(state): State<AppState>,
+) -> Response {
+    ws.on_upgrade(move |socket| handle_socket(socket, game_id, state.console))
+}
+
+async fn handle_socket(mut socket: WebSocket, game_id: String, console: SiteConsole) {
+    let mut rx = console.subscribe(&game_id);
+
+    console.send(
+        &game_id,
+        ConsoleMessage {
+            sender: "System".to_string(),
+            body: "WebSocket connected.".to_string(),
+        },
+    );
+
+    while let Ok(message) = rx.recv().await {
+        let rendered = match render_message(&message.sender, &message.body) {
+            Ok(rendered) => rendered,
+            Err(err) => {
+                tracing::error!(%err, "Failed to render console message");
+                continue;
+            }
+        };
+
+        if socket.send(Message::Text(rendered.into())).await.is_err() {
+            break;
+        }
+    }
+}
+
+#[derive(Template)]
+#[template(path = "message_fragment.html")]
+struct MessageFragmentTemplate<'a> {
+    sender: &'a str,
+    body: &'a str,
+}
+
+fn render_message(sender: &str, body: &str) -> Result<String, askama::Error> {
+    MessageFragmentTemplate { sender, body }.render()
 }

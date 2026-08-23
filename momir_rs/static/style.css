@@ -61,7 +61,7 @@ button:active {
   transform: translateY(1px);
 }
 
-#test-result {
+#message-list {
   min-height: 3rem;
   margin-top: 1.5rem;
   padding: 1rem;
@@ -70,7 +70,7 @@ button:active {
   background: #59578b;
   color: #eeeeee;
 }
-#test-result:empty {
+#message-list:empty {
   display: none;
 }
 
