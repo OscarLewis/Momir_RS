@@ -7,7 +7,6 @@ use crate::bulk_data::oracle_cards::filters::OracleFilter;
 use crate::bulk_data::oracle_cards::filters::OracleFilters;
 use crate::cards::models::ScryfallApiError;
 use chrono::{DateTime, NaiveDateTime, Utc};
-use rand::prelude::IndexedRandom;
 use rand::prelude::IteratorRandom;
 use regex::Regex;
 use serde::Deserialize;
@@ -109,11 +108,11 @@ impl OracleCards {
         let ids = self.creatures_by_cmc.get(&cmc.to_bits())?;
 
         let eligible = |id: &&String| {
-            let Some(filters) = filters else {
+            let Some(oracle_filters) = filters else {
                 return true;
             };
 
-            filters.filters.iter().all(|filter| {
+            oracle_filters.filters.iter().all(|filter| {
                 match filter {
                     OracleFilter::Unsets => {
                         // Filter out all creature cards that are part of an unset
@@ -140,6 +139,7 @@ impl OracleCards {
 
         debug!(
             cmc,
+            filters=?filters,
             total_ids,
             eligible_count,
             removed = total_ids - eligible_count,

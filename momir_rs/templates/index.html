@@ -18,7 +18,7 @@
                         {% match momir_card.core.life_modifier %}
                             {% when Some with (life_modifier) %}
                                 <p>
-                                    <strong>Life Modifier</strong>: {{ life_modifier }}
+                                    <strong>Life Modifier</strong>: Your starting life total is increased by {{ life_modifier }}.
                                 </p>
                             {% when None %}
                         {% endmatch %}
@@ -26,14 +26,14 @@
                         {% match momir_card.core.hand_modifier %}
                             {% when Some with (hand_modifier) %}
                                 <p>
-                                    <strong>Hand Modifier</strong>: {{ hand_modifier }}
+                                    <strong>Hand Modifier</strong>: {{ hand_modifier }} Cards in your starting hand.
                                 </p>
                             {% when None %}
                         {% endmatch %}
                         {% match momir_card.core.oracle_text %}
                             {% when Some with (oracle_text) %}
                                 <p>
-                                    <strong>Abilities</strong>: {{ oracle_text }}
+                                    <strong>Ability</strong>: {{ oracle_text }}
                                 </p>
                             {% when None %}
                         {% endmatch %}

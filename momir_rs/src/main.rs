@@ -232,7 +232,6 @@ async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<
                 card_name = %card.core.name,
                 card_cmc = cmc,
                 card_id = %card.core.id,
-                filters = ?filters,
                 "Momir generated a card"
             );
 
