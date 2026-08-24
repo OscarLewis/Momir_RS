@@ -1,7 +1,7 @@
 use crate::{ScryfallCard, ScryfallClient};
 use serde::Deserialize;
 use std::collections::HashMap;
-use tracing::{debug, info};
+use tracing::debug;
 
 const SCRYFALL_SEARCH_URL: &str = "https://api.scryfall.com/cards/search";
 
@@ -36,57 +36,53 @@ impl ScryfallCardList {
 
 impl ScryfallCard {
     /// Executes a search query, following all `next_page` pagination links to collect every card.
-    pub fn search<'a>(
-        client: &'a ScryfallClient,
-        query: &'a str,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<ScryfallCardList, reqwest::Error>> + 'a>,
-    > {
-        Box::pin(async move {
-            let mut params = HashMap::new();
-            params.insert("q", query);
+    pub async fn search(
+        client: &ScryfallClient,
+        query: &str,
+    ) -> Result<ScryfallCardList, reqwest::Error> {
+        let mut params = HashMap::new();
+        params.insert("q", query);
 
-            let mut all_cards = Vec::new();
+        let mut all_cards = Vec::new();
 
-            // First page fetch using query parameters
-            let response = client
-                .client
-                .get(SCRYFALL_SEARCH_URL)
-                .query(&params)
-                .send()
-                .await?
-                .error_for_status()?;
+        // First page fetch using query parameters
+        let response = client
+            .client
+            .get(SCRYFALL_SEARCH_URL)
+            .query(&params)
+            .send()
+            .await?
+            .error_for_status()?;
 
-            let mut page: ScryfallPageResponse<ScryfallCard> = response.json().await?;
-            let total_cards = page.total_cards;
-            all_cards.append(&mut page.data);
+        let mut page: ScryfallPageResponse<ScryfallCard> = response.json().await?;
+        let total_cards = page.total_cards;
+        all_cards.append(&mut page.data);
 
-            // Follow next_page URIs until has_more is false
-            while page.has_more {
-                if let Some(next_url) = page.next_page {
-                    let next_response = client
-                        .client
-                        .get(&next_url)
-                        .send()
-                        .await?
-                        .error_for_status()?;
+        // Follow next_page URIs until has_more is false
+        while page.has_more {
+            if let Some(next_url) = page.next_page {
+                let next_response = client
+                    .client
+                    .get(&next_url)
+                    .send()
+                    .await?
+                    .error_for_status()?;
 
-                    page = next_response.json().await?;
-                    all_cards.append(&mut page.data);
-                } else {
-                    break;
-                }
+                page = next_response.json().await?;
+                all_cards.append(&mut page.data);
+            } else {
+                break;
             }
-            info!(
-                total_cards = total_cards,
-                query = query,
-                "Scryfall search for query resulted in num cards"
-            );
+        }
+        debug!(
+            total_cards = total_cards,
+            query = query,
+            "Scryfall search for query resulted in num cards"
+        );
 
-            Ok(ScryfallCardList {
-                total_cards,
-                data: all_cards,
-            })
+        Ok(ScryfallCardList {
+            total_cards,
+            data: all_cards,
         })
     }
 }
