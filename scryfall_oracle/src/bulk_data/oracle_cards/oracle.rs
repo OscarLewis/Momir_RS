@@ -22,18 +22,23 @@ const ORACLE_CACHE_DIR: &str = "/home/oscar/Documents/Projects/momir_rs_workspac
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct OracleCards {
+    // Cards by Scryfall ID
     #[serde(default)]
     pub cards: Option<HashMap<String, OracleScryfallCard>>,
 
+    // Scryfall IDs by CMC
     #[serde(skip)]
     creatures_by_cmc: HashMap<u64, HashSet<String>>,
 
+    // Scryfall IDs in any 'unset'
     #[serde(skip)]
     unset_creature_ids: HashSet<String>,
 
+    // Scryfall IDs by formats their legal in
     #[serde(skip)]
     creatures_by_format: HashMap<FormatLegality, HashSet<String>>,
 
+    // Scryfall IDs from Gavin's 'Unknown Events'
     #[serde(skip)]
     unknown_events_creature_ids: HashSet<String>,
 }
