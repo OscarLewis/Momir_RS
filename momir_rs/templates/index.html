@@ -4,10 +4,56 @@
     <h1>Momir Basic</h1>
     <p>Test Page.</p>
     <div class="controls">
-        <input type="hidden" name="game_id" value="{{ game_id }}">
-        <label for="cmc">Converted Mana Cost</label>
-        <input id="cmc" type="number" name="cmc" value="1" min="0">
-        <button hx-get="/card-by-cmc" hx-include="[name='cmc'], [name='game_id']" hx-swap="none">Test</button>
+        <div class="controls-stack">
+            <div class="filter-grid">
+                <div class="filter-item">
+                    <div class="filter-toggle">
+                        <span>Unsets</span>
+                        <label class="switch">
+                            <input type="checkbox" name="unset_filter" value="true" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="filter-item">
+                    <div class="filter-toggle">
+                        <span>Pre-Modern</span>
+                        <label class="switch">
+                            <input type="checkbox" name="premodern_filter" value="true" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="filter-item">
+                    <div class="filter-toggle">
+                        <span>Modern</span>
+                        <label class="switch">
+                            <input type="checkbox" name="modern_filter" value="true" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="filter-item">
+                    <div class="filter-toggle">
+                        <span>Unknown Events</span>
+                        <label class="switch">
+                            <input type="checkbox" name="unknown_event_filter" value="true" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <input type="hidden" name="game_id" value="{{ game_id }}">
+                <label for="cmc">Converted Mana Cost</label>
+                <input id="cmc" type="number" name="cmc" value="1" min="0">
+                <button hx-get="/card-by-cmc"
+                        hx-include="[name='cmc'], [name='game_id'], [name='unknown_event_filter'], [name='modern_filter'], [name='premodern_filter'], [name='unset_filter']"
+                        hx-swap="none">
+                    Randomize
+                </button>
+            </div>
+        </div>
         <img src="static/images/momir.webp" alt="Momir" class="momir-image">
     </div>
     <div>

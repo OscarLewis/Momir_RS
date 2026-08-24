@@ -1,26 +1,23 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
+// ==========================================
+// 1. SHARED CORE FIELDS (Present in both API & Bulk)
+// ==========================================
 
+/// Core identity & gameplay metadata common across all card data formats
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct OracleScryfallCard {
+pub struct CoreCardFields {
     pub id: String,
     pub oracle_id: Option<String>,
-    pub multiverse_ids: Option<Vec<i64>>,
-    pub mtgo_id: Option<i64>,
-    pub mtgo_foil_id: Option<i64>,
-    pub tcgplayer_id: Option<i64>,
-    pub cardmarket_id: Option<i64>,
     pub name: String,
     pub lang: String,
     pub released_at: Option<String>,
     pub uri: String,
     pub scryfall_uri: String,
     pub layout: String,
-    pub highres_image: bool,
-    pub image_status: String,
-    pub image_updated_at: Option<String>,
-    pub image_uris: Option<ImageUris>,
+
+    // Gameplay
     pub mana_cost: Option<String>,
     pub cmc: Option<f64>,
     pub type_line: Option<String>,
@@ -34,16 +31,10 @@ pub struct OracleScryfallCard {
     pub color_indicator: Option<Vec<String>>,
     pub keywords: Vec<String>,
     pub legalities: HashMap<String, String>,
-    pub games: Vec<String>,
     pub reserved: bool,
     pub game_changer: Option<bool>,
-    pub foil: bool,
-    pub nonfoil: bool,
-    pub finishes: Vec<String>,
-    pub oversized: bool,
-    pub promo: bool,
-    pub reprint: bool,
-    pub variation: bool,
+
+    // Set Info (Canonical set data)
     pub set_id: String,
     pub set: String,
     pub set_name: String,
@@ -53,6 +44,30 @@ pub struct OracleScryfallCard {
     pub scryfall_set_uri: String,
     pub rulings_uri: String,
     pub prints_search_uri: String,
+
+    // Auxiliary / Relations
+    pub all_parts: Option<Vec<RelatedCard>>,
+    pub card_faces: Option<Vec<CardFace>>,
+}
+
+// ==========================================
+// 2. SHARED PRINT FIELDS
+// ==========================================
+
+/// Visual and physical printing details shared by full card objects
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct PrintFields {
+    pub multiverse_ids: Option<Vec<i64>>,
+    pub mtgo_id: Option<i64>,
+    pub mtgo_foil_id: Option<i64>,
+    pub tcgplayer_id: Option<i64>,
+    pub cardmarket_id: Option<i64>,
+
+    pub highres_image: bool,
+    pub image_status: String,
+    pub image_updated_at: Option<String>,
+    pub image_uris: Option<ImageUris>,
+
     pub collector_number: String,
     pub digital: bool,
     pub rarity: String,
@@ -66,19 +81,58 @@ pub struct OracleScryfallCard {
     pub frame: String,
     pub frame_effects: Option<Vec<String>>,
     pub security_stamp: Option<String>,
+
     pub full_art: bool,
     pub textless: bool,
     pub booster: bool,
     pub story_spotlight: bool,
     pub edhrec_rank: Option<i64>,
     pub penny_rank: Option<i64>,
+
+    pub games: Vec<String>,
+    pub finishes: Vec<String>,
+    pub foil: bool,
+    pub nonfoil: bool,
+    pub oversized: bool,
+    pub promo: bool,
+    pub reprint: bool,
+    pub variation: bool,
+
     pub prices: Prices,
     pub related_uris: HashMap<String, String>,
     pub purchase_uris: Option<HashMap<String, String>>,
-    pub all_parts: Option<Vec<RelatedCard>>,
-    pub card_faces: Option<Vec<CardFace>>,
     pub preview: Option<PreviewInfo>,
 }
+
+// ==========================================
+// 3. COMPOSITE CARDS
+// ==========================================
+
+/// Full Scryfall Card (Default API Endpoint & 'Default Cards' Bulk JSONL File)
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ScryfallCard {
+    #[serde(flatten)]
+    pub core: CoreCardFields,
+
+    #[serde(flatten)]
+    pub print: PrintFields,
+}
+
+/// Oracle Scryfall Card ('Oracle Cards' Bulk JSONL File)
+/// Shares core and print data via composition, keeping code DRY.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OracleScryfallCard {
+    #[serde(flatten)]
+    pub core: CoreCardFields,
+
+    #[serde(flatten)]
+    pub print: PrintFields,
+}
+
+// ==========================================
+// 4. NESTED TYPES
+// ==========================================
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ImageUris {
     pub small: Option<String>,

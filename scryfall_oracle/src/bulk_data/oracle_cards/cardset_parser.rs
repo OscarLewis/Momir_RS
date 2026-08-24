@@ -1,4 +1,4 @@
-use crate::bulk_data::oracle_cards::OracleScryfallCard;
+use crate::OracleScryfallCard;
 use crate::bulk_data::oracle_cards::oracle::BulkDataError;
 use async_compression::tokio::bufread::GzipDecoder;
 use std::collections::HashMap;
@@ -35,11 +35,12 @@ pub async fn parse_card_set(
         count += 1;
 
         if card
+            .core
             .type_line
             .as_deref()
             .is_some_and(|type_line| type_line.contains("Creature"))
         {
-            scryfall_cards.insert(card.id.clone(), card);
+            scryfall_cards.insert(card.core.id.clone(), card);
         }
     }
 

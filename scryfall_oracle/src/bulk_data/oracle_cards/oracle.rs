@@ -1,7 +1,8 @@
+use crate::OracleScryfallCard;
 use crate::ScryfallClient;
 use crate::bulk_data::BulkData;
-use crate::bulk_data::oracle_cards::OracleScryfallCard;
 use crate::bulk_data::oracle_cards::cardset_parser::parse_card_set;
+use crate::bulk_data::oracle_cards::filters::OracleFilters;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use rand::prelude::IndexedRandom;
 use regex::Regex;
@@ -20,6 +21,7 @@ pub struct OracleCards {
 
     #[serde(skip)]
     creatures_by_cmc: HashMap<u64, Vec<String>>,
+    // TODO Add a lookup table for creatures who are found by "is:unset t:creature"
 }
 
 impl OracleCards {
@@ -49,6 +51,7 @@ impl OracleCards {
 
         for (id, card) in &cards {
             if !card
+                .core
                 .type_line
                 .as_deref()
                 .is_some_and(|type_line| type_line.contains("Creature"))
@@ -56,7 +59,7 @@ impl OracleCards {
                 continue;
             }
 
-            let Some(cmc) = card.cmc else {
+            let Some(cmc) = card.core.cmc else {
                 continue;
             };
 
@@ -73,13 +76,20 @@ impl OracleCards {
     }
 
     pub fn named(&self, name: &str) -> Option<&OracleScryfallCard> {
-        self.cards.as_ref()?.values().find(|card| card.name == name)
+        self.cards
+            .as_ref()?
+            .values()
+            .find(|card| card.core.name == name)
     }
 
-    pub fn random_creature_by_cmc(&self, cmc: f64) -> Option<&OracleScryfallCard> {
+    pub fn random_creature_by_cmc(
+        &self,
+        cmc: f64,
+        filters: Option<&OracleFilters>,
+    ) -> Option<&OracleScryfallCard> {
         let ids = self.creatures_by_cmc.get(&cmc.to_bits())?;
         let id = ids.choose(&mut rand::rng())?;
-
+        // TODO Implement filter feature
         self.cards.as_ref()?.get(id)
     }
 }
@@ -327,9 +337,10 @@ mod tests {
             .named("Elvish Mystic")
             .expect("Elvish Mystic should exist in Oracle cards");
 
-        assert_eq!(card.name, "Elvish Mystic");
+        assert_eq!(card.core.name, "Elvish Mystic");
         assert!(
-            card.type_line
+            card.core
+                .type_line
                 .as_deref()
                 .is_some_and(|type_line| type_line.contains("Creature"))
         );
@@ -353,12 +364,13 @@ mod tests {
         let cmc = rand::rng().random_range(1..=10);
 
         let card = oracle
-            .random_creature_by_cmc(cmc as f64)
+            .random_creature_by_cmc(cmc as f64, None)
             .expect("there should be a creature at this CMC");
 
-        assert_eq!(card.cmc, Some(cmc as f64));
+        assert_eq!(card.core.cmc, Some(cmc as f64));
         assert!(
-            card.type_line
+            card.core
+                .type_line
                 .as_deref()
                 .is_some_and(|type_line| type_line.contains("Creature"))
         );

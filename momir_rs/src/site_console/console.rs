@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use scryfall_oracle::bulk_data::oracle_cards::OracleScryfallCard;
+use scryfall_oracle::OracleScryfallCard;
 use tokio::sync::broadcast;
 
 #[derive(Clone, Debug)]

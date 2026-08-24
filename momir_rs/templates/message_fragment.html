@@ -6,11 +6,10 @@
             {% when ConsoleMessage::Card { sender, card } %}
                 <strong>{{ sender }}:</strong>
                 Generated
-                '
-                <a href="{{ card.scryfall_uri }}" target="_blank" rel="noopener noreferrer">{{ card.name }}</a>
-                '
-                ({{ card.id }})
-                {% match card.cmc %}
+                <a href="{{ card.core.scryfall_uri }}" target="_blank" rel="noopener noreferrer">
+                    '{{ card.core.name }}'
+                </a>
+                {% match card.core.cmc %}
                     {% when Some with (cmc) %}
                         (CMC {{ cmc }})
                     {% when None %}
@@ -25,39 +24,42 @@
             <div class="latest-card-content">
                 <div class="card-details">
                     <p>
-                        <a href="{{ card.scryfall_uri }}" target="_blank" rel="noopener noreferrer">{{ card.name }}</a>
+                        <a href="{{ card.core.scryfall_uri }}" target="_blank" rel="noopener noreferrer">
+                            {{ card.core.name }}
+                        </a>
                     </p>
-                    {% match card.mana_cost %}
+                    {% match card.core.mana_cost %}
                         {% when Some with (mana_cost) %}
                             <p>Cost: {{ mana_cost }}</p>
                         {% when None %}
                     {% endmatch %}
-                    {% match card.cmc %}
+                    {% match card.core.cmc %}
                         {% when Some with (cmc) %}
                             <p>CMC: {{ cmc }}</p>
                         {% when None %}
                     {% endmatch %}
-                    {% match card.type_line %}
+                    {% match card.core.type_line %}
                         {% when Some with (type_line) %}
                             <p>{{ type_line }}</p>
                         {% when None %}
                     {% endmatch %}
-                    {% match card.oracle_text %}
+                    {% match card.core.oracle_text %}
                         {% when Some with (oracle_text) %}
-                            <p>{{ oracle_text }}</p>
+                            <p>Oracle Text: {{ oracle_text }}</p>
                         {% when None %}
                     {% endmatch %}
-                    {% match (&card.power, &card.toughness) %}
+                    {% match (&card.core.power, &card.core.toughness) %}
                         {% when (Some(power), Some(toughness)) %}
-                            <p>Power/Toughness: {{ power }}/{{ toughness }}</p>
+                            <p>Power/Toughness: {{ power }} / {{ toughness }}</p>
                         {% when _ %}
                     {% endmatch %}
+                    <p>Set: {{ card.core.set | upper }}</p>
                 </div>
-                {% match card.image_uris %}
+                {% match card.print.image_uris %}
                     {% when Some with (image_uris) %}
                         {% match image_uris.art_crop %}
                             {% when Some with (art_crop) %}
-                                <img class="latest-card-image" src="{{ art_crop }}" alt="{{ card.name }}">
+                                <img class="latest-card-image" src="{{ art_crop }}" alt="{{ card.core.name }}">
                             {% when None %}
                         {% endmatch %}
                     {% when None %}

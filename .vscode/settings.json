@@ -12,4 +12,7 @@
         "editor.defaultFormatter": "SteefH.external-formatters",
         "editor.formatOnSave": true
     }
+    // "rust-analyzer.runnables.extraEnv": {
+    //     "RUST_LOG": "debug"
+    // }
 }

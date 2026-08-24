@@ -1,5 +1,6 @@
 pub mod cardset_parser;
-mod models;
-mod oracle;
-pub use models::oracle_scryfall_card::OracleScryfallCard;
+pub mod filters;
+pub mod oracle;
+
+pub use oracle::BulkDataError;
 pub use oracle::OracleCards;

@@ -15,7 +15,13 @@ use axum::{
     routing::get,
 };
 use rand::RngExt;
-use scryfall_oracle::{bulk_data::oracle_cards::OracleCards, client::ScryfallClient};
+use scryfall_oracle::{
+    bulk_data::oracle_cards::{
+        OracleCards,
+        filters::{OracleFilter, OracleFilters},
+    },
+    client::ScryfallClient,
+};
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use serde::Deserialize;
 use std::{path::PathBuf, time::Duration};
@@ -114,11 +120,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let rand_cmc = rand::rng().random_range(1..=16) as f64;
 
-    if let Some(card) = oracle.random_creature_by_cmc(rand_cmc) {
+    if let Some(card) = oracle.random_creature_by_cmc(rand_cmc, None) {
         debug!(
             rand_cmc,
-            card_name = %card.name,
-            scryfall_id = %card.id,
+            card_name = %card.core.name,
+            scryfall_id = %card.core.id,
             "Random creature of the day"
         );
     }
@@ -172,19 +178,49 @@ async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> 
 struct CardByCMCParams {
     cmc: i32,
     game_id: String,
+
+    #[serde(default)]
+    unknown_event_filter: bool,
+
+    #[serde(default)]
+    modern_filter: bool,
+
+    #[serde(default)]
+    premodern_filter: bool,
+
+    #[serde(default)]
+    unset_filter: bool,
 }
 
 async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<AppState>) {
-    let card = state.oracle.random_creature_by_cmc(params.cmc.into());
+    let filter_checks = [
+        (OracleFilter::UnknownEvent, params.unknown_event_filter),
+        (OracleFilter::Modern, params.modern_filter),
+        (OracleFilter::Premodern, params.premodern_filter),
+        (OracleFilter::Unsets, params.unset_filter),
+    ];
 
+    let filters = {
+        let filters: Vec<_> = filter_checks
+            .into_iter()
+            .filter_map(|(filter, checked)| (!checked).then_some(filter))
+            .collect();
+
+        (!filters.is_empty()).then(|| OracleFilters::from_vec(filters))
+    };
+
+    let card = state
+        .oracle
+        .random_creature_by_cmc(params.cmc.into(), filters.as_ref());
     let message = match card {
         Some(card) => {
-            let cmc = card.cmc.expect("card selected by CMC must have a CMC");
+            let cmc = card.core.cmc.expect("card selected by CMC must have a CMC");
 
             debug!(
-                card_name = %card.name,
+                card_name = %card.core.name,
                 card_cmc = cmc,
-                card_id = %card.id,
+                card_id = %card.core.id,
+                filters = ?filters,
                 "Momir generated a card"
             );
 
@@ -202,6 +238,7 @@ async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<
 
     state.console.send(&params.game_id, message);
 }
+
 async fn websocket(
     ws: WebSocketUpgrade,
     Path(game_id): Path<String>,

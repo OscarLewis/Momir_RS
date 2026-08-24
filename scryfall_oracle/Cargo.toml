@@ -8,10 +8,11 @@ async-compression = { version = "0.4.43", features = ["gzip", "tokio"] }
 chrono = "0.4.45"
 rand = "0.10.2"
 regex = "1.13.1"
-reqwest = { version = "0.13.4", features = ["json"] }
+reqwest = { version = "0.13.4", features = ["json", "query"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 tempfile = "3.27.0"
+test-log = { version = "0.2.21", features = ["trace"] }
 thiserror = "2.0.20"
 tokio = { version = "1.53.1", features = ["full"] }
 tracing = "0.1.44"
