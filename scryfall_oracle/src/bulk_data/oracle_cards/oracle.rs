@@ -82,6 +82,7 @@ impl OracleCards {
         let mut unknown_events_creature_ids: HashSet<String> = HashSet::new();
 
         for (id, card) in &local_card_set {
+            debug_assert!(*id == card.core.id, "Scryfall ID mismatch");
             if !card
                 .core
                 .type_line
