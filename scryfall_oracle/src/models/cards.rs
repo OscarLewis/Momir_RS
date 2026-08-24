@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
 // Core Fields
@@ -28,14 +28,13 @@ pub struct CoreCardFields {
     pub color_identity: Vec<String>,
     pub color_indicator: Option<Vec<String>>,
     pub keywords: Vec<String>,
-    pub legalities: HashMap<String, String>,
+    #[serde(deserialize_with = "deserialize_legalities")]
+    pub legalities: HashMap<Format, bool>,
     pub reserved: bool,
     pub game_changer: Option<bool>,
-
-    // "life_modifier": "+4",
-    //   "hand_modifier": "+0",
     pub life_modifier: Option<String>,
     pub hand_modifier: Option<String>,
+
     // Set Info (Canonical set data)
     pub set_id: String,
     pub set: String,
@@ -183,4 +182,50 @@ pub struct PreviewInfo {
     pub source: Option<String>,
     pub source_uri: Option<String>,
     pub previewed_at: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum Format {
+    Standard,
+    Future,
+    Historic,
+    Timeless,
+    Gladiator,
+    Pioneer,
+    Modern,
+    Legacy,
+    Pauper,
+    Vintage,
+    Penny,
+    Commander,
+    Oathbreaker,
+    Standardbrawl,
+    Brawl,
+    Competitivebrawl,
+    Alchemy,
+    Paupercommander,
+    Duel,
+    Oldschool,
+    Premodern,
+    Predh,
+    Tlr,
+}
+fn deserialize_legalities<'de, D>(deserializer: D) -> Result<HashMap<Format, bool>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let raw: HashMap<Format, String> = HashMap::deserialize(deserializer)?;
+
+    raw.into_iter()
+        .map(|(format, legality)| match legality.as_str() {
+            "legal" => Ok((format, true)),
+            "restricted" => Ok((format, true)),
+            "not_legal" => Ok((format, false)),
+            "banned" => Ok((format, false)),
+            other => Err(serde::de::Error::custom(format!(
+                "unknown legality value: {other}"
+            ))),
+        })
+        .collect()
 }

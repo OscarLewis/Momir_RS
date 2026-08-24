@@ -29,6 +29,8 @@ pub struct OracleCards {
 
     #[serde(skip)]
     unset_creature_ids: HashSet<String>,
+    // #[serde(skip)]
+    // creatures_by_format: HashMap<String, HashSet<String>>,
 }
 
 impl OracleCards {
@@ -150,6 +152,8 @@ impl OracleCards {
 
         self.cards.as_ref()?.get(id)
     }
+
+    // pub fn creatures_legal_in_format(&self, format: &str) {}
 }
 
 #[derive(Debug, thiserror::Error)]
