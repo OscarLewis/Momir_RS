@@ -13,6 +13,19 @@ $color-off: #ccc;
 $color-knob: #ffffff;
 $transition-speed: 0.4s;
 
+@mixin card-link {
+    color: #f8f0df;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
+
+    &:visited {
+        color: #d0d0d0;
+    }
+}
+
 body {
     margin: 0;
     min-height: 100vh;
@@ -51,6 +64,9 @@ body {
 
 .momir-card-name {
     margin-bottom: 0.25rem;
+    a {
+        @include card-link;
+    }
 }
 
 .content {
@@ -141,28 +157,26 @@ button {
     gap: 1rem;
 }
 
+.momir-img-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
 .momir-image {
     display: block;
     width: 280px;
     height: auto;
-    flex: 0 0 280px;
+    flex: 0 0 auto;
 
     @media (width < 640px) {
         display: none;
     }
 }
 
-@mixin card-link {
-    color: #f8f0df;
-    text-decoration: none;
-
-    &:hover {
-        text-decoration: underline;
-    }
-
-    &:visited {
-        color: #d0d0d0;
-    }
+.art-credit {
+    margin-top: 0.1rem;
+    font-size: smaller;
 }
 
 .message-item {

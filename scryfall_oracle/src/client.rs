@@ -21,4 +21,5 @@ impl ScryfallClient {
 
         Ok(Self { client })
     }
+    // TODO Add rate limit
 }

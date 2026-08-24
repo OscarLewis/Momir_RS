@@ -28,7 +28,6 @@ pub struct OracleCards {
     #[serde(skip)]
     creatures_by_cmc: HashMap<u64, HashSet<String>>,
 
-    // TODO Add a lookup table for creatures who are found by "is:unset t:creature"
     #[serde(skip)]
     unset_creature_ids: HashSet<String>,
 }

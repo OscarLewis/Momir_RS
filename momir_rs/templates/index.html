@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}Momir Basic{% endblock %}
-
 {% block content %}
     <h1>Momir Basic</h1>
 
@@ -11,7 +9,11 @@
                 {% match momir_card %}
                     {% when Some with (momir_card) %}
                         <div class="momir-card-name">
-                            <strong>{{ momir_card.core.name }}</strong>
+                            <strong>
+                            <a href="{{ momir_card.core.scryfall_uri }}" target="_blank" rel="noopener noreferrer">
+                                {{ momir_card.core.name }}
+                            </a>
+                            </strong>
                         </div>
                         {% match momir_card.core.life_modifier %}
                             {% when Some with (life_modifier) %}
@@ -98,7 +100,18 @@
             </div>
         </div>
 
-        <img src="static/images/momir.webp" alt="Momir" class="momir-image">
+        <div class="momir-img-block">
+            <img src="static/images/momir.webp" alt="Momir" class="momir-image">
+            {% match momir_card %}
+                {% when Some with (momir_card) %}
+                    {% match momir_card.print.artist %}
+                        {% when Some with (artist) %}
+                            <p class="art-credit">Momir Vig Art by {{ artist }}</p>
+                        {% when None %}
+                    {% endmatch %}
+                {% when None %}
+            {% endmatch %}
+        </div>
     </div>
 
     <div>
@@ -114,6 +127,5 @@
             <p>No card generated yet.</p>
         </div>
     </div>
-
     {{ super() }}
 {% endblock %}
