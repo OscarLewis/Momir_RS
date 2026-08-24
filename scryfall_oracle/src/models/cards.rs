@@ -29,7 +29,7 @@ pub struct CoreCardFields {
     pub color_indicator: Option<Vec<String>>,
     pub keywords: Vec<String>,
     #[serde(deserialize_with = "deserialize_legalities")]
-    pub legalities: HashMap<Format, bool>,
+    pub legalities: HashMap<FormatLegality, bool>,
     pub reserved: bool,
     pub game_changer: Option<bool>,
     pub life_modifier: Option<String>,
@@ -186,7 +186,7 @@ pub struct PreviewInfo {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
-pub enum Format {
+pub enum FormatLegality {
     Standard,
     Future,
     Historic,
@@ -211,11 +211,13 @@ pub enum Format {
     Predh,
     Tlr,
 }
-fn deserialize_legalities<'de, D>(deserializer: D) -> Result<HashMap<Format, bool>, D::Error>
+fn deserialize_legalities<'de, D>(
+    deserializer: D,
+) -> Result<HashMap<FormatLegality, bool>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let raw: HashMap<Format, String> = HashMap::deserialize(deserializer)?;
+    let raw: HashMap<FormatLegality, String> = HashMap::deserialize(deserializer)?;
 
     raw.into_iter()
         .map(|(format, legality)| match legality.as_str() {

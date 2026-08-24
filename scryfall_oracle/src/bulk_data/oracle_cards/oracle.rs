@@ -1,3 +1,4 @@
+use crate::FormatLegality;
 use crate::OracleScryfallCard;
 use crate::ScryfallCard;
 use crate::ScryfallClient;
@@ -29,8 +30,12 @@ pub struct OracleCards {
 
     #[serde(skip)]
     unset_creature_ids: HashSet<String>,
-    // #[serde(skip)]
-    // creatures_by_format: HashMap<String, HashSet<String>>,
+
+    #[serde(skip)]
+    creatures_by_format: HashMap<FormatLegality, HashSet<String>>,
+
+    #[serde(skip)]
+    unknown_events_creature_ids: HashSet<String>,
 }
 
 impl OracleCards {
@@ -68,6 +73,8 @@ impl OracleCards {
         );
 
         let mut creatures_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
+        let mut creatures_by_format: HashMap<FormatLegality, HashSet<String>> = HashMap::new();
+        let mut unknown_events_creature_ids: HashSet<String> = HashSet::new();
 
         for (id, card) in &local_card_set {
             if !card
@@ -83,16 +90,31 @@ impl OracleCards {
                 continue;
             };
 
+            if card.core.set.eq_ignore_ascii_case("unk") {
+                unknown_events_creature_ids.insert(card.core.id.clone());
+            }
+
             creatures_by_cmc
                 .entry(cmc.to_bits())
                 .or_default()
                 .insert(card.core.id.clone());
+
+            for (&format, &legal) in &card.core.legalities {
+                if legal {
+                    creatures_by_format
+                        .entry(format)
+                        .or_default()
+                        .insert(card.core.id.clone());
+                }
+            }
         }
 
         Ok(Self {
             cards: Some(local_card_set),
             creatures_by_cmc,
+            creatures_by_format,
             unset_creature_ids,
+            unknown_events_creature_ids,
         })
     }
 
@@ -102,6 +124,7 @@ impl OracleCards {
             .values()
             .find(|card| card.core.name == name)
     }
+
     pub fn random_creature_by_cmc(
         &self,
         cmc: f64,
@@ -121,16 +144,22 @@ impl OracleCards {
                         !self.unset_creature_ids.contains(*id)
                     }
                     OracleFilter::Modern => {
-                        // TODO: exclude Modern cards
-                        true
+                        // Filter out all creature cards that are legal in Modern
+                        !self
+                            .creatures_by_format
+                            .get(&FormatLegality::Modern)
+                            .is_some_and(|ids| ids.contains(*id))
                     }
                     OracleFilter::Premodern => {
-                        // TODO: exclude Premodern cards
-                        true
+                        // Filter out all creature cards that are legal in Pre-Modern
+                        !self
+                            .creatures_by_format
+                            .get(&FormatLegality::Premodern)
+                            .is_some_and(|ids| ids.contains(*id))
                     }
                     OracleFilter::UnknownEvent => {
-                        // TODO: exclude Unknown Event cards
-                        true
+                        // Filter out all creature cards that are part of Gavin's 'Unknown Events'
+                        !self.unknown_events_creature_ids.contains(*id)
                     }
                 }
             })
@@ -439,5 +468,32 @@ mod tests {
                 .as_deref()
                 .is_some_and(|type_line| type_line.contains("Creature"))
         );
+    }
+
+    #[tokio::test]
+    async fn test_birds_of_paradise_not_legal_in_pauper() {
+        let bop_scryfall_id = "492c2f9a-51e7-4e0f-9899-23bf43ea988b";
+        let oracle = test_oracle().await;
+
+        let pauper_creatures = oracle
+            .creatures_by_format
+            .get(&FormatLegality::Pauper)
+            .expect("Pauper creature bucket should exist");
+
+        assert!(!pauper_creatures.contains(bop_scryfall_id));
+    }
+
+    #[tokio::test]
+    async fn test_corpse_connoisseur_is_legal_in_modern() {
+        let oracle = test_oracle().await;
+
+        let corpse_connoisseur_id = "3f4ef04b-5434-480e-82a1-118ed1ff551f";
+
+        let is_modern_legal = oracle
+            .creatures_by_format
+            .get(&FormatLegality::Modern)
+            .is_some_and(|ids| ids.contains(corpse_connoisseur_id));
+
+        assert!(is_modern_legal);
     }
 }
