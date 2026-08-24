@@ -1,51 +1,24 @@
-use crate::{ScryfallCard, ScryfallClient};
-use serde::Deserialize;
+use crate::{
+    ScryfallCard, ScryfallClient,
+    cards::models::{ScryfallApiError, ScryfallCardList, ScryfallPageResponse},
+};
 use std::collections::HashMap;
 use tracing::debug;
 
 const SCRYFALL_SEARCH_URL: &str = "https://api.scryfall.com/cards/search";
 
-/// Low-level page response returned directly by the Scryfall API.
-#[derive(Debug, Deserialize)]
-pub struct ScryfallPageResponse<T> {
-    pub object: String,
-    pub total_cards: Option<u32>,
-    pub has_more: bool,
-    pub next_page: Option<String>,
-    pub data: Vec<T>,
-}
-
-/// Fully-aggregated list containing all pages from a search query.
-#[derive(Debug, Clone)]
-pub struct ScryfallCardList {
-    pub total_cards: Option<u32>,
-    pub data: Vec<ScryfallCard>,
-}
-
-impl ScryfallCardList {
-    /// Extracts a list of `id` strings from `card.core.id` for all cards.
-    pub fn card_ids(&self) -> Vec<String> {
-        self.data.iter().map(|card| card.core.id.clone()).collect()
-    }
-
-    /// Consumes the list and extracts all `card.core.id` strings without cloning.
-    pub fn into_card_ids(self) -> Vec<String> {
-        self.data.into_iter().map(|card| card.core.id).collect()
-    }
-}
-
 impl ScryfallCard {
-    /// Executes a search query, following all `next_page` pagination links to collect every card.
+    /// Executes a search query, following all `next_page` pagination links to collect every card
     pub async fn search(
         client: &ScryfallClient,
         query: &str,
-    ) -> Result<ScryfallCardList, reqwest::Error> {
+    ) -> Result<ScryfallCardList, ScryfallApiError> {
         let mut params = HashMap::new();
         params.insert("q", query);
 
+        // Gotta keep all these cards somewhere, might as well be here
         let mut all_cards = Vec::new();
 
-        // First page fetch using query parameters
         let response = client
             .client
             .get(SCRYFALL_SEARCH_URL)
@@ -58,7 +31,6 @@ impl ScryfallCard {
         let total_cards = page.total_cards;
         all_cards.append(&mut page.data);
 
-        // Follow next_page URIs until has_more is false
         while page.has_more {
             if let Some(next_url) = page.next_page {
                 let next_response = client
@@ -74,6 +46,7 @@ impl ScryfallCard {
                 break;
             }
         }
+
         debug!(
             total_cards = total_cards,
             query = query,
@@ -87,6 +60,7 @@ impl ScryfallCard {
     }
 }
 
+// Tests
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -32,11 +32,25 @@ body {
     max-width: 800px;
     margin: 2rem auto 1rem;
     padding: 0 1rem;
-
     color: #b8c0cc;
     font-size: 0.75rem;
     line-height: 1.5;
     text-align: center;
+}
+
+.momir-oracle {
+    color: $text-muted;
+    max-width: none;
+    font-size: small;
+    margin-bottom: 1rem;
+
+    p {
+        margin: 0;
+    }
+}
+
+.momir-card-name {
+    margin-bottom: 0.25rem;
 }
 
 .content {
@@ -47,6 +61,7 @@ body {
 h1 {
     font-size: 2.5rem;
     margin-top: 0;
+    margin-bottom: 2rem;
 }
 
 p {
@@ -110,17 +125,14 @@ button {
 }
 
 .controls {
-    position: relative;
     display: flex;
-    align-items: flex-end;
-    min-height: 44px;
-    // padding-right: 280px;
+    align-items: flex-start;
+    gap: 1rem;
+}
 
-    label {
-        font-weight: 600;
-        margin-right: 0.35rem;
-        margin-bottom: 0.65rem;
-    }
+.controls-main {
+    flex: 1;
+    min-width: 0;
 }
 
 .controls-stack {
@@ -130,11 +142,10 @@ button {
 }
 
 .momir-image {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 260px;
+    display: block;
+    width: 280px;
     height: auto;
+    flex: 0 0 280px;
 
     @media (width < 640px) {
         display: none;
@@ -257,6 +268,7 @@ button {
         }
     }
 }
+
 .filter-grid {
     display: grid;
     grid-template-columns: repeat(2, max-content);
@@ -266,6 +278,7 @@ button {
         grid-template-columns: repeat(1, max-content);
     }
 }
+
 .filter-item {
     display: flex;
     align-items: center;

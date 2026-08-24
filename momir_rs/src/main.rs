@@ -16,6 +16,7 @@ use axum::{
 };
 use rand::RngExt;
 use scryfall_oracle::{
+    ScryfallCard,
     bulk_data::oracle_cards::{
         OracleCards,
         filters::{OracleFilter, OracleFilters},
@@ -35,11 +36,7 @@ pub(crate) mod game_manager;
 pub(crate) mod scss;
 pub(crate) mod site_console;
 
-#[derive(Template)]
-#[template(path = "index.html")]
-struct IndexHtmlTemplate {
-    game_id: String,
-}
+const MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID: &str = "f5ed5ad3-b970-4720-b23b-308a25f42887";
 
 #[derive(Debug)]
 enum AppError {
@@ -71,6 +68,7 @@ impl IntoResponse for AppError {
 #[derive(Clone)]
 struct AppState {
     _scryfall_app_name: String,
+    momir_card: Option<ScryfallCard>,
     db: DatabaseConnection,
     game_manager: GameManager,
     console: SiteConsole,
@@ -129,8 +127,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    let momir_avatar =
+        ScryfallCard::by_id(&scryfall, MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID).await?;
+
     let shared_state = AppState {
         _scryfall_app_name: "momir_basic_rs/v0.1".to_string(),
+        momir_card: Some(momir_avatar.clone()),
         db,
         game_manager: GameManager::new(),
         console: SiteConsole::new(),
@@ -158,6 +160,13 @@ async fn check_database(db: &DatabaseConnection) {
     assert!(db.ping().await.is_ok());
 }
 
+#[derive(Template)]
+#[template(path = "index.html")]
+struct IndexHtmlTemplate {
+    game_id: String,
+    momir_card: Option<ScryfallCard>,
+}
+
 async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> {
     let game_id = state.game_manager.new_game();
 
@@ -169,7 +178,10 @@ async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> 
         },
     );
 
-    let template = IndexHtmlTemplate { game_id };
+    let template = IndexHtmlTemplate {
+        game_id,
+        momir_card: state.momir_card.clone(),
+    };
 
     Ok(Html(template.render()?))
 }

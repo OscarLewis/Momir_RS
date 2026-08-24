@@ -1,61 +1,106 @@
 {% extends "base.html" %}
+
 {% block title %}Momir Basic{% endblock %}
+
 {% block content %}
     <h1>Momir Basic</h1>
-    <p>Test Page.</p>
+
     <div class="controls">
-        <div class="controls-stack">
-            <div class="filter-grid">
-                <div class="filter-item">
-                    <div class="filter-toggle">
-                        <span>Unsets</span>
-                        <label class="switch">
-                            <input type="checkbox" name="unset_filter" value="true" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-                <div class="filter-item">
-                    <div class="filter-toggle">
-                        <span>Pre-Modern</span>
-                        <label class="switch">
-                            <input type="checkbox" name="premodern_filter" value="true" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-                <div class="filter-item">
-                    <div class="filter-toggle">
-                        <span>Modern</span>
-                        <label class="switch">
-                            <input type="checkbox" name="modern_filter" value="true" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
-                <div class="filter-item">
-                    <div class="filter-toggle">
-                        <span>Unknown Events</span>
-                        <label class="switch">
-                            <input type="checkbox" name="unknown_event_filter" value="true" checked>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
-                </div>
+        <div class="controls-main">
+            <div class="momir-oracle">
+                {% match momir_card %}
+                    {% when Some with (momir_card) %}
+                        <div class="momir-card-name">
+                            <strong>{{ momir_card.core.name }}</strong>
+                        </div>
+                        {% match momir_card.core.life_modifier %}
+                            {% when Some with (life_modifier) %}
+                                <p>
+                                    <strong>Life Modifier</strong>: {{ life_modifier }}
+                                </p>
+                            {% when None %}
+                        {% endmatch %}
+
+                        {% match momir_card.core.hand_modifier %}
+                            {% when Some with (hand_modifier) %}
+                                <p>
+                                    <strong>Hand Modifier</strong>: {{ hand_modifier }}
+                                </p>
+                            {% when None %}
+                        {% endmatch %}
+                        {% match momir_card.core.oracle_text %}
+                            {% when Some with (oracle_text) %}
+                                <p>
+                                    <strong>Abilities</strong>: {{ oracle_text }}
+                                </p>
+                            {% when None %}
+                        {% endmatch %}
+                    {% when None %}
+                {% endmatch %}
             </div>
-            <div>
-                <input type="hidden" name="game_id" value="{{ game_id }}">
-                <label for="cmc">Converted Mana Cost</label>
-                <input id="cmc" type="number" name="cmc" value="1" min="0">
-                <button hx-get="/card-by-cmc"
-                        hx-include="[name='cmc'], [name='game_id'], [name='unknown_event_filter'], [name='modern_filter'], [name='premodern_filter'], [name='unset_filter']"
-                        hx-swap="none">
-                    Randomize
-                </button>
+
+            <div class="controls-stack">
+                <div class="filter-grid">
+                    <div class="filter-item">
+                        <div class="filter-toggle">
+                            <span>Unsets</span>
+                            <label class="switch">
+                                <input type="checkbox" name="unset_filter" value="true" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-item">
+                        <div class="filter-toggle">
+                            <span>Pre-Modern</span>
+                            <label class="switch">
+                                <input type="checkbox" name="premodern_filter" value="true" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-item">
+                        <div class="filter-toggle">
+                            <span>Modern</span>
+                            <label class="switch">
+                                <input type="checkbox" name="modern_filter" value="true" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-item">
+                        <div class="filter-toggle">
+                            <span>Unknown Events</span>
+                            <label class="switch">
+                                <input type="checkbox" name="unknown_event_filter" value="true" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <input type="hidden" name="game_id" value="{{ game_id }}">
+
+                    <label for="cmc">Converted Mana Cost</label>
+
+                    <input id="cmc" type="number" name="cmc" value="1" min="0">
+
+                    <button hx-get="/card-by-cmc"
+                            hx-include="[name='cmc'], [name='game_id'], [name='unknown_event_filter'], [name='modern_filter'], [name='premodern_filter'], [name='unset_filter']"
+                            hx-swap="none">
+                        Randomize
+                    </button>
+                </div>
             </div>
         </div>
+
         <img src="static/images/momir.webp" alt="Momir" class="momir-image">
     </div>
+
     <div>
         <div hx-ext="ws" ws-connect="/ws/messages/{{ game_id }}">
             <div id="message-list">
@@ -63,10 +108,12 @@
             </div>
         </div>
     </div>
+
     <div id="latest-card" class="latest-card">
         <div class="card-details">
             <p>No card generated yet.</p>
         </div>
     </div>
+
     {{ super() }}
 {% endblock %}

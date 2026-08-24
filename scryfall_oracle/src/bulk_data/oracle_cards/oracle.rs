@@ -1,17 +1,23 @@
 use crate::OracleScryfallCard;
+use crate::ScryfallCard;
 use crate::ScryfallClient;
 use crate::bulk_data::BulkData;
 use crate::bulk_data::oracle_cards::cardset_parser::parse_card_set;
+use crate::bulk_data::oracle_cards::filters::OracleFilter;
 use crate::bulk_data::oracle_cards::filters::OracleFilters;
+use crate::cards::models::ScryfallApiError;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use rand::prelude::IndexedRandom;
+use rand::prelude::IteratorRandom;
 use regex::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
 use tracing::{debug, error};
+
 const ORACLE_CACHE_DIR: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/cache/";
 
 #[derive(Debug, Deserialize, Clone, Default)]
@@ -20,8 +26,11 @@ pub struct OracleCards {
     pub cards: Option<HashMap<String, OracleScryfallCard>>,
 
     #[serde(skip)]
-    creatures_by_cmc: HashMap<u64, Vec<String>>,
+    creatures_by_cmc: HashMap<u64, HashSet<String>>,
+
     // TODO Add a lookup table for creatures who are found by "is:unset t:creature"
+    #[serde(skip)]
+    unset_creature_ids: HashSet<String>,
 }
 
 impl OracleCards {
@@ -45,11 +54,22 @@ impl OracleCards {
         };
 
         let data_path = write_data(target_dir, oracle_cards_bulk, client).await?;
-        let cards = parse_card_set(data_path).await?;
+        let local_card_set = parse_card_set(data_path).await?;
 
-        let mut creatures_by_cmc: HashMap<u64, Vec<String>> = HashMap::new();
+        let unset_creature_ids = ScryfallCard::search(client, "is:unset t:creature")
+            .await?
+            .into_card_ids()
+            .into_iter()
+            .collect::<HashSet<_>>();
 
-        for (id, card) in &cards {
+        debug!(
+            num_unset_creatures = unset_creature_ids.len(),
+            "Unset creatures fetched from Scryfall"
+        );
+
+        let mut creatures_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
+
+        for (id, card) in &local_card_set {
             if !card
                 .core
                 .type_line
@@ -66,12 +86,13 @@ impl OracleCards {
             creatures_by_cmc
                 .entry(cmc.to_bits())
                 .or_default()
-                .push(id.clone());
+                .insert(card.core.id.clone());
         }
 
         Ok(Self {
-            cards: Some(cards),
+            cards: Some(local_card_set),
             creatures_by_cmc,
+            unset_creature_ids,
         })
     }
 
@@ -81,15 +102,53 @@ impl OracleCards {
             .values()
             .find(|card| card.core.name == name)
     }
-
     pub fn random_creature_by_cmc(
         &self,
         cmc: f64,
         filters: Option<&OracleFilters>,
     ) -> Option<&OracleScryfallCard> {
         let ids = self.creatures_by_cmc.get(&cmc.to_bits())?;
-        let id = ids.choose(&mut rand::rng())?;
-        // TODO Implement filter feature
+
+        let eligible = |id: &&String| {
+            let Some(filters) = filters else {
+                return true;
+            };
+
+            filters.filters.iter().all(|filter| {
+                match filter {
+                    OracleFilter::Unsets => {
+                        // Filter out all creature cards that are part of an unset
+                        !self.unset_creature_ids.contains(*id)
+                    }
+                    OracleFilter::Modern => {
+                        // TODO: exclude Modern cards
+                        true
+                    }
+                    OracleFilter::Premodern => {
+                        // TODO: exclude Premodern cards
+                        true
+                    }
+                    OracleFilter::UnknownEvent => {
+                        // TODO: exclude Unknown Event cards
+                        true
+                    }
+                }
+            })
+        };
+
+        let total_ids = ids.len();
+        let eligible_count = ids.iter().filter(eligible).count();
+
+        debug!(
+            cmc,
+            total_ids,
+            eligible_count,
+            removed = total_ids - eligible_count,
+            "Filtered creature pool"
+        );
+
+        let id = ids.iter().filter(eligible).choose(&mut rand::rng())?;
+
         self.cards.as_ref()?.get(id)
     }
 }
@@ -107,6 +166,9 @@ pub enum BulkDataError {
 
     #[error("failed to download bulk data")]
     Download(#[source] reqwest::Error),
+
+    #[error("Scryfall API request failed")]
+    ScryfallApi(#[from] ScryfallApiError),
 
     #[error("oracle cards bulk data not found")]
     OracleCardsNotFound,

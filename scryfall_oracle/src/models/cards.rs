@@ -32,6 +32,10 @@ pub struct CoreCardFields {
     pub reserved: bool,
     pub game_changer: Option<bool>,
 
+    // "life_modifier": "+4",
+    //   "hand_modifier": "+0",
+    pub life_modifier: Option<String>,
+    pub hand_modifier: Option<String>,
     // Set Info (Canonical set data)
     pub set_id: String,
     pub set: String,

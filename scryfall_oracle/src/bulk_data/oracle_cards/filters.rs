@@ -1,4 +1,5 @@
 use std::fmt;
+
 #[derive(Debug)]
 pub enum OracleFilter {
     Unsets,
@@ -6,6 +7,7 @@ pub enum OracleFilter {
     Premodern,
     UnknownEvent,
 }
+
 #[derive(Debug)]
 pub struct OracleFilters {
     pub filters: Vec<OracleFilter>,
