@@ -1,10 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-// ==========================================
-// 1. SHARED CORE FIELDS (Present in both API & Bulk)
-// ==========================================
-
+// Core Fields
+//
 /// Core identity & gameplay metadata common across all card data formats
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CoreCardFields {
@@ -50,10 +48,8 @@ pub struct CoreCardFields {
     pub card_faces: Option<Vec<CardFace>>,
 }
 
-// ==========================================
-// 2. SHARED PRINT FIELDS
-// ==========================================
-
+// Print Fields
+//
 /// Visual and physical printing details shared by full card objects
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PrintFields {
@@ -104,10 +100,10 @@ pub struct PrintFields {
     pub preview: Option<PreviewInfo>,
 }
 
-// ==========================================
-// 3. COMPOSITE CARDS
-// ==========================================
-
+// Public Models
+// Why are there two? great question? maybe? no.
+//
+//
 /// Full Scryfall Card (Default API Endpoint & 'Default Cards' Bulk JSONL File)
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ScryfallCard {
@@ -129,10 +125,8 @@ pub struct OracleScryfallCard {
     pub print: PrintFields,
 }
 
-// ==========================================
-// 4. NESTED TYPES
-// ==========================================
-
+// NESTED TYPES
+//
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ImageUris {
     pub small: Option<String>,
