@@ -97,6 +97,8 @@ button:active {
 #message-list {
   min-height: 3rem;
   margin-top: 1.5rem;
+  max-height: 6rem;
+  overflow-y: auto;
   padding: 1rem;
   border: 1px solid #7e7ba7;
   border-radius: 0.5rem;
@@ -188,6 +190,7 @@ button:active {
 
 .latest-card-content {
   display: flex;
+  justify-content: space-between;
   align-items: flex-end;
   gap: 1rem;
 }

@@ -16,6 +16,15 @@
                 {% endmatch %}
         {% endmatch %}
     </div>
+    <script>
+        // Scroll to the bottom of the "message-list" on recieve
+        (function() {
+            const list = document.getElementById('message-list');
+            if (list) {
+                list.scrollTop = list.scrollHeight;
+            }
+        })();
+    </script>
 </div>
 {% match message %}
     {% when ConsoleMessage::Card { sender, card } %}
