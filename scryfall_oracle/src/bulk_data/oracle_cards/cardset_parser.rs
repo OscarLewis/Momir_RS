@@ -44,10 +44,7 @@ pub async fn parse_card_set(
         }
     }
 
-    debug!(
-        total_parsed = count,
-        "Successfully finished parsing Scryfall card set"
-    );
+    debug!(total_parsed = count, "Finished parsing Scryfall card set");
 
     Ok(scryfall_cards)
 }

@@ -22,7 +22,7 @@ impl ScryfallCard {
         debug!(
             card_id = id,
             card_name = card.core.name,
-            "Retrieved Scryfall card by ID"
+            "Scryfall card by ID fetched"
         );
 
         Ok(card)

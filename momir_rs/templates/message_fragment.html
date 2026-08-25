@@ -55,15 +55,22 @@
                     {% endmatch %}
                     <p>Set: {{ card.core.set | upper }}</p>
                 </div>
-                {% match card.print.image_uris %}
-                    {% when Some with (image_uris) %}
-                        {% match image_uris.art_crop %}
-                            {% when Some with (art_crop) %}
-                                <img class="latest-card-image" src="{{ art_crop }}" alt="{{ card.core.name }}">
-                            {% when None %}
-                        {% endmatch %}
-                    {% when None %}
-                {% endmatch %}
+                <div class="art-card-block">
+                    {% match card.print.image_uris %}
+                        {% when Some with (image_uris) %}
+                            {% match image_uris.art_crop %}
+                                {% when Some with (art_crop) %}
+                                    <img class="latest-card-image" src="{{ art_crop }}" alt="{{ card.core.name }}">
+                                {% when None %}
+                            {% endmatch %}
+                        {% when None %}
+                    {% endmatch %}
+                    {% match card.print.artist %}
+                        {% when Some with (artist) %}
+                            <p class="art-credit">Art by {{ artist }}</p>
+                        {% when None %}
+                    {% endmatch %}
+                </div>
             </div>
         </div>
     {% when ConsoleMessage::Text { .. } %}

@@ -299,3 +299,9 @@ button {
     gap: 1rem;
     min-height: 2rem;
 }
+
+.art-card-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}

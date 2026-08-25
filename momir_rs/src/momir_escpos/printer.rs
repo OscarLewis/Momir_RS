@@ -23,10 +23,7 @@ pub fn test_network_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
     let temp_file = NamedTempFile::with_suffix(".png")?;
     image.to_luma8().save(temp_file.path())?;
 
-    let image_path = temp_file
-        .path()
-        .to_str()
-        .ok_or_else(|| anyhow::anyhow!("Invalid image path"))?;
+    let image_path = temp_file.path().to_str().ok_or("Invalid image path")?;
 
     printer
         .debug_mode(Some(DebugMode::Hex))
@@ -42,16 +39,6 @@ pub fn test_network_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
         port = host_port,
         "Attempting to print test page via network"
     );
+
     Ok(())
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_print() -> Result<(), Box<dyn std::error::Error>> {
-//         test_receipt_print()?;
-//         Ok(())
-//     }
-// }

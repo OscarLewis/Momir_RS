@@ -42,7 +42,7 @@ impl ScryfallCard {
         debug!(
             total_cards = total_cards,
             query = query,
-            "Scryfall search for query resulted in num cards"
+            "Scryfall search completed"
         );
 
         Ok(ScryfallCardList {
