@@ -4,11 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.104"
 askama = "0.16.0"
 axum = { version = "0.8.9", features = ["ws"] }
 axum-embed = "0.1.0"
 chrono = "0.4.45"
+escpos = { version = "0.19.0", features = ["full"] }
 grass = "0.13.4"
+image = "0.25.10"
 log = "0.4.33"
 native-tls = "0.2.18"
 notify = "8.2.0"
@@ -22,6 +25,7 @@ sea-orm = { version = "2.0.2", features = [
     "sqlx-sqlite",
 ] }
 serde = { version = "1.0.229", features = ["derive"] }
+tempfile = "3.27.0"
 tokio = { version = "1.53.1", features = ["full"] }
 tower = { version = "0.5.3", features = ["tokio"] }
 tower-http = { version = "0.7.0", features = ["fs"] }

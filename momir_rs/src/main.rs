@@ -1,5 +1,6 @@
 use crate::{
     game_manager::GameManager,
+    momir_escpos::printer::_test_reciept_print,
     scss::compile_scss,
     site_console::{ConsoleMessage, SiteConsole},
 };
@@ -30,9 +31,9 @@ use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
-
 pub(crate) mod database;
 pub(crate) mod game_manager;
+pub(crate) mod momir_escpos;
 pub(crate) mod scss;
 pub(crate) mod site_console;
 
