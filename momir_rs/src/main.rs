@@ -1,6 +1,6 @@
 use crate::{
     game_manager::GameManager,
-    momir_escpos::printer::_test_reciept_print,
+    momir_escpos::printer::test_receipt_print,
     scss::compile_scss,
     site_console::{ConsoleMessage, SiteConsole},
 };
@@ -143,6 +143,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .route("/", get(index))
         .route("/card-by-cmc", get(card_by_cmc))
+        .route("/test/print", get(test_print_handler))
         .route("/ws/messages/{game_id}", get(websocket))
         .nest_service("/static", ServeDir::new("momir_rs/static"))
         .with_state(shared_state);
@@ -185,6 +186,14 @@ async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> 
     };
 
     Ok(Html(template.render()?))
+}
+
+async fn test_print_handler(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, String), AppError> {
+    // TODO Figure out the flow for printing
+    let _ = test_receipt_print();
+    Ok((StatusCode::OK, "Testing printer...".into()))
 }
 
 #[derive(Deserialize)]

@@ -7,7 +7,7 @@ use escpos::{
 use image::ImageReader;
 use tempfile::NamedTempFile;
 
-pub fn _test_reciept_print() -> Result<(), Box<dyn std::error::Error>> {
+pub fn test_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
     let driver = NetworkDriver::open("127.0.0.1", 9100, None)?;
 
     let image = ImageReader::open(
@@ -35,13 +35,13 @@ pub fn _test_reciept_print() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[test]
-    fn test_prints_bold_underline_text() -> Result<(), Box<dyn std::error::Error>> {
-        _test_reciept_print()?;
-        Ok(())
-    }
-}
+//     #[test]
+//     fn test_print() -> Result<(), Box<dyn std::error::Error>> {
+//         test_receipt_print()?;
+//         Ok(())
+//     }
+// }
