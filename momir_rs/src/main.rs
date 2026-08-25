@@ -1,6 +1,6 @@
 use crate::{
     game_manager::GameManager,
-    momir_escpos::printer::test_receipt_print,
+    momir_escpos::printer::test_network_receipt_print,
     scss::compile_scss,
     site_console::{ConsoleMessage, SiteConsole},
 };
@@ -192,7 +192,7 @@ async fn test_print_handler(
     State(state): State<AppState>,
 ) -> Result<(StatusCode, String), AppError> {
     // TODO Figure out the flow for printing
-    let _ = test_receipt_print();
+    let _ = test_network_receipt_print();
     Ok((StatusCode::OK, "Testing printer...".into()))
 }
 

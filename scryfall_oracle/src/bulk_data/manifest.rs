@@ -8,9 +8,7 @@ const BULK_DATA_URL: &str = "https://api.scryfall.com/bulk-data";
 impl BulkData {
     pub async fn list(client: &ScryfallClient) -> Result<Vec<BulkData>, reqwest::Error> {
         let response = client
-            .client
-            .get(BULK_DATA_URL)
-            .send()
+            .get(BULK_DATA_URL, None)
             .await?
             .error_for_status()?
             .json::<BulkDataResponse>()

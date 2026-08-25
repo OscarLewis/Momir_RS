@@ -6,9 +6,13 @@ use escpos::{
 };
 use image::ImageReader;
 use tempfile::NamedTempFile;
+use tracing::debug;
 
-pub fn test_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
-    let driver = NetworkDriver::open("127.0.0.1", 9100, None)?;
+pub fn test_network_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
+    let host = "127.0.0.1";
+    let host_port = 9100;
+    let driver = NetworkDriver::open(host, host_port, None)?;
+    let mut printer = Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()));
 
     let image = ImageReader::open(
         "/home/oscar/Documents/Projects/momir_rs_workspace/momir_rs/static/images/momir_small.png",
@@ -17,14 +21,14 @@ pub fn test_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
     .rotate270();
 
     let temp_file = NamedTempFile::with_suffix(".png")?;
-    image.save(temp_file.path())?;
+    image.to_luma8().save(temp_file.path())?;
 
     let image_path = temp_file
         .path()
         .to_str()
         .ok_or_else(|| anyhow::anyhow!("Invalid image path"))?;
 
-    Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()))
+    printer
         .debug_mode(Some(DebugMode::Hex))
         .init()?
         .writeln("Test Text")?
@@ -32,6 +36,12 @@ pub fn test_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
         .bit_image(image_path)?
         .feed()?
         .print_cut()?;
+
+    debug!(
+        addr = host,
+        port = host_port,
+        "Attempting to print test page via network"
+    );
     Ok(())
 }
 

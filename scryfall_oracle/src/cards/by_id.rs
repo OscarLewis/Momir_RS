@@ -13,9 +13,7 @@ impl ScryfallCard {
         id: &str,
     ) -> Result<ScryfallCard, ScryfallApiError> {
         let response = client
-            .client
-            .get(format!("{SCRYFALL_CARDS_BY_ID_URL}/{id}"))
-            .send()
+            .get(format!("{SCRYFALL_CARDS_BY_ID_URL}/{id}"), None)
             .await?
             .error_for_status()?;
 

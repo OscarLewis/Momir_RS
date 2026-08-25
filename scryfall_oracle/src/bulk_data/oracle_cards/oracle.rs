@@ -357,7 +357,7 @@ async fn download_bulk_data(
         "Starting Scryfall bulk-data download"
     );
 
-    let response = client.client.get(url).send().await.map_err(|error| {
+    let response = client.get(url, None).await.map_err(|error| {
         error!(%error, "Scryfall download request failed");
         BulkDataError::Download(error)
     })?;

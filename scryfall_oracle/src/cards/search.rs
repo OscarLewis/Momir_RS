@@ -20,10 +20,7 @@ impl ScryfallCard {
         let mut all_cards = Vec::new();
 
         let response = client
-            .client
-            .get(SCRYFALL_SEARCH_URL)
-            .query(&params)
-            .send()
+            .get(SCRYFALL_SEARCH_URL, Some(&params))
             .await?
             .error_for_status()?;
 
@@ -33,12 +30,7 @@ impl ScryfallCard {
 
         while page.has_more {
             if let Some(next_url) = page.next_page {
-                let next_response = client
-                    .client
-                    .get(&next_url)
-                    .send()
-                    .await?
-                    .error_for_status()?;
+                let next_response = client.get(&next_url, None).await?.error_for_status()?;
 
                 page = next_response.json().await?;
                 all_cards.append(&mut page.data);
