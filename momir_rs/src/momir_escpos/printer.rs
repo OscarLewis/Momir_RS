@@ -25,6 +25,12 @@ pub fn test_network_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
 
     let image_path = temp_file.path().to_str().ok_or("Invalid image path")?;
 
+    // TODO
+    // Consider using 'swash' to build text then send to printer as
+    // a rasterized Image instead of trying to get everything composed
+    // as print commands.
+    // https://docs.rs/swash/latest/swash/
+
     printer
         .debug_mode(Some(DebugMode::Hex))
         .init()?
