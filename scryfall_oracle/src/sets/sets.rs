@@ -13,6 +13,32 @@ pub struct ScryfallSetListResponse {
     pub data: Vec<ScryfallSet>,
 }
 
+/// A single Set retrieved from the Scryfall API
+/// Derived from https://scryfall.com/docs/api/sets
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
+pub struct ScryfallSet {
+    pub object: String,
+    pub id: String,
+    pub code: String,
+    pub mtgo_code: Option<String>,
+    pub arena_code: Option<String>,
+    pub tcgplayer_id: Option<i64>,
+    pub name: String,
+    pub set_type: ScryfallSetType,
+    pub released_at: Option<String>,
+    pub block_code: Option<String>,
+    pub parent_set_code: Option<String>,
+    pub card_count: i64,
+    pub printed_size: Option<i64>,
+    pub digital: bool,
+    pub foil_only: bool,
+    pub nonfoil_only: bool,
+    pub scryfall_uri: String,
+    pub uri: String,
+    pub icon_svg_uri: String,
+    pub search_uri: String,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct ScryfallSets(HashSet<ScryfallSet>);
 
@@ -43,18 +69,6 @@ impl ScryfallSets {
     pub fn iter(&self) -> impl Iterator<Item = &ScryfallSet> {
         self.0.iter()
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
-pub struct ScryfallSet {
-    pub object: String,
-    pub id: String,
-    pub code: String,
-    pub mtgo_code: Option<String>,
-    pub arena_code: Option<String>,
-    pub tcgplayer_id: Option<i64>,
-    pub name: String,
-    pub set_type: ScryfallSetType,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]

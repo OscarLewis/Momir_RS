@@ -23,6 +23,7 @@ use scryfall_oracle::{
         filters::{OracleFilter, OracleFilters},
     },
     client::ScryfallClient,
+    sets::sets::ScryfallSets,
 };
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use serde::Deserialize;
@@ -71,6 +72,7 @@ struct AppState {
     _scryfall_app_name: String,
     momir_card: Option<ScryfallCard>,
     db: DatabaseConnection,
+    mtg_sets: ScryfallSets,
     game_manager: GameManager,
     console: SiteConsole,
     oracle: OracleCards,
@@ -131,9 +133,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let momir_avatar =
         ScryfallCard::by_id(&scryfall, MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID).await?;
 
+    let sets = ScryfallSets::new(&scryfall).await?;
+    debug!(num_sets = sets.len(), "Fetched Sets from Scryfall");
+
     let shared_state = AppState {
         _scryfall_app_name: "momir_basic_rs/v0.1".to_string(),
         momir_card: Some(momir_avatar.clone()),
+        mtg_sets: sets,
         db,
         game_manager: GameManager::new(),
         console: SiteConsole::new(),
