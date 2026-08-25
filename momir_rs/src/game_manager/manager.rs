@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -27,5 +28,15 @@ impl GameManager {
 
     pub fn exists(&self, game_id: &str) -> bool {
         self.games.read().unwrap().contains(game_id)
+    }
+
+    pub fn list(&self) -> Vec<String> {
+        let games: Vec<String> = self.games.read().unwrap().iter().cloned().collect();
+        debug!(
+            len = games.len(),
+            games = ?games,
+            "Games stored in GameManager"
+        );
+        games
     }
 }

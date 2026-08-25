@@ -6,7 +6,7 @@ use crate::{
 };
 use askama::Template;
 use axum::{
-    Router,
+    Json, Router,
     extract::{
         Path, Query, State,
         ws::{Message, WebSocket, WebSocketUpgrade},
@@ -142,6 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/", get(index))
+        .route("/games", get(games_handler))
         .route("/card-by-cmc", get(card_by_cmc))
         .route("/test/print", get(test_print_handler))
         .route("/ws/messages/{game_id}", get(websocket))
@@ -186,6 +187,10 @@ async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> 
     };
 
     Ok(Html(template.render()?))
+}
+
+async fn games_handler(State(state): State<AppState>) -> Json<Vec<String>> {
+    Json(state.game_manager.list())
 }
 
 async fn test_print_handler(
