@@ -38,3 +38,34 @@ impl ScryfallCatalog {
         Ok(catalog.into_data())
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::OnceLock;
+
+    fn test_client() -> &'static ScryfallClient {
+        static CLIENT: OnceLock<ScryfallClient> = OnceLock::new();
+
+        CLIENT.get_or_init(|| ScryfallClient::new().expect("failed to create Scryfall client"))
+    }
+
+    #[tokio::test]
+    async fn test_live_creature_types() {
+        let catalog = ScryfallCatalog::creature_types_catalog(test_client())
+            .await
+            .expect("Failed to fetch creature types catalog from Scryfall");
+
+        assert_eq!(
+            catalog.data.len(),
+            catalog.total_values,
+            "Data vector length ({}) does not match total_values ({})",
+            catalog.data.len(),
+            catalog.total_values
+        );
+
+        assert!(
+            catalog.data.iter().any(|t| t == "Elf"),
+            "Expected 'Elf' to be present in Scryfall creature types catalog"
+        );
+    }
+}
