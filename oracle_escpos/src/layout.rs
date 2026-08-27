@@ -155,16 +155,24 @@ pub enum BorderStyle {
     FullWrap,
     SemiWrap,
 }
+
 impl BorderStyle {
     /// Applies layout margin and dimension shifts based on the border style.
+    /// These automatically override the default Standard style.
     pub fn apply_layout_adjustments(&self, layout: &mut Layout) {
         match self {
             BorderStyle::FullWrap => {
                 layout.type_line.x = 35;
                 layout.rules.x = 35;
                 layout.rules.wrap_width = 350;
-                layout.set_icon.x = 35;
-                layout.set_icon.y = 476;
+                layout.set_icon.x = 43;
+                layout.set_icon.y = 470;
+                layout.set_code.x = 40;
+                layout.set_code.y = 530;
+                layout.artist.x = 130;
+                layout.artist.y = 530;
+                layout.pow_tough_style.x = 330;
+                layout.pow_tough_style.y = 530;
             }
             BorderStyle::Standard => {
                 // Default margins stay intact
