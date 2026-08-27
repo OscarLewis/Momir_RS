@@ -1,3 +1,4 @@
+use crate::layout::BorderPathLayout;
 use image::{Rgb, RgbImage};
 use resvg::usvg;
 use swash::{
@@ -9,7 +10,326 @@ use swash::{
 use tiny_skia::{Pixmap, Transform};
 use tracing::debug;
 
-/// Draws text onto the image with automatic word wrapping
+/// Configuration parameters for wrapping text along card boundaries.
+#[derive(Clone, Copy, Debug)]
+pub struct BorderWrapConfig {
+    pub card_width: i32,
+    pub card_height: i32,
+    pub border_margin: i32,
+}
+
+impl BorderWrapConfig {
+    pub fn new(card_width: i32, card_height: i32, border_margin: i32) -> Self {
+        Self {
+            card_width,
+            card_height,
+            border_margin,
+        }
+    }
+}
+
+/// Renders a string wrapped along all four perimeter paths (Left, Top, Right, Bottom).
+pub fn draw_text_around_border(
+    image: &mut RgbImage,
+    text: &str,
+    font_data: &[u8],
+    font_size: f32,
+    letter_spacing: f32,
+    path: &BorderPathLayout,
+) {
+    let font = FontRef::from_index(font_data, 0).expect("invalid font");
+    let mut shape_context = ShapeContext::new();
+    let mut scale_context = ScaleContext::new();
+    let mut scaler = scale_context.builder(font).size(font_size).build();
+    let renderer = Render::new(&[Source::Outline]);
+
+    // Segment physical line lengths along perimeter boundaries
+    let left_height = (path.left_side_bottom_y - path.left_side_top_y) as f32;
+    let top_width = (path.top_end_x - path.top_start_x) as f32;
+    let right_height = (path.right_side_bottom_y - path.right_side_top_y) as f32;
+
+    let corner1 = left_height;
+    let corner2 = left_height + top_width;
+    let corner3 = left_height + top_width + right_height;
+
+    struct GlyphItem {
+        id: swash::GlyphId,
+        advance: f32,
+    }
+
+    struct Word {
+        glyphs: Vec<GlyphItem>,
+        width: f32,
+    }
+
+    let mut words: Vec<Word> = Vec::new();
+
+    for word_str in text.split_whitespace() {
+        let mut shaper = shape_context
+            .builder(font)
+            .size(font_size)
+            .script(Script::Latin)
+            .build();
+
+        shaper.add_str(word_str);
+
+        let mut glyphs = Vec::new();
+        let mut word_width = 0.0;
+
+        shaper.shape_with(|cluster| {
+            for glyph in cluster.glyphs {
+                let adv = glyph.advance + letter_spacing;
+                word_width += adv;
+                glyphs.push(GlyphItem {
+                    id: glyph.id,
+                    advance: glyph.advance,
+                });
+            }
+        });
+
+        words.push(Word {
+            glyphs,
+            width: word_width,
+        });
+    }
+
+    let space_width = text_width(" ", font_data, font_size, letter_spacing);
+    let mut current_dist = 0.0;
+
+    for (i, word) in words.iter().enumerate() {
+        // Corner wrap transitions
+        if current_dist < corner1 && (current_dist + word.width) > corner1 {
+            current_dist = corner1; // Left -> Top
+        } else if current_dist >= corner1
+            && current_dist < corner2
+            && (current_dist + word.width) > corner2
+        {
+            current_dist = corner2; // Top -> Right
+        } else if current_dist >= corner2
+            && current_dist < corner3
+            && (current_dist + word.width) > corner3
+        {
+            current_dist = corner3; // Right -> Bottom
+        }
+
+        for glyph in &word.glyphs {
+            if let Some(glyph_image) = renderer.render(&mut scaler, glyph.id) {
+                if current_dist < corner1 {
+                    // Left border (270 deg)
+                    let y = path.left_side_bottom_y - current_dist as i32;
+                    let x = path.left_x;
+                    render_glyph_rotated_270(image, &glyph_image, x, y);
+                } else if current_dist < corner2 {
+                    // Top border (0 deg)
+                    let progress = current_dist - corner1;
+                    let x = path.top_start_x + progress as i32;
+                    let y = path.top_y;
+                    render_glyph_normal(image, &glyph_image, x, y);
+                } else if current_dist < corner3 {
+                    // Right border (90 deg)
+                    let progress = current_dist - corner2;
+                    let x = path.right_x;
+                    let y = path.right_side_top_y + progress as i32;
+                    render_glyph_rotated_90(image, &glyph_image, x, y);
+                } else {
+                    // Bottom border: right-to-left upside-down (180 deg)
+                    let progress = current_dist - corner3;
+                    let x = path.bottom_x_start - progress as i32;
+                    let y = path.bottom_y;
+                    render_glyph_rotated_180(image, &glyph_image, x, y);
+                }
+            }
+            current_dist += glyph.advance + letter_spacing;
+        }
+
+        if i < words.len() - 1
+            && current_dist != corner1
+            && current_dist != corner2
+            && current_dist != corner3
+        {
+            current_dist += space_width;
+        }
+    }
+}
+
+/// Draws a glyph bitmap transformed 180 degrees (upside down, right-to-left orientation).
+fn render_glyph_rotated_180(
+    image: &mut RgbImage,
+    glyph: &swash::scale::image::Image,
+    base_x: i32,
+    base_y: i32,
+) {
+    let placement = glyph.placement;
+    for y in 0..placement.height {
+        for x in 0..placement.width {
+            let coverage = glyph.data[(y * placement.width + x) as usize];
+            if coverage > 128 {
+                let px = base_x - placement.left - x as i32;
+                let py = base_y + placement.top - y as i32;
+                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
+                }
+            }
+        }
+    }
+}
+
+/// Draws an unrotated glyph bitmap directly onto the target RGB image canvas.
+fn render_glyph_normal(
+    image: &mut RgbImage,
+    glyph: &swash::scale::image::Image,
+    base_x: i32,
+    base_y: i32,
+) {
+    let placement = glyph.placement;
+    let glyph_x = base_x + placement.left;
+    let glyph_y = base_y - placement.top;
+
+    for y in 0..placement.height {
+        for x in 0..placement.width {
+            let coverage = glyph.data[(y * placement.width + x) as usize];
+            if coverage > 128 {
+                let px = glyph_x + x as i32;
+                let py = glyph_y + y as i32;
+                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
+                }
+            }
+        }
+    }
+}
+
+/// Draws a glyph bitmap transformed 270 degrees counter-clockwise (bottom-to-top orientation).
+fn render_glyph_rotated_270(
+    image: &mut RgbImage,
+    glyph: &swash::scale::image::Image,
+    base_x: i32,
+    base_y: i32,
+) {
+    let placement = glyph.placement;
+    for y in 0..placement.height {
+        for x in 0..placement.width {
+            let coverage = glyph.data[(y * placement.width + x) as usize];
+            if coverage > 128 {
+                let px = base_x - (placement.top - y as i32);
+                let py = base_y - placement.left - x as i32;
+                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
+                }
+            }
+        }
+    }
+}
+
+/// Draws a glyph bitmap transformed 90 degrees clockwise (top-to-bottom orientation).
+fn render_glyph_rotated_90(
+    image: &mut RgbImage,
+    glyph: &swash::scale::image::Image,
+    base_x: i32,
+    base_y: i32,
+) {
+    let placement = glyph.placement;
+    for y in 0..placement.height {
+        for x in 0..placement.width {
+            let coverage = glyph.data[(y * placement.width + x) as usize];
+            if coverage > 128 {
+                let px = base_x + (placement.top - y as i32);
+                let py = base_y + placement.left + x as i32;
+                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
+                }
+            }
+        }
+    }
+}
+
+/// Draws a 3-pixel-wide solid black frame along the outer edges of the canvas.
+pub(crate) fn draw_border(image: &mut RgbImage) {
+    const BORDER_WIDTH: u32 = 3;
+
+    let width = image.width();
+    let height = image.height();
+    let black = Rgb([0, 0, 0]);
+
+    debug!(
+        width,
+        height,
+        border_width = BORDER_WIDTH,
+        "Drawing card border"
+    );
+
+    // Draw top and bottom outer borders
+    for x in 0..width {
+        image.put_pixel(x, 0, black);
+        image.put_pixel(x, height - BORDER_WIDTH, black);
+    }
+
+    // Draw left and right outer borders
+    for y in 0..height {
+        image.put_pixel(0, y, black);
+        image.put_pixel(width - BORDER_WIDTH, y, black);
+    }
+}
+
+/// Renders raw SVG byte data to an offscreen pixmap and alpha-blends it onto the RGB image.
+pub(crate) fn draw_svg(
+    image: &mut RgbImage,
+    svg_data: &[u8],
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let options = usvg::Options::default();
+    let tree = usvg::Tree::from_data(svg_data, &options)?;
+
+    let mut pixmap = Pixmap::new(width, height).ok_or("Failed to create SVG pixmap")?;
+
+    // Calculate scale factor from vector bounds to requested render size
+    let scale_x = width as f32 / tree.size().width();
+    let scale_y = height as f32 / tree.size().height();
+
+    let transform = Transform::from_scale(scale_x, scale_y);
+
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
+
+    // Alpha blend tiny-skia pixmap pixels over the target RgbImage canvas
+    for py in 0..height {
+        for px in 0..width {
+            let pixel = pixmap.pixel(px, py);
+
+            if let Some(pixel) = pixel {
+                let alpha = pixel.alpha() as f32 / 255.0;
+
+                if alpha == 0.0 {
+                    continue;
+                }
+
+                let dst_x = x + px;
+                let dst_y = y + py;
+
+                if dst_x >= image.width() || dst_y >= image.height() {
+                    continue;
+                }
+
+                let dst = image.get_pixel_mut(dst_x, dst_y);
+
+                let src_r = pixel.red() as f32;
+                let src_g = pixel.green() as f32;
+                let src_b = pixel.blue() as f32;
+
+                // Standard linear interpolation for RGBA over RGB compositing
+                dst[0] = (src_r * alpha + dst[0] as f32 * (1.0 - alpha)) as u8;
+                dst[1] = (src_g * alpha + dst[1] as f32 * (1.0 - alpha)) as u8;
+                dst[2] = (src_b * alpha + dst[2] as f32 * (1.0 - alpha)) as u8;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Renders multiline text onto an image with word wrapping based on width constraints.
 pub(crate) fn draw_text(
     image: &mut RgbImage,
     text: &str,
@@ -39,6 +359,7 @@ pub(crate) fn draw_text(
     let mut line = String::new();
     let mut line_count = 0;
 
+    // Split input into words to measure and wrap lines dynamically
     for word in text.split_whitespace() {
         let candidate = if line.is_empty() {
             word.to_string()
@@ -62,14 +383,8 @@ pub(crate) fn draw_text(
             }
         });
 
+        // Push current line to render if expanding it exceeds max_width boundary
         if width > max_width as f32 && !line.is_empty() {
-            debug!(
-                line = %line,
-                width,
-                max_width,
-                "Wrapping text line"
-            );
-
             draw_text_line(
                 image,
                 &line,
@@ -90,12 +405,8 @@ pub(crate) fn draw_text(
         }
     }
 
+    // Flush any remaining text left in the buffer after tokenization loop
     if !line.is_empty() {
-        debug!(
-            line = %line,
-            "Rendering final text line"
-        );
-
         draw_text_line(
             image,
             &line,
@@ -114,8 +425,8 @@ pub(crate) fn draw_text(
     debug!(line_count, final_y = y, "Finished drawing text");
 }
 
-/// Shapes and rasterizes a single line of text onto the image
-pub(crate) fn draw_text_line(
+/// Helper function to shape and rasterize a single horizontal line of text.
+fn draw_text_line(
     image: &mut RgbImage,
     text: &str,
     x: i32,
@@ -126,16 +437,7 @@ pub(crate) fn draw_text_line(
     scaler: &mut swash::scale::Scaler<'_>,
     renderer: &Render,
 ) {
-    debug!(
-        text = %text,
-        x,
-        baseline_y,
-        font_size,
-        "Rendering text line"
-    );
-
     let mut shape_context = ShapeContext::new();
-
     let mut shaper = shape_context
         .builder(font)
         .size(font_size)
@@ -143,39 +445,25 @@ pub(crate) fn draw_text_line(
         .build();
 
     shaper.add_str(text);
-
     let mut glyphs = Vec::new();
-
     shaper.shape_with(|cluster| {
         for glyph in cluster.glyphs {
             glyphs.push((glyph.id, glyph.advance));
         }
     });
 
-    debug!(glyph_count = glyphs.len(), "Shaped text line");
-
     let mut pen_x = x as f32;
 
     for (glyph_id, advance) in glyphs {
         if let Some(glyph_image) = renderer.render(scaler, glyph_id) {
             let placement = glyph_image.placement;
-
             let glyph_x = pen_x.round() as i32 + placement.left;
             let glyph_y = baseline_y - placement.top;
 
-            debug!(
-                glyph_id,
-                glyph_x,
-                glyph_y,
-                width = placement.width,
-                height = placement.height,
-                "Rendering glyph"
-            );
-
+            // Render non-transparent coverage pixels from rasterized glyph map
             for y in 0..placement.height {
                 for x in 0..placement.width {
                     let coverage = glyph_image.data[(y * placement.width + x) as usize];
-
                     if coverage == 0 {
                         continue;
                     }
@@ -192,49 +480,15 @@ pub(crate) fn draw_text_line(
                     }
                 }
             }
-        } else {
-            debug!(glyph_id, "Failed to render glyph");
         }
-
         pen_x += advance + letter_spacing;
     }
-
-    debug!(final_pen_x = pen_x, "Finished rendering text line");
 }
 
-/// Draws a black border around the card image
-pub(crate) fn draw_border(image: &mut RgbImage) {
-    const BORDER_WIDTH: u32 = 3;
-
-    let width = image.width();
-    let height = image.height();
-    let black = Rgb([0, 0, 0]);
-
-    debug!(
-        width,
-        height,
-        border_width = BORDER_WIDTH,
-        "Drawing card border"
-    );
-
-    for x in 0..width {
-        image.put_pixel(x, 0, black);
-        image.put_pixel(x, height - BORDER_WIDTH, black);
-    }
-
-    for y in 0..height {
-        image.put_pixel(0, y, black);
-        image.put_pixel(width - BORDER_WIDTH, y, black);
-    }
-}
-
-/// Returns the rendered width of a string using the specified font and
-/// letter spacing.
-pub(crate) fn text_width(text: &str, font_data: &[u8], font_size: f32, letter_spacing: f32) -> f32 {
+/// Calculates total rendered pixel width for a given text string, size, and letter spacing.
+pub fn text_width(text: &str, font_data: &[u8], font_size: f32, letter_spacing: f32) -> f32 {
     let font = FontRef::from_index(font_data, 0).expect("invalid font");
-
     let mut shape_context = ShapeContext::new();
-
     let mut shaper = shape_context
         .builder(font)
         .size(font_size)
@@ -242,110 +496,11 @@ pub(crate) fn text_width(text: &str, font_data: &[u8], font_size: f32, letter_sp
         .build();
 
     shaper.add_str(text);
-
     let mut width = 0.0;
-
     shaper.shape_with(|cluster| {
         for glyph in cluster.glyphs {
             width += glyph.advance + letter_spacing;
         }
     });
-
     width
-}
-
-pub(crate) fn draw_svg(
-    image: &mut RgbImage,
-    svg_data: &[u8],
-    x: u32,
-    y: u32,
-    width: u32,
-    height: u32,
-) -> Result<(), Box<dyn std::error::Error>> {
-    // Use the default SVG parsing options.
-    let options = usvg::Options::default();
-
-    // Parse the SVG byte data into a usvg tree.
-    //
-    // The tree contains the SVG's shapes, paths, text, dimensions, etc.
-    let tree = usvg::Tree::from_data(svg_data, &options)?;
-
-    // Create a pixel buffer that will hold the rendered SVG.
-    //
-    // Pixmap pixels are RGBA, whereas our destination RgbImage
-    // contains only RGB pixels.
-    let mut pixmap = Pixmap::new(width, height).ok_or("Failed to create SVG pixmap")?;
-
-    // Calculate how much the SVG needs to be scaled horizontally
-    // and vertically to fit the requested output dimensions.
-    let scale_x = width as f32 / tree.size().width();
-    let scale_y = height as f32 / tree.size().height();
-
-    // Create a transform that applies the calculated scaling
-    // when resvg renders the SVG.
-    let transform = Transform::from_scale(scale_x, scale_y);
-
-    // Render the SVG into the pixmap using the scale transform.
-    //
-    // The resulting pixmap is exactly `width × height`.
-    resvg::render(&tree, transform, &mut pixmap.as_mut());
-
-    // Iterate over every pixel in the rendered SVG.
-    for py in 0..height {
-        for px in 0..width {
-            // Get the RGBA pixel from the rendered SVG.
-            let pixel = pixmap.pixel(px, py);
-
-            if let Some(pixel) = pixel {
-                // Convert the pixel's alpha value from 0..255
-                // into a floating-point value from 0.0..1.0.
-                //
-                // 0.0 = completely transparent
-                // 1.0 = completely opaque
-                let alpha = pixel.alpha() as f32 / 255.0;
-
-                // Completely transparent pixels don't change the
-                // destination image, so we can skip them.
-                if alpha == 0.0 {
-                    continue;
-                }
-
-                // Convert the SVG-local pixel coordinates into
-                // coordinates in the destination image.
-                let dst_x = x + px;
-                let dst_y = y + py;
-
-                // Don't write outside the bounds of the destination image.
-                //
-                // This also allows the SVG to be partially outside
-                // the image without causing a panic.
-                if dst_x >= image.width() || dst_y >= image.height() {
-                    continue;
-                }
-
-                // Get a mutable reference to the destination RGB pixel.
-                let dst = image.get_pixel_mut(dst_x, dst_y);
-
-                // Extract the RGB components from the rendered SVG pixel.
-                let src_r = pixel.red() as f32;
-                let src_g = pixel.green() as f32;
-                let src_b = pixel.blue() as f32;
-
-                // Alpha-composite the SVG pixel over the destination.
-                //
-                // For example, with alpha = 0.5:
-                //
-                //     output = 50% source + 50% destination
-                //
-                // This is done independently for each RGB channel.
-                dst[0] = (src_r * alpha + dst[0] as f32 * (1.0 - alpha)) as u8;
-
-                dst[1] = (src_g * alpha + dst[1] as f32 * (1.0 - alpha)) as u8;
-
-                dst[2] = (src_b * alpha + dst[2] as f32 * (1.0 - alpha)) as u8;
-            }
-        }
-    }
-
-    Ok(())
 }

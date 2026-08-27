@@ -1,6 +1,8 @@
 use crate::{
     layout::Layout,
-    render::{draw_border, draw_svg, draw_text, text_width},
+    render::{
+        BorderWrapConfig, draw_border, draw_svg, draw_text, draw_text_around_border, text_width,
+    },
 };
 use image::{Rgb, RgbImage, imageops};
 use scryfall_oracle::{OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
@@ -100,11 +102,12 @@ impl CardImage {
         debug!(font_size = name_style.font_size, "Rendering card name");
 
         let name_width = layout.text_width(&self.card.core.name, name_style);
+        let mut use_border_wrap = false;
 
         let (font_size, letter_spacing) =
             if let Some(long_text_font_size) = name_style.long_text_font_size {
                 if name_width > name_style.wrap_width as f32 {
-                    let post_width = crate::render::text_width(
+                    let post_width = text_width(
                         &self.card.core.name,
                         name_font_data,
                         long_text_font_size,
@@ -115,7 +118,7 @@ impl CardImage {
                         initial_name_width = name_width,
                         post_name_width = post_width,
                         wrap_width = name_style.wrap_width,
-                        starts_with = &self.card.core.name.get(..10),
+                        starts_with = &self.card.core.name.chars().take(10).collect::<String>(),
                         "Long name found"
                     );
 
@@ -123,9 +126,10 @@ impl CardImage {
                         info!(
                             post_name_width = post_width,
                             wrap_width = name_style.wrap_width,
-                            starts_with = &self.card.core.name.get(..10),
+                            starts_with = &self.card.core.name.chars().take(10).collect::<String>(),
                             "Exceedingly long name found (name longer than wrap plus buffer)"
                         );
+                        use_border_wrap = true;
                     }
 
                     (long_text_font_size, 0.5)
@@ -136,16 +140,28 @@ impl CardImage {
                 (name_style.font_size, name_style.letter_spacing)
             };
 
-        draw_text(
-            &mut card_img,
-            &self.card.core.name,
-            name_style.x,
-            name_style.y,
-            name_font_data,
-            font_size,
-            letter_spacing,
-            name_style.wrap_width,
-        );
+        // Draw name - either border wrap or normal
+        if use_border_wrap {
+            draw_text_around_border(
+                &mut card_img,
+                &self.card.core.name,
+                name_font_data,
+                font_size,
+                letter_spacing,
+                &layout.border_path,
+            );
+        } else {
+            draw_text(
+                &mut card_img,
+                &self.card.core.name,
+                name_style.x,
+                name_style.y,
+                name_font_data,
+                font_size,
+                letter_spacing,
+                name_style.wrap_width,
+            );
+        }
 
         //
         // Mana Cost line
@@ -237,31 +253,6 @@ impl CardImage {
             rules_style.letter_spacing,
             rules_style.wrap_width,
         );
-
-        //
-        // Flavor text
-        //
-        // if let Some(flavor_text) = &self.card.core.flavor_text {
-        //     let flavor_style = &layout.flavor;
-        //     let flavor_font_data = layout.font_data(flavor_style.font);
-
-        //     debug!(
-        //         font_size = flavor_style.font_size,
-        //         flavor_text_length = flavor_text.len(),
-        //         "Rendering flavor text"
-        //     );
-
-        //     draw_text(
-        //         &mut card_img,
-        //         flavor_text,
-        //         flavor_style.x,
-        //         flavor_style.y,
-        //         flavor_font_data,
-        //         flavor_style.font_size,
-        //         flavor_style.letter_spacing,
-        //         flavor_style.wrap_width,
-        //     );
-        // }
 
         //
         // Artist Credit

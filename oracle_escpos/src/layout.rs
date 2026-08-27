@@ -1,8 +1,6 @@
-use std::path::PathBuf;
-
-use tracing::debug;
-
 use crate::render::text_width;
+use std::path::PathBuf;
+use tracing::debug;
 
 #[derive(Debug, Clone)]
 pub struct TextStyle {
@@ -16,11 +14,13 @@ pub struct TextStyle {
     pub letter_spacing: f32,
     pub wrap_width: i32,
 }
+
 #[derive(Debug, Clone, Copy)]
 pub enum Font {
     Serif,
     Sanserif,
 }
+
 impl Default for TextStyle {
     fn default() -> Self {
         Self {
@@ -36,6 +36,7 @@ impl Default for TextStyle {
         }
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct FontSizes {
     pub name: f32,
@@ -54,7 +55,7 @@ impl Default for FontSizes {
     fn default() -> Self {
         Self {
             name: 34.0,
-            long_name: 24.0,
+            long_name: 22.0,
             type_line: 18.0,
             rules: 16.0,
             pow_tough: 28.0,
@@ -63,6 +64,61 @@ impl Default for FontSizes {
             artist: 14.0,
             cost: 16.0,
             long_cost: 12.0,
+        }
+    }
+}
+
+/// Layout dimensions and coordinate bounds for wrapping text along card borders.
+#[derive(Clone, Copy, Debug)]
+pub struct BorderPathLayout {
+    /// X coordinate baseline for vertical text along the left border.
+    pub left_x: i32,
+    /// Y coordinate baseline for horizontal text along the top border.
+    pub top_y: i32,
+    /// X coordinate baseline for vertical text along the right border.
+    pub right_x: i32,
+    /// Starting X coordinate where text rendering begins on the top edge.
+    pub top_start_x: i32,
+    /// Ending X coordinate where text rendering stops on the top edge before wrapping.
+    pub top_end_x: i32,
+    /// Y coordinate at the bottom boundary of the left side path.
+    pub left_side_bottom_y: i32,
+    /// Y coordinate at the top boundary of the left side path.
+    pub left_side_top_y: i32,
+    /// Y coordinate at the top boundary of the right side path.
+    pub right_side_top_y: i32,
+    /// Y coordinate at the bottom boundary of the right side path.
+    pub right_side_bottom_y: i32,
+    /// Starting X coordinate on the right side where text begins wrapping leftward along the bottom border.
+    pub bottom_x_start: i32,
+    /// Y coordinate baseline for 180-degree rotated text along the bottom border.
+    pub bottom_y: i32,
+}
+
+impl Default for BorderPathLayout {
+    /// Provides baseline coordinate presets for standard card layout dimensions.
+    fn default() -> Self {
+        Self {
+            left_x: 18,
+            top_y: 24,
+            right_x: 390,
+            top_start_x: 26,
+            top_end_x: 380,
+            left_side_bottom_y: 300,
+            left_side_top_y: 18,
+            right_side_top_y: 18,
+            right_side_bottom_y: 560,
+            bottom_x_start: 380,
+            bottom_y: 540,
+        }
+    }
+}
+
+impl BorderPathLayout {
+    pub fn extra_large() -> Self {
+        Self {
+            left_side_bottom_y: 350,
+            ..Default::default()
         }
     }
 }
@@ -84,15 +140,9 @@ pub struct Layout {
     pub set_code: TextStyle,
     pub artist: TextStyle,
     pub pow_tough_style: TextStyle,
+    pub border_path: BorderPathLayout,
 }
 
-#[derive(Debug, Clone)]
-pub struct ArtLayout {
-    pub x: i64,
-    pub y: i64,
-    pub max_width: u32,
-    pub max_height: u32,
-}
 impl Default for Layout {
     fn default() -> Self {
         let fonts = FontSizes::default();
@@ -100,6 +150,7 @@ impl Default for Layout {
         Self {
             width: 412,
             height: 576,
+            border_path: BorderPathLayout::default(),
             set_icon: SvgLayout {
                 x: 20,
                 y: 496,
@@ -130,7 +181,6 @@ impl Default for Layout {
             },
 
             cost: TextStyle {
-                // x: 260,
                 y: 55,
                 font: Font::Serif,
                 font_size: fonts.cost,
@@ -200,6 +250,14 @@ impl Default for Layout {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct ArtLayout {
+    pub x: i64,
+    pub y: i64,
+    pub max_width: u32,
+    pub max_height: u32,
+}
+
 impl Layout {
     pub fn font_data(&self, font: Font) -> &[u8] {
         match font {
@@ -207,6 +265,7 @@ impl Layout {
             Font::Sanserif => &self.sanserif_font,
         }
     }
+
     pub fn load_fonts(
         serif_font_path: impl Into<PathBuf>,
         sanserif_font_path: impl Into<PathBuf>,
@@ -222,6 +281,7 @@ impl Layout {
 
         Ok((serif_font, sanserif_font))
     }
+
     pub fn text_width(&self, text: &str, style: &TextStyle) -> f32 {
         text_width(
             text,
@@ -231,6 +291,7 @@ impl Layout {
         )
     }
 }
+
 #[derive(Debug, Clone)]
 pub struct SvgLayout {
     pub x: u32,
