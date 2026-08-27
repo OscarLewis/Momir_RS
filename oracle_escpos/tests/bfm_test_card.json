@@ -1,0 +1,146 @@
+{
+  "object": "card",
+  "id": "d15c6375-2e4e-47f7-88e1-d90794e7f724",
+  "oracle_id": "d0bd00f2-91bb-4c9c-a8e7-f8aeadc0bbb9",
+  "multiverse_ids": [
+    9844
+  ],
+  "tcgplayer_id": 829,
+  "cardmarket_id": 11869,
+  "name": "B.F.M. (Big Furry Monster)",
+  "lang": "en",
+  "released_at": "1998-08-11",
+  "uri": "https://api.scryfall.com/cards/d15c6375-2e4e-47f7-88e1-d90794e7f724",
+  "scryfall_uri": "https://scryfall.com/card/ugl/29/bfm-(big-furry-monster)?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_updated_at": "2026-07-13T12:40:31Z",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.jpg?1783946431",
+    "normal": "https://cards.scryfall.io/normal/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.jpg?1783946431",
+    "large": "https://cards.scryfall.io/large/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.jpg?1783946431",
+    "png": "https://cards.scryfall.io/png/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.png?1783946431",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.jpg?1783946431",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.jpg?1783946431",
+    "thumb": "https://cards.scryfall.io/thumb/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.webp?1783946431",
+    "grid": "https://cards.scryfall.io/grid/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.webp?1783946431",
+    "display": "https://cards.scryfall.io/display/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.webp?1783946431",
+    "art": "https://cards.scryfall.io/art/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.webp?1783946431",
+    "crop": "https://cards.scryfall.io/crop/front/d/1/d15c6375-2e4e-47f7-88e1-d90794e7f724.webp?1783946431"
+  },
+  "mana_cost": "{B}{B}{B}{B}{B}{B}{B}{B}{B}{B}{B}{B}{B}{B}{B}",
+  "cmc": 15.0,
+  "type_line": "Scariest Creature You'll Ever See",
+  "oracle_text": "B.F.M. onto the battlefield. If one B.F.M. card\nmore creatures.",
+  "power": "99",
+  "toughness": "99",
+  "colors": [
+    "B"
+  ],
+  "color_identity": [
+    "B"
+  ],
+  "keywords": [],
+  "all_parts": [
+    {
+      "object": "related_card",
+      "id": "a9f9c279-e382-4feb-9575-196e7cf5d7dc",
+      "component": "combo_piece",
+      "name": "B.F.M. (Big Furry Monster)",
+      "type_line": "Creature — The Biggest, Baddest, Nastiest,",
+      "uri": "https://api.scryfall.com/cards/a9f9c279-e382-4feb-9575-196e7cf5d7dc"
+    },
+    {
+      "object": "related_card",
+      "id": "d15c6375-2e4e-47f7-88e1-d90794e7f724",
+      "component": "combo_piece",
+      "name": "B.F.M. (Big Furry Monster)",
+      "type_line": "Scariest Creature You'll Ever See",
+      "uri": "https://api.scryfall.com/cards/d15c6375-2e4e-47f7-88e1-d90794e7f724"
+    }
+  ],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "oathbreaker": "not_legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "competitivebrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal",
+    "tlr": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "game_changer": false,
+  "foil": false,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "3404fc78-6678-4cf4-bd39-4c0be3bb7baf",
+  "set": "ugl",
+  "set_name": "Unglued",
+  "set_type": "funny",
+  "set_uri": "https://api.scryfall.com/sets/3404fc78-6678-4cf4-bd39-4c0be3bb7baf",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Augl&unique=prints",
+  "scryfall_set_uri": "https://scryfall.com/sets/ugl?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/d15c6375-2e4e-47f7-88e1-d90794e7f724/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ad0bd00f2-91bb-4c9c-a8e7-f8aeadc0bbb9&unique=prints",
+  "collector_number": "29",
+  "digital": false,
+  "rarity": "rare",
+  "flavor_text": "than that. Even bigger. Keep going. More.\ndreadnoughts for jewelry. It was *big*!\"\n—Arna Kennerüd, skyknight",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Douglas Shuler",
+  "artist_ids": [
+    "a9ddb513-51c7-455c-ab8f-5b90aae9f75b"
+  ],
+  "illustration_id": "c85bd9c9-2a73-4e76-8c58-5903134b674d",
+  "border_color": "silver",
+  "frame": "1997",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "prices": {
+    "usd": "20.72",
+    "usd_foil": null,
+    "usd_etched": null,
+    "eur": "9.89",
+    "eur_foil": null,
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=9844&printed=false",
+    "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DB.F.M.%2B%2528Big%2BFurry%2BMonster%2529",
+    "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DB.F.M.%2B%2528Big%2BFurry%2BMonster%2529",
+    "edhrec": "https://edhrec.com/route/?cc=B.F.M.+%28Big+Furry+Monster%29"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F829%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=11869&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=B.F.M.+%28Big+Furry+Monster%29&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

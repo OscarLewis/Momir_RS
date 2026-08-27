@@ -43,6 +43,7 @@ pub struct FontSizes {
     pub long_name: f32,
     pub type_line: f32,
     pub rules: f32,
+    pub small_rules: f32,
     pub flavor: f32,
     pub pow_tough: f32,
     pub set_code: f32,
@@ -57,6 +58,7 @@ impl Default for FontSizes {
             name: 34.0,
             long_name: 22.0,
             type_line: 18.0,
+            small_rules: 15.0,
             rules: 16.0,
             pow_tough: 28.0,
             flavor: 17.0,
@@ -160,17 +162,22 @@ impl BorderStyle {
     /// Applies layout margin and dimension shifts based on the border style.
     /// These automatically override the default Standard style.
     pub fn apply_layout_adjustments(&self, layout: &mut Layout) {
+        let fonts = FontSizes::default();
         match self {
             BorderStyle::FullWrap => {
                 layout.type_line.x = 35;
                 layout.rules.x = 35;
                 layout.rules.wrap_width = 350;
+                layout.rules.font_size = fonts.small_rules;
+                layout.rules.letter_spacing = 1.5;
                 layout.set_icon.x = 43;
                 layout.set_icon.y = 470;
                 layout.set_code.x = 40;
                 layout.set_code.y = 530;
+                layout.set_code.letter_spacing = 1.0;
                 layout.artist.x = 130;
                 layout.artist.y = 530;
+                layout.artist.letter_spacing = 1.5;
                 layout.pow_tough_style.x = 330;
                 layout.pow_tough_style.y = 530;
             }
@@ -261,6 +268,7 @@ impl Default for Layout {
                 font: Font::Sanserif,
                 font_size: fonts.type_line,
                 wrap_width: 372,
+                letter_spacing: 1.0,
                 ..Default::default()
             },
 
