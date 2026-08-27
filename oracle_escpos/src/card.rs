@@ -1,4 +1,7 @@
-use crate::render::{draw_border, draw_svg, draw_text, text_width};
+use crate::{
+    layout::Layout,
+    render::{draw_border, draw_svg, draw_text, text_width},
+};
 use image::{Rgb, RgbImage, imageops};
 use scryfall_oracle::{OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
 use std::path::PathBuf;
@@ -30,36 +33,39 @@ impl CardImage {
 
     /// Generates the card image and saves it as a PNG
     pub async fn generate(self, out_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        const DEFAULT_LINE_WRAP_WIDTH: i32 = 372;
-        const MAX_ART_WIDTH: u32 = 300;
-        const MAX_ART_HEIGHT: u32 = 200;
-        const CARD_ART_HEIGHT: i64 = 80;
-        const WIDTH: u32 = 412;
-        const HEIGHT: u32 = 576;
-        const RULES_TEXT_Y_POS: i32 = 340;
-        const FONT_NAME: f32 = 34.0;
-        const FONT_LONG_NAME: f32 = 24.0;
-        const FONT_TYPE_LINE: f32 = 22.0;
-        const FONT_RULES: f32 = 19.0;
-        const FONT_FLAVOR: f32 = 17.0;
-        const NAME_Y_POS: i32 = 35;
-        const FONT_METADATA: f32 = 14.0;
+        let serif_font_path =
+            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
+
+        let sanserif_font_path =
+            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/tahoma.ttf";
+
+        let (serif_font, sanserif_font) = Layout::load_fonts(serif_font_path, sanserif_font_path)?;
+
+        let layout = Layout {
+            serif_font,
+            sanserif_font,
+            ..Layout::default()
+        };
 
         info!(
             scryfall_id = %self.scryfall_id,
             card_name = %self.card.core.name,
-            width = WIDTH,
-            height = HEIGHT,
+            width = layout.width,
+            height = layout.height,
             "Generating card image"
         );
 
-        let mut card_img = RgbImage::from_pixel(WIDTH, HEIGHT, Rgb([255, 255, 255]));
+        let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
 
         let oracle_text = self.card.core.oracle_text.unwrap_or_default();
         let type_line = self.card.core.type_line.unwrap_or_default();
 
+        //
+        // Card art
+        //
         let card_art = if let Some(image_uris) = &self.card.print.image_uris {
             let client = ScryfallClient::new()?;
+
             Some(image_uris.fetch_art_crop(&client).await?.to_vec())
         } else {
             None
@@ -70,14 +76,14 @@ impl CardImage {
 
             let art = card_art_img
                 .resize(
-                    MAX_ART_WIDTH,
-                    MAX_ART_HEIGHT,
-                    image::imageops::FilterType::Lanczos3,
+                    layout.art.max_width,
+                    layout.art.max_height,
+                    imageops::FilterType::Lanczos3,
                 )
                 .grayscale()
                 .to_rgb8();
 
-            imageops::overlay(&mut card_img, &art, 60, CARD_ART_HEIGHT);
+            imageops::overlay(&mut card_img, &art, layout.art.x, layout.art.y);
         }
 
         debug!(
@@ -85,86 +91,195 @@ impl CardImage {
             "Loaded card oracle text"
         );
 
-        let font_path =
-            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
+        //
+        // Card name
+        //
+        let name_style = &layout.name;
+        let name_font_data = layout.font_data(name_style.font);
 
-        debug!(path = font_path, "Loading font");
+        debug!(font_size = name_style.font_size, "Rendering card name");
 
-        let font_data = std::fs::read(font_path)?;
-        debug!(font_size = FONT_NAME, "Rendering card name");
+        let name_width = layout.text_width(&self.card.core.name, name_style);
 
-        // Check for a comma in a name, might be a good place to split?
-        // if !&self.card.core.name.contains(',') {}
+        let (font_size, letter_spacing) =
+            if let Some(long_text_font_size) = name_style.long_text_font_size {
+                if name_width > name_style.wrap_width as f32 {
+                    let post_width = crate::render::text_width(
+                        &self.card.core.name,
+                        name_font_data,
+                        long_text_font_size,
+                        0.5,
+                    );
 
-        const NAME_MAX_WIDTH_PRE_ADJUST: f32 = 372.0;
-        const NAME_MAX_WIDTH_POST_ADJUST: f32 = 377.1;
+                    info!(
+                        initial_name_width = name_width,
+                        post_name_width = post_width,
+                        "Long name found"
+                    );
 
-        let name_width = text_width(&self.card.core.name, &font_data, FONT_NAME, 0.0);
-        let long_name = name_width > NAME_MAX_WIDTH_PRE_ADJUST;
+                    if post_width > name_style.wrap_width as f32 {
+                        info!(post_name_width = post_width, "Really long name found");
+                    }
 
-        let font_name_size = if long_name { FONT_LONG_NAME } else { FONT_NAME };
-        let font_name_spacing = if long_name { 0.5 } else { 0.0 };
-
-        if long_name {
-            let post_width = text_width(
-                &self.card.core.name,
-                &font_data,
-                font_name_size,
-                font_name_spacing,
-            );
-            info!(
-                initial_name_width = name_width,
-                post_name_width = post_width,
-                "Long name found"
-            );
-            if post_width > NAME_MAX_WIDTH_POST_ADJUST {
-                info!(post_name_width = post_width, "Really long name found");
-            }
-        }
-
-        // TODO Draw Option<card.print.image_uris> art_crop here
+                    (long_text_font_size, 0.5)
+                } else {
+                    (name_style.font_size, name_style.letter_spacing)
+                }
+            } else {
+                (name_style.font_size, name_style.letter_spacing)
+            };
 
         draw_text(
             &mut card_img,
             &self.card.core.name,
-            20,
-            NAME_Y_POS,
-            &font_data,
-            font_name_size,
-            font_name_spacing,
-            DEFAULT_LINE_WRAP_WIDTH,
+            name_style.x,
+            name_style.y,
+            name_font_data,
+            font_size,
+            letter_spacing,
+            name_style.wrap_width,
         );
 
+        //
+        // Mana Cost line
+        //
+        let mana_cost_style = &layout.cost;
+        let mana_cost_font_data = layout.font_data(mana_cost_style.font);
+        if let Some(mana_cost) = &self.card.core.mana_cost {
+            let cost_width = layout.text_width(&mana_cost, &layout.cost);
+
+            let (cost_font_size, cost_x) = if cost_width > layout.cost.wrap_width as f32 {
+                let long_cost_width = crate::render::text_width(
+                    &mana_cost,
+                    mana_cost_font_data,
+                    layout.font_sizes.long_cost,
+                    mana_cost_style.letter_spacing,
+                );
+
+                let adjusted_x = (layout.width as i32 - long_cost_width as i32)
+                    - mana_cost_style.margin_right as i32;
+                debug!(
+                    scenario = "long_cost",
+                    long_cost_width = long_cost_width,
+                    adjusted_x = adjusted_x,
+                    "Using long cost sizing"
+                );
+                (layout.font_sizes.long_cost, adjusted_x)
+            } else {
+                let normal_x =
+                    (layout.width as i32 - cost_width as i32) - mana_cost_style.margin_right as i32;
+                debug!(
+                    scenario = "normal_cost",
+                    cost_width = cost_width,
+                    normal_x = normal_x,
+                    "Using normal cost sizing"
+                );
+                (mana_cost_style.font_size, normal_x)
+            };
+
+            draw_text(
+                &mut card_img,
+                &mana_cost,
+                cost_x,
+                mana_cost_style.y,
+                mana_cost_font_data,
+                cost_font_size,
+                mana_cost_style.letter_spacing,
+                mana_cost_style.wrap_width,
+            );
+        }
+
+        //
+        // Type line
+        //
+        let type_style = &layout.type_line;
+        let type_font_data = layout.font_data(type_style.font);
+
+        debug!(font_size = type_style.font_size, "Rendering type line");
+
+        draw_text(
+            &mut card_img,
+            &type_line,
+            type_style.x,
+            type_style.y,
+            type_font_data,
+            type_style.font_size,
+            type_style.letter_spacing,
+            type_style.wrap_width,
+        );
+
+        //
+        // Oracle text
+        //
+        let rules_style = &layout.rules;
+        let rules_font_data = layout.font_data(rules_style.font);
+
         debug!(
-            font_size = FONT_RULES,
+            font_size = rules_style.font_size,
             oracle_text_length = oracle_text.len(),
             "Rendering oracle text"
         );
 
         draw_text(
             &mut card_img,
-            &type_line,
-            20,
-            RULES_TEXT_Y_POS - 30,
-            &font_data,
-            FONT_RULES,
-            0.0,
-            DEFAULT_LINE_WRAP_WIDTH,
-        );
-
-        draw_text(
-            &mut card_img,
             &oracle_text,
-            20,
-            RULES_TEXT_Y_POS,
-            &font_data,
-            FONT_RULES,
-            1.0,
-            DEFAULT_LINE_WRAP_WIDTH,
+            rules_style.x,
+            rules_style.y,
+            rules_font_data,
+            rules_style.font_size,
+            rules_style.letter_spacing,
+            rules_style.wrap_width,
         );
 
-        if let Some(svg_uri) = &self.card.core.set_icon_svg_uri {
-            debug!(uri = %svg_uri, "Loading set icon from Scryfall");
+        //
+        // Flavor text
+        //
+        // if let Some(flavor_text) = &self.card.core.flavor_text {
+        //     let flavor_style = &layout.flavor;
+        //     let flavor_font_data = layout.font_data(flavor_style.font);
+
+        //     debug!(
+        //         font_size = flavor_style.font_size,
+        //         flavor_text_length = flavor_text.len(),
+        //         "Rendering flavor text"
+        //     );
+
+        //     draw_text(
+        //         &mut card_img,
+        //         flavor_text,
+        //         flavor_style.x,
+        //         flavor_style.y,
+        //         flavor_font_data,
+        //         flavor_style.font_size,
+        //         flavor_style.letter_spacing,
+        //         flavor_style.wrap_width,
+        //     );
+        // }
+
+        //
+        // Artist Credit
+        //
+        if let Some(artist_name) = &self.card.print.artist {
+            let artist_style = &layout.artist;
+            let artist_font_data = layout.font_data(artist_style.font);
+
+            draw_text(
+                &mut card_img,
+                &format!("Art by {}", &artist_name),
+                artist_style.x,
+                artist_style.y,
+                artist_font_data,
+                artist_style.font_size,
+                artist_style.letter_spacing,
+                artist_style.wrap_width,
+            );
+        }
+
+        //
+        // Set icon
+        //
+        if self.card.core.set_icon_svg_uri.is_some() {
+            debug!("Loading set icon from Scryfall");
 
             let client = ScryfallClient::new()?;
 
@@ -172,19 +287,44 @@ impl CardImage {
 
             let svg_data = set.get_svg_bytes(&client).await?;
 
-            draw_svg(&mut card_img, &svg_data, 20, HEIGHT - 80, 50, 50)?;
+            let set_icon = &layout.set_icon;
+
+            draw_svg(
+                &mut card_img,
+                &svg_data,
+                set_icon.x,
+                set_icon.y,
+                set_icon.width,
+                set_icon.height,
+            )?;
         }
+
+        //
+        // Set code
+        //
+        let metadata_style = &layout.set_code;
+        let metadata_font_data = layout.font_data(metadata_style.font);
 
         draw_text(
             &mut card_img,
-            &self.card.core.set.to_uppercase(),
-            20,
-            (HEIGHT - 10).try_into().unwrap(),
-            &font_data,
-            FONT_RULES,
-            1.0,
-            DEFAULT_LINE_WRAP_WIDTH,
+            &format!(
+                "{} {}",
+                self.card.core.set.to_uppercase(),
+                self.card.print.collector_number
+            ),
+            metadata_style.x,
+            metadata_style.y,
+            metadata_font_data,
+            metadata_style.font_size,
+            metadata_style.letter_spacing,
+            metadata_style.wrap_width,
         );
+
+        //
+        // Power / toughness
+        //
+        let pow_tough_style = &layout.pow_tough_style;
+        let pow_tough_font_data = layout.font_data(pow_tough_style.font);
 
         if let (Some(power), Some(toughness)) = (&self.card.core.power, &self.card.core.toughness) {
             debug!(
@@ -196,21 +336,27 @@ impl CardImage {
             draw_text(
                 &mut card_img,
                 &format!("{power}/{toughness}"),
-                (WIDTH - 70).try_into().unwrap(),
-                (HEIGHT - 20) as i32,
-                &font_data,
-                FONT_NAME,
-                0.0,
-                DEFAULT_LINE_WRAP_WIDTH,
+                pow_tough_style.x,
+                pow_tough_style.y,
+                pow_tough_font_data,
+                pow_tough_style.font_size,
+                pow_tough_style.letter_spacing,
+                pow_tough_style.wrap_width,
             );
         } else {
             debug!("Card has no power and toughness");
         }
 
+        //
+        // Border
+        //
         debug!("Rendering card border");
 
         draw_border(&mut card_img);
 
+        //
+        // Save
+        //
         card_img.save(out_path)?;
 
         info!(
