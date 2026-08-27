@@ -91,25 +91,34 @@ pub struct BorderPathLayout {
     pub right_side_bottom_y: i32,
     /// Starting X coordinate on the right side where text begins wrapping leftward along the bottom border.
     pub bottom_x_start: i32,
+    /// Ending X coordinate where text stops on the bottom border before returning up the left edge.
+    pub bottom_x_end: i32,
     /// Y coordinate baseline for 180-degree rotated text along the bottom border.
     pub bottom_y: i32,
+    /// Y coordinate baseline for starting the return loop back up the left border.
+    pub left_side_return_bottom_y: i32,
+    /// Y coordinate baseline for ending the return loop up the left border.
+    pub left_side_return_top_y: i32,
 }
 
 impl Default for BorderPathLayout {
     /// Provides baseline coordinate presets for standard card layout dimensions.
     fn default() -> Self {
         Self {
-            left_x: 18,
-            top_y: 24,
+            left_x: 20,
+            top_y: 28,
             right_x: 390,
-            top_start_x: 26,
+            top_start_x: 25,
             top_end_x: 380,
-            left_side_bottom_y: 300,
-            left_side_top_y: 18,
-            right_side_top_y: 18,
-            right_side_bottom_y: 560,
-            bottom_x_start: 380,
+            left_side_bottom_y: 330,
+            left_side_top_y: 35,
+            right_side_top_y: 35,
+            right_side_bottom_y: 535,
+            bottom_x_start: 375,
+            bottom_x_end: 25,
             bottom_y: 540,
+            left_side_return_bottom_y: 535,
+            left_side_return_top_y: 360,
         }
     }
 }

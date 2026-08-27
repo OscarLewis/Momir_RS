@@ -28,7 +28,7 @@ impl BorderWrapConfig {
     }
 }
 
-/// Renders a string wrapped along all four perimeter paths (Left, Top, Right, Bottom).
+/// Renders a string wrapped counter-clockwise along perimeter paths (Left Top -> Top -> Right -> Bottom -> Left Bottom).
 pub fn draw_text_around_border(
     image: &mut RgbImage,
     text: &str,
@@ -43,14 +43,18 @@ pub fn draw_text_around_border(
     let mut scaler = scale_context.builder(font).size(font_size).build();
     let renderer = Render::new(&[Source::Outline]);
 
-    // Segment physical line lengths along perimeter boundaries
+    // Segment physical line lengths: Left Top -> Top -> Right -> Bottom -> Left Return
     let left_height = (path.left_side_bottom_y - path.left_side_top_y) as f32;
     let top_width = (path.top_end_x - path.top_start_x) as f32;
     let right_height = (path.right_side_bottom_y - path.right_side_top_y) as f32;
+    let bottom_width = (path.bottom_x_start - path.bottom_x_end) as f32;
+    let left_return_height = (path.left_side_return_bottom_y - path.left_side_return_top_y) as f32;
 
     let corner1 = left_height;
-    let corner2 = left_height + top_width;
-    let corner3 = left_height + top_width + right_height;
+    let corner2 = corner1 + top_width;
+    let corner3 = corner2 + right_height;
+    let corner4 = corner3 + bottom_width;
+    let max_perimeter = corner4 + left_return_height;
 
     struct GlyphItem {
         id: swash::GlyphId,
@@ -97,7 +101,7 @@ pub fn draw_text_around_border(
     let mut current_dist = 0.0;
 
     for (i, word) in words.iter().enumerate() {
-        // Corner wrap transitions
+        // Corner wrap transitions - leap over corners if word exceeds remaining segment space
         if current_dist < corner1 && (current_dist + word.width) > corner1 {
             current_dist = corner1; // Left -> Top
         } else if current_dist >= corner1
@@ -110,33 +114,48 @@ pub fn draw_text_around_border(
             && (current_dist + word.width) > corner3
         {
             current_dist = corner3; // Right -> Bottom
+        } else if current_dist >= corner3
+            && current_dist < corner4
+            && (current_dist + word.width) > corner4
+        {
+            current_dist = corner4; // Bottom -> Left Return
         }
 
         for glyph in &word.glyphs {
+            if current_dist >= max_perimeter {
+                break;
+            }
+
             if let Some(glyph_image) = renderer.render(&mut scaler, glyph.id) {
                 if current_dist < corner1 {
-                    // Left border (270 deg)
+                    // 1. Initial Left border (270 deg / bottom-to-top)
                     let y = path.left_side_bottom_y - current_dist as i32;
                     let x = path.left_x;
                     render_glyph_rotated_270(image, &glyph_image, x, y);
                 } else if current_dist < corner2 {
-                    // Top border (0 deg)
+                    // 2. Top border (0 deg / normal left-to-right)
                     let progress = current_dist - corner1;
                     let x = path.top_start_x + progress as i32;
                     let y = path.top_y;
                     render_glyph_normal(image, &glyph_image, x, y);
                 } else if current_dist < corner3 {
-                    // Right border (90 deg)
+                    // 3. Right border (90 deg / top-to-bottom)
                     let progress = current_dist - corner2;
                     let x = path.right_x;
                     let y = path.right_side_top_y + progress as i32;
                     render_glyph_rotated_90(image, &glyph_image, x, y);
-                } else {
-                    // Bottom border: right-to-left upside-down (180 deg)
+                } else if current_dist < corner4 {
+                    // 4. Bottom border (180 deg / right-to-left flipped)
                     let progress = current_dist - corner3;
                     let x = path.bottom_x_start - progress as i32;
                     let y = path.bottom_y;
                     render_glyph_rotated_180(image, &glyph_image, x, y);
+                } else {
+                    // 5. Left border return loop (270 deg / bottom-to-top)
+                    let progress = current_dist - corner4;
+                    let y = path.left_side_return_bottom_y - progress as i32;
+                    let x = path.left_x;
+                    render_glyph_rotated_270(image, &glyph_image, x, y);
                 }
             }
             current_dist += glyph.advance + letter_spacing;
@@ -146,6 +165,7 @@ pub fn draw_text_around_border(
             && current_dist != corner1
             && current_dist != corner2
             && current_dist != corner3
+            && current_dist != corner4
         {
             current_dist += space_width;
         }
