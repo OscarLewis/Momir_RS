@@ -138,11 +138,44 @@ impl Default for BorderPathLayout {
         }
     }
 }
+impl BorderPathLayout {
+    /// Distance along perimeter where text reaches the bottom edge.
+    pub fn bottom_threshold(&self) -> f32 {
+        let left_height = (self.left_side_bottom_y - self.left_side_top_y) as f32;
+        let top_width = (self.top_end_x - self.top_start_x) as f32;
+        let right_height = (self.right_side_bottom_y - self.right_side_top_y) as f32;
+
+        left_height + top_width + right_height
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BorderStyle {
     Standard,
     FullWrap,
+    SemiWrap,
+}
+impl BorderStyle {
+    /// Applies layout margin and dimension shifts based on the border style.
+    pub fn apply_layout_adjustments(&self, layout: &mut Layout) {
+        match self {
+            BorderStyle::FullWrap => {
+                layout.type_line.x = 35;
+                layout.rules.x = 35;
+                layout.rules.wrap_width = 350;
+                layout.set_icon.x = 35;
+                layout.set_icon.y = 476;
+            }
+            BorderStyle::Standard => {
+                // Default margins stay intact
+            }
+            BorderStyle::SemiWrap => {
+                layout.type_line.x = 35;
+                layout.rules.x = 35;
+                layout.rules.wrap_width = 350;
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

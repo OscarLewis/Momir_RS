@@ -1,5 +1,5 @@
 use crate::{
-    layout::{BorderStyle, Layout},
+    layout::{self, BorderStyle, Layout},
     render::{
         BorderWrapConfig, draw_border, draw_svg, draw_text, draw_text_around_border, text_width,
     },
@@ -96,40 +96,44 @@ impl CardImage {
         // Card name
         //
 
-        // Determine if full-wrap border mode is required
-        let use_border_wrap = {
+        // Determine border wrapping style (Standard, SemiWrap, or FullWrap)
+        let border_style = {
             let name_style = &layout.name;
             let name_font_data = layout.font_data(name_style.font);
             let name_width = layout.text_width(&self.card.core.name, name_style);
 
             if let Some(long_text_font_size) = name_style.long_text_font_size {
                 if name_width > name_style.wrap_width as f32 {
-                    let post_width = text_width(
+                    let total_text_len = text_width(
                         &self.card.core.name,
                         name_font_data,
                         long_text_font_size,
                         0.5,
                     );
-                    post_width > (name_style.wrap_width + 10) as f32
+                    let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
+
+                    if total_text_len > layout.border_path.bottom_threshold() {
+                        BorderStyle::FullWrap
+                    } else if total_text_len > standard_wrap_limit {
+                        BorderStyle::SemiWrap
+                    } else {
+                        BorderStyle::Standard
+                    }
                 } else {
-                    false
+                    BorderStyle::Standard
                 }
             } else {
-                false
+                BorderStyle::Standard
             }
         };
 
-        // Update layout state (layout is no longer borrowed here)
-        if use_border_wrap {
-            layout.border_style = BorderStyle::FullWrap;
+        // Update layout state
+        layout.border_style = border_style;
 
-            // Adjust margins dynamically so text doesn't overlap the left border
-            layout.type_line.x = 35;
-            layout.rules.x = 35;
-            layout.rules.wrap_width = 350;
-        }
+        // Apply layout modifications from the local variable
+        border_style.apply_layout_adjustments(&mut layout);
 
-        // Proceed with rendering standard or full-wrap text
+        // Proceed with rendering standard or border-wrap text
         let name_style = &layout.name;
         let name_font_data = layout.font_data(name_style.font);
         let name_width = layout.text_width(&self.card.core.name, name_style);
@@ -145,26 +149,29 @@ impl CardImage {
                 (name_style.font_size, name_style.letter_spacing)
             };
 
-        if layout.border_style == BorderStyle::FullWrap {
-            draw_text_around_border(
-                &mut card_img,
-                &self.card.core.name,
-                name_font_data,
-                font_size,
-                letter_spacing,
-                &layout.border_path,
-            );
-        } else {
-            draw_text(
-                &mut card_img,
-                &self.card.core.name,
-                name_style.x,
-                name_style.y,
-                name_font_data,
-                font_size,
-                letter_spacing,
-                name_style.wrap_width,
-            );
+        match layout.border_style {
+            BorderStyle::FullWrap | BorderStyle::SemiWrap => {
+                draw_text_around_border(
+                    &mut card_img,
+                    &self.card.core.name,
+                    name_font_data,
+                    font_size,
+                    letter_spacing,
+                    &layout.border_path,
+                );
+            }
+            BorderStyle::Standard => {
+                draw_text(
+                    &mut card_img,
+                    &self.card.core.name,
+                    name_style.x,
+                    name_style.y,
+                    name_font_data,
+                    font_size,
+                    letter_spacing,
+                    name_style.wrap_width,
+                );
+            }
         }
         // End of Card Name render block
 
