@@ -114,15 +114,17 @@ impl CardImage {
                     info!(
                         initial_name_width = name_width,
                         post_name_width = post_width,
+                        wrap_width = name_style.wrap_width,
                         starts_with = &self.card.core.name.get(..10),
                         "Long name found"
                     );
 
-                    if post_width > name_style.wrap_width as f32 {
+                    if post_width > (name_style.wrap_width + 10) as f32 {
                         info!(
                             post_name_width = post_width,
+                            wrap_width = name_style.wrap_width,
                             starts_with = &self.card.core.name.get(..10),
-                            "Really long name found"
+                            "Exceedingly long name found (name longer than wrap plus buffer)"
                         );
                     }
 
