@@ -114,7 +114,7 @@ impl CardImage {
                     info!(
                         initial_name_width = name_width,
                         post_name_width = post_width,
-                        name = &self.card.core.name,
+                        starts_with = &self.card.core.name.get(..10),
                         "Long name found"
                     );
 
