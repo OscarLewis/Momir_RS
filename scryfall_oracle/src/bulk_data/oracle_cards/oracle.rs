@@ -7,6 +7,7 @@ use crate::bulk_data::oracle_cards::cardset_parser::parse_card_set;
 use crate::bulk_data::oracle_cards::filters::OracleFilter;
 use crate::bulk_data::oracle_cards::filters::OracleFilters;
 use crate::cards::models::ScryfallApiError;
+use crate::sets::sets::ScryfallSets;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use rand::prelude::IteratorRandom;
 use regex::Regex;
@@ -41,12 +42,17 @@ pub struct OracleCards {
     // Scryfall IDs from Gavin's 'Unknown Events'
     #[serde(skip)]
     unknown_events_creature_ids: HashSet<String>,
+
+    // Scryfall Sets
+    #[serde(skip)]
+    scryfall_sets: Option<ScryfallSets>,
 }
 
 impl OracleCards {
     pub async fn new(
         client: &ScryfallClient,
         cache_dir: Option<&PathBuf>,
+        scryfall_sets: Option<ScryfallSets>,
     ) -> Result<Self, BulkDataError> {
         let bulk_data = BulkData::list(client)
             .await
@@ -118,6 +124,7 @@ impl OracleCards {
         Ok(Self {
             cards: Some(local_card_set),
             creatures_by_cmc,
+            scryfall_sets,
             creatures_by_format,
             unset_creature_ids,
             unknown_events_creature_ids,
@@ -135,7 +142,7 @@ impl OracleCards {
         &self,
         cmc: f64,
         filters: Option<&OracleFilters>,
-    ) -> Option<&OracleScryfallCard> {
+    ) -> Option<OracleScryfallCard> {
         let ids = self.creatures_by_cmc.get(&cmc.to_bits())?;
 
         let eligible = |id: &&String| {
@@ -184,8 +191,26 @@ impl OracleCards {
         );
 
         let id = ids.iter().filter(eligible).choose(&mut rand::rng())?;
+        // TODO Set set_icon_svg_uri on this cards object to the set svg uri in state.mtg_sets before returning it
+        let set_icon_svg_uri = self
+            .scryfall_sets
+            .as_ref()
+            .and_then(|sets| sets.get_set_from_id(&self.cards.as_ref()?.get(id)?.core.set_id))
+            .and_then(|set| Some(set.icon_svg_uri.clone()));
 
-        self.cards.as_ref()?.get(id)
+        let mut card = self.cards.as_ref()?.get(id)?.clone();
+
+        if let Some(set) = self
+            .scryfall_sets
+            .as_ref()
+            .and_then(|sets| sets.get_set_from_id(&card.core.set_id))
+        {
+            card.core.set_icon_svg_uri = Some(set.icon_svg_uri.clone());
+        }
+
+        Some(card)
+
+        // self.cards.as_ref()?.get(id).clone()
     }
 
     // pub fn creatures_legal_in_format(&self, format: &str) {}
@@ -412,7 +437,7 @@ mod tests {
     async fn test_oracle() -> OracleCards {
         let client = ScryfallClient::new().expect("failed to create Scryfall client");
 
-        OracleCards::new(&client, Some(&cache_dir()))
+        OracleCards::new(&client, Some(&cache_dir()), None)
             .await
             .expect("failed to initialize OracleCards")
     }

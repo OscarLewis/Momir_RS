@@ -1,6 +1,8 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 
+use crate::{ScryfallClient, cards::models::ScryfallApiError};
+
 // Core Fields
 //
 /// Core identity & gameplay metadata common across all card data formats
@@ -42,6 +44,7 @@ pub struct CoreCardFields {
     pub set_type: String,
     pub set_uri: String,
     pub set_search_uri: String,
+    pub set_icon_svg_uri: Option<String>,
     pub scryfall_set_uri: String,
     pub rulings_uri: String,
     pub prints_search_uri: String,
@@ -140,6 +143,41 @@ pub struct ImageUris {
     pub border_crop: Option<String>,
 }
 
+impl ImageUris {
+    pub async fn fetch_normal(&self, client: &ScryfallClient) -> Result<Vec<u8>, ScryfallApiError> {
+        let uri = self
+            .normal
+            .as_deref()
+            .ok_or(ScryfallApiError::MissingImageUri)?;
+
+        Ok(client
+            .get(uri, None)
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?
+            .to_vec())
+    }
+
+    pub async fn fetch_art_crop(
+        &self,
+        client: &ScryfallClient,
+    ) -> Result<Vec<u8>, ScryfallApiError> {
+        let uri = self
+            .art_crop
+            .as_deref()
+            .ok_or(ScryfallApiError::MissingImageUri)?;
+
+        Ok(client
+            .get(uri, None)
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?
+            .to_vec())
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Prices {
     pub usd: Option<String>,
@@ -211,6 +249,7 @@ pub enum FormatLegality {
     Predh,
     Tlr,
 }
+
 fn deserialize_legalities<'de, D>(
     deserializer: D,
 ) -> Result<HashMap<FormatLegality, bool>, D::Error>

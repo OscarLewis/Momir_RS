@@ -1,9 +1,11 @@
 use std::collections::HashSet;
 
 use crate::{ScryfallClient, cards::models::ScryfallApiError};
+use reqwest::Url;
 use serde::Deserialize;
 
 const SCRYFALL_ALL_SETS: &str = "https://api.scryfall.com/sets";
+const SCRYFALL_SET_BY_ID: &str = "https://api.scryfall.com/sets/";
 
 /// Represents the full Catalog object response from Scryfall.
 #[derive(Debug, Clone, Deserialize)]
@@ -69,6 +71,66 @@ impl ScryfallSets {
     pub fn iter(&self) -> impl Iterator<Item = &ScryfallSet> {
         self.0.iter()
     }
+
+    pub fn get_set_from_id(&self, id: &str) -> Option<&ScryfallSet> {
+        self.0.iter().find(|set| set.id == id)
+    }
+
+    pub fn get_svg_uri_from_id(&self, id: &str) -> Option<&String> {
+        self.0
+            .iter()
+            .find(|set| set.id == id)
+            .map(|set| &set.icon_svg_uri)
+    }
+}
+
+impl ScryfallSet {
+    pub async fn from_id(id: &str, client: &ScryfallClient) -> Result<Self, ScryfallApiError> {
+        let mut url = Url::parse(SCRYFALL_SET_BY_ID)?;
+
+        url.path_segments_mut()
+            .expect("Scryfall API URL should support path segments")
+            .push(id);
+
+        let response = client
+            .get(url.as_str(), None)
+            .await?
+            .error_for_status()?
+            .json::<ScryfallSet>()
+            .await?;
+
+        Ok(response)
+    }
+
+    pub async fn from_code(code: &str, client: &ScryfallClient) -> Result<Self, ScryfallApiError> {
+        let mut url = Url::parse(SCRYFALL_SET_BY_ID)?;
+
+        url.path_segments_mut()
+            .expect("Scryfall API URL should support path segments")
+            .push(code);
+
+        let response = client
+            .get(url.as_str(), None)
+            .await?
+            .error_for_status()?
+            .json::<ScryfallSet>()
+            .await?;
+
+        Ok(response)
+    }
+
+    pub async fn get_svg_bytes(
+        &self,
+        client: &ScryfallClient,
+    ) -> Result<Vec<u8>, ScryfallApiError> {
+        Ok(client
+            .get(&self.icon_svg_uri, None)
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?
+            .to_vec())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
@@ -116,5 +178,27 @@ mod tests {
             sets.iter()
                 .any(|set| set.set_type == ScryfallSetType::Commander)
         );
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_from_id() {
+        let client = ScryfallClient::new().unwrap();
+
+        let set = ScryfallSet::from_id("2ec77b94-6d47-4891-a480-5d0b4e5c9372", &client)
+            .await
+            .unwrap();
+
+        assert_eq!(set.id, "2ec77b94-6d47-4891-a480-5d0b4e5c9372");
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn test_from_code() {
+        let client = ScryfallClient::new().unwrap();
+
+        let set = ScryfallSet::from_code("neo", &client).await.unwrap();
+
+        assert_eq!(set.code, "neo");
     }
 }

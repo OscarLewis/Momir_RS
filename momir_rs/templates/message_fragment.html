@@ -62,7 +62,15 @@
                             <p>Power/Toughness: {{ power }} / {{ toughness }}</p>
                         {% when _ %}
                     {% endmatch %}
-                    <p>Set: {{ card.core.set | upper }}</p>
+                    <p>
+                        Set: {{ card.core.set | upper }}
+                        {% match card.core.set_icon_svg_uri %}
+                            {% when Some with (icon_uri) %}
+                                <img class="set-icon" src="{{ icon_uri }}" alt="{{ card.core.set | upper }} set icon">
+                            {% when None %}
+                        {% endmatch %}
+                    </p>
+
                 </div>
                 <div class="art-card-block">
                     {% match card.print.image_uris %}

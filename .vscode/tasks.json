@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Test oracle_escpos card_image",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "test",
+                "--package",
+                "oracle_escpos",
+                "--lib",
+                "--",
+                "tests::test_generate::",
+                "--nocapture",
+                "--include-ignored"
+            ],
+            "options": {
+                "env": {
+                    "RUST_LOG": "info"
+                }
+            },
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$rustc"
+            ]
+        }
+    ]
+}

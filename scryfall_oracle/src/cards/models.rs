@@ -6,6 +6,10 @@ use crate::ScryfallCard;
 pub enum ScryfallApiError {
     #[error("Scryfall API request failed: {0}")]
     Reqwest(#[from] reqwest::Error),
+    #[error("Invalid URL: {0}")]
+    InvalidUrl(#[from] url::ParseError),
+    #[error("Missing image URI")]
+    MissingImageUri,
 }
 
 /// Low-level page response returned directly by the Scryfall API

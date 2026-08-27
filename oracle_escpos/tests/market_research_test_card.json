@@ -1,0 +1,130 @@
+{
+  "object": "card",
+  "id": "5c1f3f52-cb9b-4b2a-bb02-6175897ae76e",
+  "oracle_id": "94a3b2af-0741-48c5-b827-6ff529bafae3",
+  "multiverse_ids": [
+    74237
+  ],
+  "tcgplayer_id": 37906,
+  "cardmarket_id": 14870,
+  "name": "Our Market Research Shows That Players Like Really Long Card Names So We Made this Card to Have the Absolute Longest Card Name Ever Elemental",
+  "lang": "en",
+  "released_at": "2004-11-19",
+  "uri": "https://api.scryfall.com/cards/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e",
+  "scryfall_uri": "https://scryfall.com/card/unh/107/our-market-research-shows-that-players-like-really-long-card-names-so-we-made-this-card-to-have-the-absolute-longest-card-name-ever-elemental?utm_source=api",
+  "layout": "normal",
+  "highres_image": true,
+  "image_status": "highres_scan",
+  "image_updated_at": "2026-07-13T12:03:58Z",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.jpg?1783944238",
+    "normal": "https://cards.scryfall.io/normal/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.jpg?1783944238",
+    "large": "https://cards.scryfall.io/large/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.jpg?1783944238",
+    "png": "https://cards.scryfall.io/png/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.png?1783944238",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.jpg?1783944238",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.jpg?1783944238",
+    "thumb": "https://cards.scryfall.io/thumb/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.webp?1783944238",
+    "grid": "https://cards.scryfall.io/grid/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.webp?1783944238",
+    "display": "https://cards.scryfall.io/display/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.webp?1783944238",
+    "art": "https://cards.scryfall.io/art/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.webp?1783944238",
+    "crop": "https://cards.scryfall.io/crop/front/5/c/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e.webp?1783944238"
+  },
+  "mana_cost": "{1}{G}{G}",
+  "cmc": 3.0,
+  "type_line": "Creature — Elemental",
+  "oracle_text": "Art rampage 2 (Whenever this creature becomes blocked by a creature, it gets +2/+2 for each creature in the blocker's art beyond the first.)",
+  "power": "2",
+  "toughness": "2",
+  "colors": [
+    "G"
+  ],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [],
+  "legalities": {
+    "standard": "not_legal",
+    "future": "not_legal",
+    "historic": "not_legal",
+    "timeless": "not_legal",
+    "gladiator": "not_legal",
+    "pioneer": "not_legal",
+    "modern": "not_legal",
+    "legacy": "not_legal",
+    "pauper": "not_legal",
+    "vintage": "not_legal",
+    "penny": "not_legal",
+    "commander": "not_legal",
+    "oathbreaker": "not_legal",
+    "standardbrawl": "not_legal",
+    "brawl": "not_legal",
+    "competitivebrawl": "not_legal",
+    "alchemy": "not_legal",
+    "paupercommander": "not_legal",
+    "duel": "not_legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal",
+    "tlr": "not_legal"
+  },
+  "games": [
+    "paper"
+  ],
+  "reserved": false,
+  "game_changer": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "4c8bc76a-05a5-43db-aaf0-34deb347b871",
+  "set": "unh",
+  "set_name": "Unhinged",
+  "set_type": "funny",
+  "set_uri": "https://api.scryfall.com/sets/4c8bc76a-05a5-43db-aaf0-34deb347b871",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Aunh&unique=prints",
+  "set_icon_svg_uri": "https://svgs.scryfall.io/sets/unh.svg?1787544000",
+  "scryfall_set_uri": "https://scryfall.com/sets/unh?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/5c1f3f52-cb9b-4b2a-bb02-6175897ae76e/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A94a3b2af-0741-48c5-b827-6ff529bafae3&unique=prints",
+  "collector_number": "107",
+  "digital": false,
+  "rarity": "common",
+  "flavor_text": "Just call it OMRSTPLRLCNSWMTCTHTALCNEE for short.",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Greg Hildebrandt",
+  "artist_ids": [
+    "020f967b-0d2f-4166-aabe-901dba8bc7ec"
+  ],
+  "illustration_id": "dd2a48ad-3c45-47e4-88f3-ab90b37c1e0e",
+  "border_color": "silver",
+  "frame": "2003",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "prices": {
+    "usd": "0.36",
+    "usd_foil": "9.02",
+    "usd_etched": null,
+    "eur": "0.02",
+    "eur_foil": "4.07",
+    "tix": null
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=74237&printed=false",
+    "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DOur%2BMarket%2BResearch%2BShows%2BThat%2BPlayers%2BLike%2BReally%2BLong%2BCard%2BNames%2BSo%2BWe%2BMade%2Bthis%2BCard%2Bto%2BHave%2Bthe%2BAbsolute%2BLongest%2BCard%2BName%2BEver%2BElemental",
+    "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DOur%2BMarket%2BResearch%2BShows%2BThat%2BPlayers%2BLike%2BReally%2BLong%2BCard%2BNames%2BSo%2BWe%2BMade%2Bthis%2BCard%2Bto%2BHave%2Bthe%2BAbsolute%2BLongest%2BCard%2BName%2BEver%2BElemental",
+    "edhrec": "https://edhrec.com/route/?cc=Our+Market+Research+Shows+That+Players+Like+Really+Long+Card+Names+So+We+Made+this+Card+to+Have+the+Absolute+Longest+Card+Name+Ever+Elemental"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F37906%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=14870&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards?affiliate_id=scryfall&data%5Bsearch%5D=Our+Market+Research+Shows+That+Players+Like+Really+Long+Card+Names+So+We+Made+this+Card+to+Have+the+Absolute+Longest+Card+Name+Ever+Elemental&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

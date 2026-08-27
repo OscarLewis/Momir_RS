@@ -1,6 +1,5 @@
 use crate::{
     game_manager::GameManager,
-    momir_escpos::printer::test_network_receipt_print,
     scss::compile_scss,
     site_console::{ConsoleMessage, SiteConsole},
 };
@@ -15,6 +14,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
+use oracle_escpos::{test_img_print, test_network_receipt_print};
 use rand::RngExt;
 use scryfall_oracle::{
     ScryfallCard,
@@ -34,7 +34,6 @@ use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
 pub(crate) mod database;
 pub(crate) mod game_manager;
-pub(crate) mod momir_escpos;
 pub(crate) mod scss;
 pub(crate) mod site_console;
 
@@ -43,6 +42,7 @@ const MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID: &str = "f5ed5ad3-b970-4720-b
 #[derive(Debug)]
 enum AppError {
     Template(askama::Error),
+    Internal(String),
 }
 
 impl From<askama::Error> for AppError {
@@ -50,7 +50,11 @@ impl From<askama::Error> for AppError {
         Self::Template(err)
     }
 }
-
+impl From<Box<dyn std::error::Error>> for AppError {
+    fn from(err: Box<dyn std::error::Error>) -> Self {
+        Self::Internal(err.to_string())
+    }
+}
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         match self {
@@ -63,6 +67,15 @@ impl IntoResponse for AppError {
                 )
                     .into_response()
             }
+            Self::Internal(err) => {
+                eprintln!("Internal error: {err}");
+
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("Internal error: {err}"),
+                )
+                    .into_response()
+            }
         }
     }
 }
@@ -72,7 +85,6 @@ struct AppState {
     _scryfall_app_name: String,
     momir_card: Option<ScryfallCard>,
     db: DatabaseConnection,
-    mtg_sets: ScryfallSets,
     game_manager: GameManager,
     console: SiteConsole,
     oracle: OracleCards,
@@ -110,8 +122,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     check_database(&db).await;
 
     let scryfall = ScryfallClient::new()?;
+
+    let sets = ScryfallSets::new(&scryfall).await?;
+    debug!(num_sets = sets.len(), "Fetched Sets from Scryfall");
+
     let cache_path = PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
-    let oracle = OracleCards::new(&scryfall, Some(&cache_path)).await?;
+    let oracle = OracleCards::new(&scryfall, Some(&cache_path), Some(sets)).await?;
+
     if let Some(cards) = oracle.cards.as_ref() {
         debug!(
             num_cards_in_oracle_map = cards.len(),
@@ -133,13 +150,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let momir_avatar =
         ScryfallCard::by_id(&scryfall, MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID).await?;
 
-    let sets = ScryfallSets::new(&scryfall).await?;
-    debug!(num_sets = sets.len(), "Fetched Sets from Scryfall");
-
     let shared_state = AppState {
         _scryfall_app_name: "momir_basic_rs/v0.1".to_string(),
         momir_card: Some(momir_avatar.clone()),
-        mtg_sets: sets,
         db,
         game_manager: GameManager::new(),
         console: SiteConsole::new(),
@@ -151,6 +164,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/games", get(games_handler))
         .route("/card-by-cmc", get(card_by_cmc))
         .route("/test/print", get(test_print_handler))
+        .route("/test/imgprint", get(test_img_print_handler))
         .route("/ws/messages/{game_id}", get(websocket))
         .nest_service("/static", ServeDir::new("momir_rs/static"))
         .with_state(shared_state);
@@ -197,6 +211,14 @@ async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> 
 
 async fn games_handler(State(state): State<AppState>) -> Json<Vec<String>> {
     Json(state.game_manager.list())
+}
+
+async fn test_img_print_handler(
+    State(_state): State<AppState>,
+) -> Result<(StatusCode, String), AppError> {
+    test_img_print()?;
+
+    Ok((StatusCode::OK, "Testing IMG for printer...".into()))
 }
 
 async fn test_print_handler(
