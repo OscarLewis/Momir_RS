@@ -2,6 +2,12 @@ use crate::render::text_width;
 use std::path::PathBuf;
 use tracing::debug;
 
+#[derive(Debug, Clone, Copy)]
+pub enum Font {
+    Serif,
+    Sanserif,
+}
+
 #[derive(Debug, Clone)]
 pub struct TextStyle {
     pub x: i32,
@@ -13,12 +19,6 @@ pub struct TextStyle {
     pub long_text_font_size: Option<f32>,
     pub letter_spacing: f32,
     pub wrap_width: i32,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum Font {
-    Serif,
-    Sanserif,
 }
 
 impl Default for TextStyle {
@@ -66,6 +66,22 @@ impl Default for FontSizes {
             long_cost: 12.0,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct ArtLayout {
+    pub x: i64,
+    pub y: i64,
+    pub max_width: u32,
+    pub max_height: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct SvgLayout {
+    pub x: u32,
+    pub y: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
 /// Layout dimensions and coordinate bounds for wrapping text along card borders.
@@ -123,19 +139,17 @@ impl Default for BorderPathLayout {
     }
 }
 
-impl BorderPathLayout {
-    pub fn extra_large() -> Self {
-        Self {
-            left_side_bottom_y: 350,
-            ..Default::default()
-        }
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BorderStyle {
+    Standard,
+    FullWrap,
 }
 
 #[derive(Debug, Clone)]
 pub struct Layout {
     pub width: u32,
     pub height: u32,
+    pub border_style: BorderStyle,
     pub font_sizes: FontSizes,
     pub sanserif_font: Vec<u8>,
     pub serif_font: Vec<u8>,
@@ -159,6 +173,7 @@ impl Default for Layout {
         Self {
             width: 412,
             height: 576,
+            border_style: BorderStyle::Standard,
             border_path: BorderPathLayout::default(),
             set_icon: SvgLayout {
                 x: 20,
@@ -259,14 +274,6 @@ impl Default for Layout {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ArtLayout {
-    pub x: i64,
-    pub y: i64,
-    pub max_width: u32,
-    pub max_height: u32,
-}
-
 impl Layout {
     pub fn font_data(&self, font: Font) -> &[u8] {
         match font {
@@ -299,12 +306,4 @@ impl Layout {
             style.letter_spacing,
         )
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct SvgLayout {
-    pub x: u32,
-    pub y: u32,
-    pub width: u32,
-    pub height: u32,
 }

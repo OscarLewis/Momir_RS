@@ -1,5 +1,5 @@
 use crate::{
-    layout::Layout,
+    layout::{BorderStyle, Layout},
     render::{
         BorderWrapConfig, draw_border, draw_svg, draw_text, draw_text_around_border, text_width,
     },
@@ -35,6 +35,7 @@ impl CardImage {
 
     /// Generates the card image and saves it as a PNG
     pub async fn generate(self, out_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+        // Set Fonts
         let serif_font_path =
             "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
 
@@ -43,11 +44,18 @@ impl CardImage {
 
         let (serif_font, sanserif_font) = Layout::load_fonts(serif_font_path, sanserif_font_path)?;
 
-        let layout = Layout {
+        // Extract Option<Strings>
+        let oracle_text = self.card.core.oracle_text.unwrap_or_default();
+        let type_line = self.card.core.type_line.unwrap_or_default();
+
+        let mut layout = Layout {
             serif_font,
             sanserif_font,
             ..Layout::default()
         };
+
+        // Create base image after layout is created.
+        let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
 
         info!(
             scryfall_id = %self.scryfall_id,
@@ -56,11 +64,6 @@ impl CardImage {
             height = layout.height,
             "Generating card image"
         );
-
-        let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
-
-        let oracle_text = self.card.core.oracle_text.unwrap_or_default();
-        let type_line = self.card.core.type_line.unwrap_or_default();
 
         //
         // Card art
@@ -87,24 +90,18 @@ impl CardImage {
 
             imageops::overlay(&mut card_img, &art, layout.art.x, layout.art.y);
         }
-
-        debug!(
-            oracle_text_length = oracle_text.len(),
-            "Loaded card oracle text"
-        );
+        // End of Cart Art render block
 
         //
         // Card name
         //
-        let name_style = &layout.name;
-        let name_font_data = layout.font_data(name_style.font);
 
-        debug!(font_size = name_style.font_size, "Rendering card name");
+        // Determine if full-wrap border mode is required
+        let use_border_wrap = {
+            let name_style = &layout.name;
+            let name_font_data = layout.font_data(name_style.font);
+            let name_width = layout.text_width(&self.card.core.name, name_style);
 
-        let name_width = layout.text_width(&self.card.core.name, name_style);
-        let mut use_border_wrap = false;
-
-        let (font_size, letter_spacing) =
             if let Some(long_text_font_size) = name_style.long_text_font_size {
                 if name_width > name_style.wrap_width as f32 {
                     let post_width = text_width(
@@ -113,25 +110,33 @@ impl CardImage {
                         long_text_font_size,
                         0.5,
                     );
+                    post_width > (name_style.wrap_width + 10) as f32
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        };
 
-                    info!(
-                        initial_name_width = name_width,
-                        post_name_width = post_width,
-                        wrap_width = name_style.wrap_width,
-                        starts_with = &self.card.core.name.chars().take(10).collect::<String>(),
-                        "Long name found"
-                    );
+        // Update layout state (layout is no longer borrowed here)
+        if use_border_wrap {
+            layout.border_style = BorderStyle::FullWrap;
 
-                    if post_width > (name_style.wrap_width + 10) as f32 {
-                        info!(
-                            post_name_width = post_width,
-                            wrap_width = name_style.wrap_width,
-                            starts_with = &self.card.core.name.chars().take(10).collect::<String>(),
-                            "Exceedingly long name found (name longer than wrap plus buffer)"
-                        );
-                        use_border_wrap = true;
-                    }
+            // Adjust margins dynamically so text doesn't overlap the left border
+            layout.type_line.x = 35;
+            layout.rules.x = 35;
+            layout.rules.wrap_width = 350;
+        }
 
+        // Proceed with rendering standard or full-wrap text
+        let name_style = &layout.name;
+        let name_font_data = layout.font_data(name_style.font);
+        let name_width = layout.text_width(&self.card.core.name, name_style);
+
+        let (font_size, letter_spacing) =
+            if let Some(long_text_font_size) = name_style.long_text_font_size {
+                if name_width > name_style.wrap_width as f32 {
                     (long_text_font_size, 0.5)
                 } else {
                     (name_style.font_size, name_style.letter_spacing)
@@ -140,8 +145,7 @@ impl CardImage {
                 (name_style.font_size, name_style.letter_spacing)
             };
 
-        // Draw name - either border wrap or normal
-        if use_border_wrap {
+        if layout.border_style == BorderStyle::FullWrap {
             draw_text_around_border(
                 &mut card_img,
                 &self.card.core.name,
@@ -162,6 +166,7 @@ impl CardImage {
                 name_style.wrap_width,
             );
         }
+        // End of Card Name render block
 
         //
         // Mana Cost line

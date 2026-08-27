@@ -51,6 +51,27 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_zeta_mulldrifter() -> Result<(), Box<dyn std::error::Error>> {
+        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/zeta_mull_drifter_test_card.json";
+
+        let json = fs::read_to_string(path).expect("failed to read test card");
+
+        let card: OracleScryfallCard =
+            serde_json::from_str(&json).expect("failed to deserialize test card");
+
+        let image = CardImage::new(card);
+
+        image
+            .generate(&PathBuf::from(
+                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/zeta_mull_drifter_card.png",
+            ))
+            .await?;
+
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_long_name() -> Result<(), Box<dyn std::error::Error>> {
         let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/asmoranomardicadaistinaculdacar_test_card.json";
 
