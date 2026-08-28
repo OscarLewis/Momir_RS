@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Init Logging
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug,oracle_escpos=debug,escpos=debug")
+            EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug,oracle_escpos=debug,escpos=info")
         }))
         .init();
 
