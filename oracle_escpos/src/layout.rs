@@ -219,6 +219,7 @@ pub struct Layout {
     pub type_line: TextStyle,
     pub rules: TextStyle,
     pub flavor: TextStyle,
+    pub type_line_end_y: i32,
     pub set_code: TextStyle,
     pub artist: TextStyle,
     pub pow_tough_style: TextStyle,
@@ -277,6 +278,7 @@ impl Default for Layout {
                 letter_spacing: 1.0,
                 ..Default::default()
             },
+            type_line_end_y: 20,
 
             rules: TextStyle {
                 x: 20,

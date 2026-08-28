@@ -1,72 +1,37 @@
 use crate::{
     art::CardArtPipeline,
-    layout::{self, BorderStyle, Layout},
-    render::{
-        BorderWrapConfig, draw_border, draw_svg, draw_text, draw_text_around_border, text_width,
-    },
+    layout::{BorderStyle, Layout},
+    render::{draw_border, draw_svg, draw_text, draw_text_around_border, text_width},
 };
+use async_trait::async_trait;
 use image::{Rgb, RgbImage, imageops};
 use scryfall_oracle::{OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
-use std::path::PathBuf;
 use tracing::{debug, info};
 
-/// Represents a rendered Magic card image
-pub struct CardImage {
-    /// The Scryfall ID of the card
-    pub scryfall_id: String,
-
-    /// The card data used to generate the image
-    card: OracleScryfallCard,
+#[async_trait]
+/// Trait for individual element renderers
+pub trait ElementRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
-impl CardImage {
-    /// Creates a new card image from an Oracle Scryfall card
-    pub fn new(card: OracleScryfallCard) -> Self {
-        Self {
-            scryfall_id: card.core.id.clone(),
-            card,
-        }
-    }
+/// Renders card art
+pub struct CardArtRenderer;
 
-    /// Generates the card image and saves it as a PNG
-    pub async fn generate(self, out_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        // Set Fonts
-        let serif_font_path =
-            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
-
-        let sanserif_font_path =
-            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/tahoma.ttf";
-
-        let (serif_font, sanserif_font) = Layout::load_fonts(serif_font_path, sanserif_font_path)?;
-
-        // Extract Option<Strings>
-        let oracle_text = self.card.core.oracle_text.unwrap_or_default();
-        let type_line = self.card.core.type_line.unwrap_or_default();
-
-        let mut layout = Layout {
-            serif_font,
-            sanserif_font,
-            ..Layout::default()
-        };
-
-        // Create base image after layout is created.
-        let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
-
-        info!(
-            scryfall_id = %self.scryfall_id,
-            card_name = %self.card.core.name,
-            width = layout.width,
-            height = layout.height,
-            layout= %self.card.core.layout,
-            "Generating card image"
-        );
-
-        //
-        // Card art
-        //
-        let card_art = if let Some(image_uris) = &self.card.print.image_uris {
+#[async_trait]
+impl ElementRenderer for CardArtRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let card_art = if let Some(image_uris) = &card.print.image_uris {
             let client = ScryfallClient::new()?;
-
             Some(image_uris.fetch_art_crop(&client).await?.to_vec())
         } else {
             None
@@ -80,54 +45,42 @@ impl CardImage {
             let art =
                 CardArtPipeline::process(card_art_img, layout.art.max_width, layout.art.max_height);
 
-            // let art = card_art_img
-            //     .resize(
-            //         layout.art.max_width,
-            //         layout.art.max_height,
-            //         imageops::FilterType::Lanczos3,
-            //     )
-            //     .grayscale()
-            //     .to_rgb8();
-
-            // Calculate the scaled width after fitting into max dimensions
             let scale = (layout.art.max_width as f64 / ca_width as f64)
                 .min(layout.art.max_height as f64 / ca_height as f64)
-                .min(1.0); // don't upscale if smaller
+                .min(1.0);
 
             let render_width = (ca_width as f64 * scale) as i64;
-
-            // Center using the actual rendered width
             let draw_x = (layout.art.x as i64) + ((layout.art.max_width as i64) - render_width) / 2;
 
-            imageops::overlay(&mut card_img, &art, draw_x, layout.art.y);
-
-            // imageops::overlay(&mut card_img, &art, layout.art.x, layout.art.y);
+            imageops::overlay(canvas, &art, draw_x, layout.art.y);
         }
-        // End of Cart Art render block
 
-        //
-        // Card name
-        //
+        Ok(())
+    }
+}
 
-        // Is this card from an unset?
-        let is_funny = self.card.core.set_type == "funny";
+/// Renders card name with border wrapping logic
+pub struct NameRenderer;
 
-        // Determine border wrapping style (Standard, SemiWrap, or FullWrap)
-        // This is really important and has far reaching impacts beyond just name
-        // BorderStyles modify the default style to shift elements around
+#[async_trait]
+impl ElementRenderer for NameRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let is_funny = card.core.set_type == "funny";
+
         let border_style = {
             let name_style = &layout.name;
             let name_font_data = layout.font_data(name_style.font);
-            let name_width = layout.text_width(&self.card.core.name, name_style);
+            let name_width = layout.text_width(&card.core.name, name_style);
 
             if let Some(long_text_font_size) = name_style.long_text_font_size {
                 if name_width > name_style.wrap_width as f32 {
-                    let total_text_len = text_width(
-                        &self.card.core.name,
-                        name_font_data,
-                        long_text_font_size,
-                        0.5,
-                    );
+                    let total_text_len =
+                        text_width(&card.core.name, name_font_data, long_text_font_size, 0.5);
                     let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
 
                     if total_text_len > layout.border_path.bottom_threshold() && is_funny {
@@ -145,22 +98,17 @@ impl CardImage {
             }
         };
 
-        // Update layout state
         layout.border_style = border_style;
+        border_style.apply_layout_adjustments(layout);
 
-        // Apply layout modifications from the local variable
-        border_style.apply_layout_adjustments(&mut layout);
-
-        // Proceed with rendering standard or border-wrap text
         let name_style = &layout.name;
         let name_font_data = layout.font_data(name_style.font);
-        let name_width = layout.text_width(&self.card.core.name, name_style);
 
         match layout.border_style {
             BorderStyle::FullWrap | BorderStyle::SemiWrap => {
                 draw_text_around_border(
-                    &mut card_img,
-                    &self.card.core.name,
+                    canvas,
+                    &card.core.name,
                     name_font_data,
                     name_style.font_size,
                     name_style.letter_spacing,
@@ -169,8 +117,8 @@ impl CardImage {
             }
             BorderStyle::Standard | BorderStyle::LongName => {
                 draw_text(
-                    &mut card_img,
-                    &self.card.core.name,
+                    canvas,
+                    &card.core.name,
                     name_style.x,
                     name_style.y,
                     name_font_data,
@@ -180,14 +128,24 @@ impl CardImage {
                 );
             }
         }
-        // End of Card Name render block
 
-        //
-        // Mana Cost line
-        //
+        Ok(())
+    }
+}
+
+/// Renders mana cost
+pub struct ManaCostRenderer;
+#[async_trait]
+impl ElementRenderer for ManaCostRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mana_cost_style = &layout.cost;
         let mana_cost_font_data = layout.font_data(mana_cost_style.font);
-        if let Some(mana_cost) = &self.card.core.mana_cost {
+        if let Some(mana_cost) = &card.core.mana_cost {
             let cost_width = layout.text_width(&mana_cost, &layout.cost);
 
             let (cost_font_size, cost_x) = if cost_width > layout.cost.wrap_width as f32 {
@@ -220,7 +178,7 @@ impl CardImage {
             };
 
             draw_text(
-                &mut card_img,
+                canvas,
                 &mana_cost,
                 cost_x,
                 mana_cost_style.y,
@@ -231,16 +189,28 @@ impl CardImage {
             );
         }
 
-        //
-        // Type line
-        //
+        Ok(())
+    }
+}
+
+/// Renders type line
+pub struct TypeLineRenderer;
+#[async_trait]
+impl ElementRenderer for TypeLineRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let type_line = card.core.type_line.clone().unwrap_or_default();
         let type_style = &layout.type_line;
         let type_font_data = layout.font_data(type_style.font);
 
         debug!(font_size = type_style.font_size, "Rendering type line");
 
         let type_line_end_y = draw_text(
-            &mut card_img,
+            canvas,
             &type_line,
             type_style.x,
             type_style.y,
@@ -250,14 +220,27 @@ impl CardImage {
             type_style.wrap_width,
         );
 
-        //
-        // Oracle text
-        //
+        // Store for oracle text renderer to use
+        layout.type_line_end_y = type_line_end_y;
+
+        Ok(())
+    }
+}
+
+/// Renders oracle text
+pub struct OracleTextRenderer;
+#[async_trait]
+impl ElementRenderer for OracleTextRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let oracle_text = card.core.oracle_text.clone().unwrap_or_default();
         let rules_style = &layout.rules;
         let rules_font_data = layout.font_data(rules_style.font);
-        // Calculate oracle start position: use fixed rules_style.y if type line didn't wrap,
-        // or chain directly off type_line_end_y if it wrapped lower.
-        let rules_y = rules_style.y.max(type_line_end_y);
+        let rules_y = rules_style.y.max(layout.type_line_end_y);
 
         debug!(
             font_size = rules_style.font_size,
@@ -266,7 +249,7 @@ impl CardImage {
         );
 
         draw_text(
-            &mut card_img,
+            canvas,
             &oracle_text,
             rules_style.x,
             rules_y,
@@ -276,15 +259,26 @@ impl CardImage {
             rules_style.wrap_width,
         );
 
-        //
-        // Artist Credit
-        //
-        if let Some(artist_name) = &self.card.print.artist {
+        Ok(())
+    }
+}
+
+/// Renders artist credit
+pub struct ArtistRenderer;
+#[async_trait]
+impl ElementRenderer for ArtistRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(artist_name) = &card.print.artist {
             let artist_style = &layout.artist;
             let artist_font_data = layout.font_data(artist_style.font);
 
             draw_text(
-                &mut card_img,
+                canvas,
                 &format!("Art by {}", &artist_name),
                 artist_style.x,
                 artist_style.y,
@@ -295,22 +289,31 @@ impl CardImage {
             );
         }
 
-        //
-        // Set icon
-        //
-        if self.card.core.set_icon_svg_uri.is_some() {
+        Ok(())
+    }
+}
+
+/// Renders set icon
+pub struct SetIconRenderer;
+#[async_trait]
+impl ElementRenderer for SetIconRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if card.core.set_icon_svg_uri.is_some() {
             debug!("Loading set icon from Scryfall");
 
             let client = ScryfallClient::new()?;
-
-            let set = ScryfallSet::from_id(&self.card.core.set_id, &client).await?;
-
+            let set = ScryfallSet::from_id(&card.core.set_id, &client).await?;
             let svg_data = set.get_svg_bytes(&client).await?;
 
             let set_icon = &layout.set_icon;
 
             draw_svg(
-                &mut card_img,
+                canvas,
                 &svg_data,
                 set_icon.x,
                 set_icon.y,
@@ -319,18 +322,29 @@ impl CardImage {
             )?;
         }
 
-        //
-        // Set code
-        //
+        Ok(())
+    }
+}
+
+/// Renders set code
+pub struct SetCodeRenderer;
+#[async_trait]
+impl ElementRenderer for SetCodeRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let metadata_style = &layout.set_code;
         let metadata_font_data = layout.font_data(metadata_style.font);
 
         draw_text(
-            &mut card_img,
+            canvas,
             &format!(
                 "{} {}",
-                self.card.core.set.to_uppercase(),
-                self.card.print.collector_number
+                card.core.set.to_uppercase(),
+                card.print.collector_number
             ),
             metadata_style.x,
             metadata_style.y,
@@ -340,13 +354,24 @@ impl CardImage {
             metadata_style.wrap_width,
         );
 
-        //
-        // Power / toughness
-        //
+        Ok(())
+    }
+}
+
+/// Renders power/toughness
+pub struct PowerToughnessRenderer;
+#[async_trait]
+impl ElementRenderer for PowerToughnessRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let pow_tough_style = &layout.pow_tough_style;
         let pow_tough_font_data = layout.font_data(pow_tough_style.font);
 
-        if let (Some(power), Some(toughness)) = (&self.card.core.power, &self.card.core.toughness) {
+        if let (Some(power), Some(toughness)) = (&card.core.power, &card.core.toughness) {
             debug!(
                 power = %power,
                 toughness = %toughness,
@@ -354,7 +379,7 @@ impl CardImage {
             );
 
             draw_text(
-                &mut card_img,
+                canvas,
                 &format!("{power}/{toughness}"),
                 pow_tough_style.x,
                 pow_tough_style.y,
@@ -367,23 +392,22 @@ impl CardImage {
             debug!("Card has no power and toughness");
         }
 
-        //
-        // Border
-        //
+        Ok(())
+    }
+}
+
+/// Renders border
+pub struct BorderRenderer;
+#[async_trait]
+impl ElementRenderer for BorderRenderer {
+    async fn render(
+        &self,
+        _card: &OracleScryfallCard,
+        canvas: &mut RgbImage,
+        _layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         debug!("Rendering card border");
-
-        draw_border(&mut card_img);
-
-        //
-        // Save
-        //
-        card_img.save(out_path)?;
-
-        info!(
-            scryfall_id = %self.scryfall_id,
-            "Card image generated successfully"
-        );
-
+        draw_border(canvas);
         Ok(())
     }
 }
