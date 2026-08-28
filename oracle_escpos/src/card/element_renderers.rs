@@ -5,15 +5,15 @@ use crate::{
 };
 use async_trait::async_trait;
 use image::{Rgb, RgbImage, imageops};
-use scryfall_oracle::{OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
+use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
 use tracing::{debug, info};
 
 #[async_trait]
-/// Trait for individual element renderers
 pub trait ElementRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>>;
@@ -21,16 +21,26 @@ pub trait ElementRenderer {
 
 /// Renders card art
 pub struct CardArtRenderer;
-
 #[async_trait]
 impl ElementRenderer for CardArtRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let card_art = if let Some(image_uris) = &card.print.image_uris {
+        let image_uris = face
+            .and_then(|f| f.image_uris.as_ref())
+            .or_else(|| card.print.image_uris.as_ref());
+
+        debug!(
+            has_face = face.is_some(),
+            has_image_uris = image_uris.is_some(),
+            "CardArtRenderer state"
+        );
+
+        let card_art = if let Some(image_uris) = image_uris {
             let client = ScryfallClient::new()?;
             Some(image_uris.fetch_art_crop(&client).await?.to_vec())
         } else {
@@ -67,20 +77,21 @@ impl ElementRenderer for NameRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let is_funny = card.core.set_type == "funny";
+        let name = face.map(|f| &f.name).unwrap_or_else(|| &card.core.name);
 
         let border_style = {
             let name_style = &layout.name;
             let name_font_data = layout.font_data(name_style.font);
-            let name_width = layout.text_width(&card.core.name, name_style);
+            let name_width = layout.text_width(name, name_style);
 
             if let Some(long_text_font_size) = name_style.long_text_font_size {
                 if name_width > name_style.wrap_width as f32 {
-                    let total_text_len =
-                        text_width(&card.core.name, name_font_data, long_text_font_size, 0.5);
+                    let total_text_len = text_width(name, name_font_data, long_text_font_size, 0.5);
                     let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
 
                     if total_text_len > layout.border_path.bottom_threshold() && is_funny {
@@ -108,7 +119,7 @@ impl ElementRenderer for NameRenderer {
             BorderStyle::FullWrap | BorderStyle::SemiWrap => {
                 draw_text_around_border(
                     canvas,
-                    &card.core.name,
+                    name,
                     name_font_data,
                     name_style.font_size,
                     name_style.letter_spacing,
@@ -118,7 +129,7 @@ impl ElementRenderer for NameRenderer {
             BorderStyle::Standard | BorderStyle::LongName => {
                 draw_text(
                     canvas,
-                    &card.core.name,
+                    name,
                     name_style.x,
                     name_style.y,
                     name_font_data,
@@ -140,12 +151,20 @@ impl ElementRenderer for ManaCostRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mana_cost_style = &layout.cost;
         let mana_cost_font_data = layout.font_data(mana_cost_style.font);
-        if let Some(mana_cost) = &card.core.mana_cost {
+        //     let image_uris = face
+        // .and_then(|f| f.image_uris.as_ref())
+        // .or_else(|| card.print.image_uris.as_ref());
+        let mana_cost = face
+            .and_then(|f| f.mana_cost.as_ref())
+            .or_else(|| card.core.mana_cost.as_ref());
+
+        if let Some(mana_cost) = mana_cost {
             let cost_width = layout.text_width(&mana_cost, &layout.cost);
 
             let (cost_font_size, cost_x) = if cost_width > layout.cost.wrap_width as f32 {
@@ -200,10 +219,15 @@ impl ElementRenderer for TypeLineRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let type_line = card.core.type_line.clone().unwrap_or_default();
+        let type_line = face
+            .and_then(|f| f.type_line.as_ref())
+            .or_else(|| card.core.type_line.as_ref())
+            .cloned()
+            .unwrap_or_default();
         let type_style = &layout.type_line;
         let type_font_data = layout.font_data(type_style.font);
 
@@ -234,10 +258,15 @@ impl ElementRenderer for OracleTextRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let oracle_text = card.core.oracle_text.clone().unwrap_or_default();
+        let oracle_text = face
+            .and_then(|f| f.oracle_text.as_ref())
+            .or_else(|| card.core.oracle_text.as_ref())
+            .cloned()
+            .unwrap_or_default();
         let rules_style = &layout.rules;
         let rules_font_data = layout.font_data(rules_style.font);
         let rules_y = rules_style.y.max(layout.type_line_end_y);
@@ -270,6 +299,7 @@ impl ElementRenderer for ArtistRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -300,6 +330,7 @@ impl ElementRenderer for SetIconRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -333,6 +364,7 @@ impl ElementRenderer for SetCodeRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -365,13 +397,22 @@ impl ElementRenderer for PowerToughnessRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let pow_tough_style = &layout.pow_tough_style;
         let pow_tough_font_data = layout.font_data(pow_tough_style.font);
 
-        if let (Some(power), Some(toughness)) = (&card.core.power, &card.core.toughness) {
+        let power = face
+            .and_then(|f| f.power.as_ref())
+            .or_else(|| card.core.power.as_ref());
+
+        let toughness = face
+            .and_then(|f| f.toughness.as_ref())
+            .or_else(|| card.core.toughness.as_ref());
+
+        if let (Some(power), Some(toughness)) = (power, toughness) {
             debug!(
                 power = %power,
                 toughness = %toughness,
@@ -403,6 +444,7 @@ impl ElementRenderer for BorderRenderer {
     async fn render(
         &self,
         _card: &OracleScryfallCard,
+        face: Option<&CardFace>,
         canvas: &mut RgbImage,
         _layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {

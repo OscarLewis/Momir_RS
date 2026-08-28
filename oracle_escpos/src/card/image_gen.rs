@@ -8,13 +8,14 @@ use crate::{
     layout::Layout,
 };
 use image::{Rgb, RgbImage, imageops};
-use scryfall_oracle::OracleScryfallCard;
+use scryfall_oracle::{CardFace, OracleScryfallCard};
 use std::path::PathBuf;
-use tracing::info;
+use tracing::{debug, info};
 
 /// Handles rendering a single card face
 async fn render_card_face(
     card: &OracleScryfallCard,
+    face: Option<&CardFace>,
     layout: &Layout,
 ) -> Result<RgbImage, Box<dyn std::error::Error>> {
     let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
@@ -48,7 +49,9 @@ async fn render_card_face(
 
     // Execute each renderer
     for renderer in renderers {
-        renderer.render(card, &mut card_img, &mut layout).await?;
+        renderer
+            .render(card, face, &mut card_img, &mut layout)
+            .await?;
     }
 
     info!(
@@ -66,7 +69,7 @@ pub struct RegularCardRenderer<'a> {
 
 impl<'a> CardRenderer for RegularCardRenderer<'a> {
     async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
-        render_card_face(self.card, layout).await
+        render_card_face(self.card, None, layout).await
     }
 }
 
@@ -78,6 +81,24 @@ pub struct MDFCCardRenderer<'a> {
 impl<'a> CardRenderer for MDFCCardRenderer<'a> {
     async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
         let card = self.card;
+        let faces = card.core.card_faces.as_ref().ok_or("No card faces")?;
+        // debug!(faces = ?faces, "MDFC Card Faces");
+
+        if faces.len() < 2 {
+            return Err("Expected at least 2 faces".into());
+        }
+        if faces.len() > 2 {
+            return Err("Expected only 2 faces".into());
+        }
+        let front_img = render_card_face(card, Some(&faces[0]), layout).await?;
+        let back_img = render_card_face(card, Some(&faces[1]), layout).await?;
+
+        // Composite side-by-side
+        let mut composed = RgbImage::new(front_img.width() * 2, front_img.height());
+        imageops::overlay(&mut composed, &front_img, 0, 0);
+        imageops::overlay(&mut composed, &back_img, front_img.width() as i64, 0);
+
+        Ok(composed)
 
         // // Render both faces
         // let front_img = render_card_face(&card.core.card_faces[0], card, layout).await?;
@@ -92,7 +113,6 @@ impl<'a> CardRenderer for MDFCCardRenderer<'a> {
         // render_shared_elements(&mut composed, card, layout).await?;
 
         // Ok(composed)
-        todo!()
     }
 }
 /// Main card print handler

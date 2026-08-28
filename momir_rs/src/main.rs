@@ -14,7 +14,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
-use oracle_escpos::{test_img_print, test_network_receipt_print};
+use oracle_escpos::{test_img_print, test_mdfc_img_print, test_network_receipt_print};
 use rand::RngExt;
 use scryfall_oracle::{
     ScryfallCard,
@@ -165,6 +165,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/card-by-cmc", get(card_by_cmc))
         .route("/test/print", get(test_print_handler))
         .route("/test/imgprint", get(test_img_print_handler))
+        .route("/test/mdfcprint", get(test_mdfc_img_print_handler))
         .route("/ws/messages/{game_id}", get(websocket))
         .nest_service("/static", ServeDir::new("momir_rs/static"))
         .with_state(shared_state);
@@ -217,6 +218,14 @@ async fn test_img_print_handler(
     State(_state): State<AppState>,
 ) -> Result<(StatusCode, String), AppError> {
     test_img_print()?;
+
+    Ok((StatusCode::OK, "Testing IMG for printer...".into()))
+}
+
+async fn test_mdfc_img_print_handler(
+    State(_state): State<AppState>,
+) -> Result<(StatusCode, String), AppError> {
+    test_mdfc_img_print()?;
 
     Ok((StatusCode::OK, "Testing IMG for printer...".into()))
 }

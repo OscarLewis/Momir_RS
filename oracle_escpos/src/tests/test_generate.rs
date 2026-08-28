@@ -26,7 +26,7 @@ mod tests {
     #[ignore]
     async fn test_spidey() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/miles_morales_test_card.json")?;
-        let card_type = CardType::Regular(card);
+        let card_type = CardType::MDFC(card);
         let print = CardPrint::new(&card_type);
         print
             .render(&PathBuf::from("./renders/miles_morales_card.png"))

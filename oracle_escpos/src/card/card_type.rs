@@ -8,5 +8,8 @@ pub enum CardType {
 }
 
 pub trait CardRenderer {
-    async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>>;
+    fn render(
+        &self,
+        layout: &Layout,
+    ) -> impl std::future::Future<Output = Result<RgbImage, Box<dyn std::error::Error>>>;
 }
