@@ -105,6 +105,7 @@
   "set_type": "funny",
   "set_uri": "https://api.scryfall.com/sets/3404fc78-6678-4cf4-bd39-4c0be3bb7baf",
   "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Augl&unique=prints",
+  "set_icon_svg_uri": "https://svgs.scryfall.io/sets/ugl.svg?1787544000",
   "scryfall_set_uri": "https://scryfall.com/sets/ugl?utm_source=api",
   "rulings_uri": "https://api.scryfall.com/cards/d15c6375-2e4e-47f7-88e1-d90794e7f724/rulings",
   "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3Ad0bd00f2-91bb-4c9c-a8e7-f8aeadc0bbb9&unique=prints",
