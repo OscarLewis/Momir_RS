@@ -221,6 +221,8 @@ pub struct PreviewInfo {
     pub source_uri: Option<String>,
     pub previewed_at: Option<String>,
 }
+
+// Layout of the Card
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CardLayout {
     #[serde(rename = "normal")]
