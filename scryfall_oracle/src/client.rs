@@ -9,7 +9,7 @@ use std::{
 use tokio::sync::Mutex;
 
 const USER_AGENT_VALUE: &str = "momir_rs/0.1.0";
-const REQUEST_INTERVAL: Duration = Duration::from_millis(250);
+const REQUEST_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Debug)]
 pub struct ScryfallClient {
