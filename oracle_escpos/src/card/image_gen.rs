@@ -72,23 +72,29 @@ impl<'a> CardRenderer for RegularCardRenderer<'a> {
 
 /// MDFC card renderer (renders side-by-side)
 pub struct MDFCCardRenderer<'a> {
-    pub front: &'a OracleScryfallCard,
-    pub back: &'a OracleScryfallCard,
+    pub card: &'a OracleScryfallCard,
 }
 
 impl<'a> CardRenderer for MDFCCardRenderer<'a> {
     async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
-        let front_img = render_card_face(self.front, layout).await?;
-        let back_img = render_card_face(self.back, layout).await?;
+        let card = self.card;
 
-        let mut composed = RgbImage::new(front_img.width() * 2, front_img.height());
-        imageops::overlay(&mut composed, &front_img, 0, 0);
-        imageops::overlay(&mut composed, &back_img, front_img.width() as i64, 0);
+        // // Render both faces
+        // let front_img = render_card_face(&card.core.card_faces[0], card, layout).await?;
+        // let back_img = render_card_face(&card.core.card_faces[1], card, layout).await?;
 
-        Ok(composed)
+        // // Composite side-by-side
+        // let mut composed = RgbImage::new(front_img.width() * 2, front_img.height());
+        // imageops::overlay(&mut composed, &front_img, 0, 0);
+        // imageops::overlay(&mut composed, &back_img, front_img.width() as i64, 0);
+
+        // // Render shared elements once on the composed image
+        // render_shared_elements(&mut composed, card, layout).await?;
+
+        // Ok(composed)
+        todo!()
     }
 }
-
 /// Main card print handler
 pub struct CardPrint<'a> {
     card_type: &'a CardType,
@@ -116,9 +122,7 @@ impl<'a> CardPrint<'a> {
 
         let image = match self.card_type {
             CardType::Regular(card) => RegularCardRenderer { card }.render(&layout).await?,
-            CardType::MDFC { front, back } => {
-                MDFCCardRenderer { front, back }.render(&layout).await?
-            }
+            CardType::MDFC(card) => MDFCCardRenderer { card }.render(&layout).await?,
         };
 
         image.save(out_path)?;

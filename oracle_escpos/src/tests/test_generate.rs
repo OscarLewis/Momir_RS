@@ -24,6 +24,18 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_spidey() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/miles_morales_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/miles_morales_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_lucy_in_the_sky() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/karolina_test_card.json")?;
         let card_type = CardType::Regular(card);
@@ -42,18 +54,6 @@ mod tests {
         let print = CardPrint::new(&card_type);
         print
             .render(&PathBuf::from("./renders/janeway_card.png"))
-            .await?;
-        Ok(())
-    }
-
-    #[test(tokio::test)]
-    #[ignore]
-    async fn test_spidey() -> Result<(), Box<dyn std::error::Error>> {
-        let card = load_card("./tests/miles_morales_test_card.json")?;
-        let card_type = CardType::Regular(card);
-        let print = CardPrint::new(&card_type);
-        print
-            .render(&PathBuf::from("./renders/miles_morales_card.png"))
             .await?;
         Ok(())
     }
