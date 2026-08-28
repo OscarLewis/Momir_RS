@@ -172,7 +172,7 @@ impl BorderStyle {
                 layout.rules.font_size = fonts.small_rules;
                 layout.rules.letter_spacing = 1.5;
                 layout.set_icon.x = 43;
-                layout.set_icon.y = 470;
+                layout.set_icon.y = 468;
                 layout.set_code.x = 40;
                 layout.set_code.y = 530;
                 layout.set_code.letter_spacing = 1.0;

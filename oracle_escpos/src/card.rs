@@ -225,7 +225,7 @@ impl CardImage {
 
         debug!(font_size = type_style.font_size, "Rendering type line");
 
-        draw_text(
+        let type_line_end_y = draw_text(
             &mut card_img,
             &type_line,
             type_style.x,
@@ -241,6 +241,9 @@ impl CardImage {
         //
         let rules_style = &layout.rules;
         let rules_font_data = layout.font_data(rules_style.font);
+        // Calculate oracle start position: use fixed rules_style.y if type line didn't wrap,
+        // or chain directly off type_line_end_y if it wrapped lower.
+        let rules_y = rules_style.y.max(type_line_end_y);
 
         debug!(
             font_size = rules_style.font_size,
@@ -252,7 +255,7 @@ impl CardImage {
             &mut card_img,
             &oracle_text,
             rules_style.x,
-            rules_style.y,
+            rules_y,
             rules_font_data,
             rules_style.font_size,
             rules_style.letter_spacing,

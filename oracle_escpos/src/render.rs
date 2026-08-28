@@ -359,7 +359,7 @@ pub(crate) fn draw_text(
     font_size: f32,
     letter_spacing: f32,
     max_width: i32,
-) {
+) -> i32 {
     debug!(
         text_length = text.len(),
         x, baseline_y, font_size, letter_spacing, max_width, "Drawing text"
@@ -443,6 +443,13 @@ pub(crate) fn draw_text(
     }
 
     debug!(line_count, final_y = y, "Finished drawing text");
+
+    // Advance y past the last drawn line so it points to the next available vertical slot
+    if line_count > 0 {
+        y += line_height;
+    }
+
+    y
 }
 
 /// Helper function to shape and rasterize a single horizontal line of text.
