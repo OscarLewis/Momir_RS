@@ -129,12 +129,12 @@ impl Default for BorderPathLayout {
             top_start_x: 25,
             top_end_x: 380,
             left_side_bottom_y: 330,
-            left_side_top_y: 35,
-            right_side_top_y: 35,
+            left_side_top_y: 25,
+            right_side_top_y: 25,
             right_side_bottom_y: 535,
             bottom_x_start: 375,
             bottom_x_end: 25,
-            bottom_y: 540,
+            bottom_y: 546,
             left_side_return_bottom_y: 535,
             left_side_return_top_y: 360,
         }
@@ -182,7 +182,7 @@ impl BorderStyle {
                 layout.pow_tough_style.x = 330;
                 layout.pow_tough_style.y = 530;
                 layout.name.font_size = fonts.long_name;
-                layout.name.letter_spacing = 1.0;
+                layout.name.letter_spacing = 0.5;
                 layout.cost.margin_right = 35;
             }
             BorderStyle::Standard => {
