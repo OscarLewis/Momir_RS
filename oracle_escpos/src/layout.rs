@@ -234,12 +234,7 @@ impl Default for Layout {
             height: 576,
             border_style: BorderStyle::Standard,
             border_path: BorderPathLayout::default(),
-            set_icon: SvgLayout {
-                x: 20,
-                y: 496,
-                width: 50,
-                height: 50,
-            },
+
             serif_font: Vec::new(),
             sanserif_font: Vec::new(),
 
@@ -302,12 +297,20 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            set_icon: SvgLayout {
+                x: 36,
+                y: 496,
+                width: 50,
+                height: 50,
+            },
+
             set_code: TextStyle {
                 x: 30,
                 y: 566,
                 font: Font::Sanserif,
                 font_size: fonts.set_code,
                 wrap_width: 372,
+                letter_spacing: 1.5,
                 ..Default::default()
             },
 
@@ -317,7 +320,7 @@ impl Default for Layout {
                 font: Font::Sanserif,
                 font_size: fonts.artist,
                 wrap_width: 372,
-                letter_spacing: 1.0,
+                letter_spacing: 1.5,
                 ..Default::default()
             },
 
