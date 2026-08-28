@@ -121,7 +121,7 @@ impl CardImage {
                     } else if total_text_len > standard_wrap_limit {
                         BorderStyle::SemiWrap
                     } else {
-                        BorderStyle::Standard
+                        BorderStyle::LongName
                     }
                 } else {
                     BorderStyle::Standard
@@ -142,37 +142,26 @@ impl CardImage {
         let name_font_data = layout.font_data(name_style.font);
         let name_width = layout.text_width(&self.card.core.name, name_style);
 
-        let (font_size, letter_spacing) =
-            if let Some(long_text_font_size) = name_style.long_text_font_size {
-                if name_width > name_style.wrap_width as f32 {
-                    (long_text_font_size, 0.5)
-                } else {
-                    (name_style.font_size, name_style.letter_spacing)
-                }
-            } else {
-                (name_style.font_size, name_style.letter_spacing)
-            };
-
         match layout.border_style {
             BorderStyle::FullWrap | BorderStyle::SemiWrap => {
                 draw_text_around_border(
                     &mut card_img,
                     &self.card.core.name,
                     name_font_data,
-                    font_size,
-                    letter_spacing,
+                    name_style.font_size,
+                    name_style.letter_spacing,
                     &layout.border_path,
                 );
             }
-            BorderStyle::Standard => {
+            BorderStyle::Standard | BorderStyle::LongName => {
                 draw_text(
                     &mut card_img,
                     &self.card.core.name,
                     name_style.x,
                     name_style.y,
                     name_font_data,
-                    font_size,
-                    letter_spacing,
+                    name_style.font_size,
+                    name_style.letter_spacing,
                     name_style.wrap_width,
                 );
             }

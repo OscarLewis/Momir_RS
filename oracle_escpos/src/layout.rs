@@ -156,6 +156,7 @@ pub enum BorderStyle {
     Standard,
     FullWrap,
     SemiWrap,
+    LongName,
 }
 
 impl BorderStyle {
@@ -189,6 +190,7 @@ impl BorderStyle {
                 layout.rules.x = 35;
                 layout.rules.wrap_width = 350;
             }
+            BorderStyle::LongName => layout.name.font_size = fonts.long_name,
         }
     }
 }
