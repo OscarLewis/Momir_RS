@@ -181,13 +181,19 @@ impl BorderStyle {
                 layout.artist.letter_spacing = 1.5;
                 layout.pow_tough_style.x = 330;
                 layout.pow_tough_style.y = 530;
+                layout.name.font_size = fonts.long_name;
+                layout.name.letter_spacing = 1.0;
+                layout.cost.margin_right = 35;
             }
             BorderStyle::Standard => {
                 // Default margins stay intact
             }
             BorderStyle::SemiWrap => {
                 layout.type_line.x = 35;
+                layout.name.font_size = fonts.long_name;
+                layout.name.letter_spacing = 1.0;
                 layout.rules.x = 35;
+                layout.cost.margin_right = 35;
                 layout.rules.wrap_width = 350;
             }
             BorderStyle::LongName => {
