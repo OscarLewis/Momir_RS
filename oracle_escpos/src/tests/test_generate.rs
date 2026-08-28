@@ -10,7 +10,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore]
     async fn test_generate() -> Result<(), Box<dyn std::error::Error>> {
-        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/sokka_suki_test_card.json";
+        let path = "./tests/sokka_suki_test_card.json";
 
         let json = fs::read_to_string(path).expect("failed to read test card");
 
@@ -19,11 +19,7 @@ mod tests {
 
         let image = CardImage::new(card);
 
-        image
-            .generate(&PathBuf::from(
-                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/card.png",
-            ))
-            .await?;
+        image.generate(&PathBuf::from("./renders/card.png")).await?;
 
         Ok(())
     }
@@ -31,7 +27,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore]
     async fn test_janeway() -> Result<(), Box<dyn std::error::Error>> {
-        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/janeway_test_card.json";
+        let path = "./tests/janeway_test_card.json";
 
         let json = fs::read_to_string(path).expect("failed to read test card");
 
@@ -41,9 +37,7 @@ mod tests {
         let image = CardImage::new(card);
 
         image
-            .generate(&PathBuf::from(
-                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/janeway_card.png",
-            ))
+            .generate(&PathBuf::from("./renders/janeway_card.png"))
             .await?;
 
         Ok(())
@@ -52,7 +46,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore]
     async fn test_zeta_mulldrifter() -> Result<(), Box<dyn std::error::Error>> {
-        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/zeta_mull_drifter_test_card.json";
+        let path = "./tests/zeta_mull_drifter_test_card.json";
 
         let json = fs::read_to_string(path).expect("failed to read test card");
 
@@ -62,9 +56,7 @@ mod tests {
         let image = CardImage::new(card);
 
         image
-            .generate(&PathBuf::from(
-                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/zeta_mull_drifter_card.png",
-            ))
+            .generate(&PathBuf::from("./renders/zeta_mull_drifter_card.png"))
             .await?;
 
         Ok(())
@@ -73,7 +65,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore]
     async fn test_bmf() -> Result<(), Box<dyn std::error::Error>> {
-        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/bfm_test_card.json";
+        let path = "./tests/bfm_test_card.json";
 
         let json = fs::read_to_string(path).expect("failed to read test card");
 
@@ -83,9 +75,7 @@ mod tests {
         let image = CardImage::new(card);
 
         image
-            .generate(&PathBuf::from(
-                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/bfm_card.png",
-            ))
+            .generate(&PathBuf::from("./renders/bfm_card.png"))
             .await?;
 
         Ok(())
@@ -94,7 +84,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore]
     async fn test_long_name() -> Result<(), Box<dyn std::error::Error>> {
-        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/asmoranomardicadaistinaculdacar_test_card.json";
+        let path = "./tests/asmoranomardicadaistinaculdacar_test_card.json";
 
         let json = fs::read_to_string(path).expect("failed to read test card");
 
@@ -105,7 +95,7 @@ mod tests {
 
         image
             .generate(&PathBuf::from(
-                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/asmoranomardicadaistinaculdacar_card.png",
+                "./renders/asmoranomardicadaistinaculdacar_card.png",
             ))
             .await?;
 
@@ -115,7 +105,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore]
     async fn test_very_long_name() -> Result<(), Box<dyn std::error::Error>> {
-        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/customer_service_test_card.json";
+        let path = "./tests/customer_service_test_card.json";
 
         let json = fs::read_to_string(path).expect("failed to read test card");
 
@@ -125,9 +115,7 @@ mod tests {
         let image = CardImage::new(card);
 
         image
-            .generate(&PathBuf::from(
-                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/customer_service_card.png",
-            ))
+            .generate(&PathBuf::from("./renders/customer_service_card.png"))
             .await?;
 
         Ok(())
@@ -136,7 +124,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore]
     async fn test_extremely_long_name() -> Result<(), Box<dyn std::error::Error>> {
-        let path = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/tests/market_research_test_card.json";
+        let path = "./tests/market_research_test_card.json";
 
         let json = fs::read_to_string(path).expect("failed to read test card");
 
@@ -146,9 +134,7 @@ mod tests {
         let image = CardImage::new(card);
 
         image
-            .generate(&PathBuf::from(
-                "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/market_research_card.png",
-            ))
+            .generate(&PathBuf::from("./renders/market_research_card.png"))
             .await?;
 
         Ok(())

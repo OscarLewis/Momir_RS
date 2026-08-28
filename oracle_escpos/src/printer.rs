@@ -58,11 +58,10 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let driver = NetworkDriver::open(host, host_port, None)?;
     let mut printer = Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()));
 
-    let image = ImageReader::open(
-        "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/card.png",
-    )?
-    .decode()?
-    .rotate270();
+    let image =
+        ImageReader::open("/homes/oscar/Downloads/old momir/oracle_escpos/renders/card.png")?
+            .decode()?
+            .rotate270();
 
     let temp_file = NamedTempFile::with_suffix(".png")?;
     // image.to_luma8().save(temp_file.path())?;
@@ -82,7 +81,7 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
         .justify(JustifyMode::LEFT)?
         .bit_image_option(
             image_path,
-            BitImageOption::new(Some(576), None, BitImageSize::Normal)?,
+            BitImageOption::new(Some(576), Some(416), BitImageSize::Normal)?,
         )?
         .feed()?
         .print_cut()?;

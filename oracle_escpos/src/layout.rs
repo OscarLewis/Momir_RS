@@ -219,7 +219,7 @@ impl Default for Layout {
         let fonts = FontSizes::default();
 
         Self {
-            width: 412,
+            width: 416,
             height: 576,
             border_style: BorderStyle::Standard,
             border_path: BorderPathLayout::default(),
