@@ -114,7 +114,12 @@ impl CardImage {
         // Card name
         //
 
+        // Is this card from an unset?
+        let is_funny = self.card.core.set_type == "funny";
+
         // Determine border wrapping style (Standard, SemiWrap, or FullWrap)
+        // This is really important and has far reaching impacts beyond just name
+        // BorderStyles modify the default style to shift elements around
         let border_style = {
             let name_style = &layout.name;
             let name_font_data = layout.font_data(name_style.font);
@@ -130,9 +135,9 @@ impl CardImage {
                     );
                     let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
 
-                    if total_text_len > layout.border_path.bottom_threshold() {
+                    if total_text_len > layout.border_path.bottom_threshold() && is_funny {
                         BorderStyle::FullWrap
-                    } else if total_text_len > standard_wrap_limit {
+                    } else if total_text_len > standard_wrap_limit && is_funny {
                         BorderStyle::SemiWrap
                     } else {
                         BorderStyle::LongName
