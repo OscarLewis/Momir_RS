@@ -22,12 +22,6 @@ pub struct CardImage {
 impl CardImage {
     /// Creates a new card image from an Oracle Scryfall card
     pub fn new(card: OracleScryfallCard) -> Self {
-        debug!(
-            scryfall_id = %card.core.id,
-            card_name = %card.core.name,
-            "Creating CardImage"
-        );
-
         Self {
             scryfall_id: card.core.id.clone(),
             card,
@@ -63,6 +57,7 @@ impl CardImage {
             card_name = %self.card.core.name,
             width = layout.width,
             height = layout.height,
+            layout= %self.card.core.layout,
             "Generating card image"
         );
 

@@ -82,7 +82,7 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
         .justify(JustifyMode::LEFT)?
         .bit_image_option(
             image_path,
-            BitImageOption::new(Some(576), Some(416), BitImageSize::Normal)?,
+            BitImageOption::new(Some(576), None, BitImageSize::Normal)?,
         )?
         .feed()?
         .print_cut()?;
