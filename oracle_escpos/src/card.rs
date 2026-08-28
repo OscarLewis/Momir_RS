@@ -79,6 +79,8 @@ impl CardImage {
 
         if let Some(card_art) = card_art {
             let card_art_img = image::load_from_memory(&card_art)?;
+            let ca_width = card_art_img.width().clone();
+            let ca_height = card_art_img.height().clone();
 
             let art =
                 CardArtPipeline::process(card_art_img, layout.art.max_width, layout.art.max_height);
@@ -92,7 +94,19 @@ impl CardImage {
             //     .grayscale()
             //     .to_rgb8();
 
-            imageops::overlay(&mut card_img, &art, layout.art.x, layout.art.y);
+            // Calculate the scaled width after fitting into max dimensions
+            let scale = (layout.art.max_width as f64 / ca_width as f64)
+                .min(layout.art.max_height as f64 / ca_height as f64)
+                .min(1.0); // don't upscale if smaller
+
+            let render_width = (ca_width as f64 * scale) as i64;
+
+            // Center using the actual rendered width
+            let draw_x = (layout.art.x as i64) + ((layout.art.max_width as i64) - render_width) / 2;
+
+            imageops::overlay(&mut card_img, &art, draw_x, layout.art.y);
+
+            // imageops::overlay(&mut card_img, &art, layout.art.x, layout.art.y);
         }
         // End of Cart Art render block
 
