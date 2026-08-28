@@ -1,3 +1,4 @@
+mod art;
 mod card;
 mod layout;
 mod printer;

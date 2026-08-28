@@ -1,4 +1,5 @@
 use crate::{
+    art::CardArtPipeline,
     layout::{self, BorderStyle, Layout},
     render::{
         BorderWrapConfig, draw_border, draw_svg, draw_text, draw_text_around_border, text_width,
@@ -79,14 +80,17 @@ impl CardImage {
         if let Some(card_art) = card_art {
             let card_art_img = image::load_from_memory(&card_art)?;
 
-            let art = card_art_img
-                .resize(
-                    layout.art.max_width,
-                    layout.art.max_height,
-                    imageops::FilterType::Lanczos3,
-                )
-                .grayscale()
-                .to_rgb8();
+            let art =
+                CardArtPipeline::process(card_art_img, layout.art.max_width, layout.art.max_height);
+
+            // let art = card_art_img
+            //     .resize(
+            //         layout.art.max_width,
+            //         layout.art.max_height,
+            //         imageops::FilterType::Lanczos3,
+            //     )
+            //     .grayscale()
+            //     .to_rgb8();
 
             imageops::overlay(&mut card_img, &art, layout.art.x, layout.art.y);
         }
