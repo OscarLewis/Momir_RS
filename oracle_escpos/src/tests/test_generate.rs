@@ -18,7 +18,9 @@ mod tests {
         let card = load_card("./tests/sokka_suki_test_card.json")?;
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
-        print.render(&PathBuf::from("./renders/card.png")).await?;
+        print
+            .render(Some(&PathBuf::from("./renders/card.png")))
+            .await?;
         Ok(())
     }
 
@@ -35,7 +37,7 @@ mod tests {
 
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/miles_morales_card.png"))
+            .render(Some(&PathBuf::from("./renders/miles_morales_card.png")))
             .await?;
         Ok(())
     }
@@ -52,7 +54,7 @@ mod tests {
 
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/etali_card.png"))
+            .render(Some(&PathBuf::from("./renders/etali_card.png")))
             .await?;
         Ok(())
     }
@@ -69,7 +71,7 @@ mod tests {
 
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/boom_bust_card.png"))
+            .render(Some(&PathBuf::from("./renders/boom_bust_card.png")))
             .await?;
         Ok(())
     }
@@ -81,7 +83,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/karolina_card.png"))
+            .render(Some(&PathBuf::from("./renders/karolina_card.png")))
             .await?;
         Ok(())
     }
@@ -93,7 +95,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/chronologist_card.png"))
+            .render(Some(&PathBuf::from("./renders/chronologist_card.png")))
             .await?;
         Ok(())
     }
@@ -105,7 +107,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/janeway_card.png"))
+            .render(Some(&PathBuf::from("./renders/janeway_card.png")))
             .await?;
         Ok(())
     }
@@ -117,7 +119,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/eslpeth_card.png"))
+            .render(Some(&PathBuf::from("./renders/eslpeth_card.png")))
             .await?;
         Ok(())
     }
@@ -129,7 +131,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/zeta_mull_drifter_card.png"))
+            .render(Some(&PathBuf::from("./renders/zeta_mull_drifter_card.png")))
             .await?;
         Ok(())
     }
@@ -141,7 +143,7 @@ mod tests {
         let card_type = CardType::Adventure(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/kaelin_adventure_card.png"))
+            .render(Some(&PathBuf::from("./renders/kaelin_adventure_card.png")))
             .await?;
         Ok(())
     }
@@ -153,7 +155,7 @@ mod tests {
         let card_type = CardType::Adventure(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/beluna_card.png"))
+            .render(Some(&PathBuf::from("./renders/beluna_card.png")))
             .await?;
         Ok(())
     }
@@ -165,7 +167,7 @@ mod tests {
         let card_type = CardType::Prepare(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/bear_prepare_card.png"))
+            .render(Some(&PathBuf::from("./renders/bear_prepare_card.png")))
             .await?;
         Ok(())
     }
@@ -177,7 +179,7 @@ mod tests {
         let card_type = CardType::Omen(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/wilding_omen_card.png"))
+            .render(Some(&PathBuf::from("./renders/wilding_omen_card.png")))
             .await?;
         Ok(())
     }
@@ -189,7 +191,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/bfm_card.png"))
+            .render(Some(&PathBuf::from("./renders/bfm_card.png")))
             .await?;
         Ok(())
     }
@@ -201,9 +203,9 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from(
+            .render(Some(&PathBuf::from(
                 "./renders/asmoranomardicadaistinaculdacar_card.png",
-            ))
+            )))
             .await?;
         Ok(())
     }
@@ -215,7 +217,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/customer_service_card.png"))
+            .render(Some(&PathBuf::from("./renders/customer_service_card.png")))
             .await?;
         Ok(())
     }
@@ -227,7 +229,7 @@ mod tests {
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
-            .render(&PathBuf::from("./renders/market_research_card.png"))
+            .render(Some(&PathBuf::from("./renders/market_research_card.png")))
             .await?;
         Ok(())
     }

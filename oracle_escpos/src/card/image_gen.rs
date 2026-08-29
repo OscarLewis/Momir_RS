@@ -9,7 +9,7 @@ use crate::{
     },
     layout::Layout,
 };
-use image::{Rgb, RgbImage, imageops};
+use image::{ImageBuffer, Rgb, RgbImage, imageops};
 use scryfall_oracle::{CardFace, OracleScryfallCard};
 use std::path::PathBuf;
 use tracing::{debug, info};
@@ -206,7 +206,10 @@ impl<'a> CardPrint<'a> {
         Self { card_type }
     }
 
-    pub async fn render(&self, out_path: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn render(
+        &self,
+        out_path: Option<&PathBuf>,
+    ) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, Box<dyn std::error::Error>> {
         // Load fonts once
         let serif_font_path =
             "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
@@ -229,7 +232,10 @@ impl<'a> CardPrint<'a> {
             CardType::Prepare(card) => AdventureCardRenderer { card }.render(&layout).await?,
         };
 
-        image.save(out_path)?;
-        Ok(())
+        if let Some(out_path) = out_path {
+            image.save(out_path)?;
+        }
+
+        Ok(image)
     }
 }

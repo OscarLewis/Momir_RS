@@ -1,4 +1,4 @@
-use image::{DynamicImage, ImageReader};
+use image::{DynamicImage, ImageBuffer, ImageReader};
 use std::io::Write;
 use std::net::TcpStream;
 use tracing::debug;
@@ -15,6 +15,23 @@ const BIG_CARD_IMAGE: &str =
 
 const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png";
 
+pub fn print_img(
+    image: ImageBuffer<image::Rgb<u8>, Vec<u8>>,
+    printer_host: &str,
+    printer_port: u16,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let dyn_img = DynamicImage::ImageRgb8(image).rotate270();
+    let raw_bytes = encode_gs_v0_image(&dyn_img);
+    send_raw_bytes_throttled(&raw_bytes, printer_host, printer_port)?;
+
+    debug!(
+        addr = PRINTER_HOST,
+        port = PRINTER_PORT,
+        "Successfully printed full card image via raw GS v 0 raster mode"
+    );
+    Ok(())
+}
+
 /// Helper function to load an image file from disk and orient it for vertical printing (rotate 270 degrees).
 fn load_image(path: &str) -> Result<image::DynamicImage, Box<dyn std::error::Error>> {
     Ok(ImageReader::open(path)?.decode()?.rotate270())
@@ -25,7 +42,7 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let image = load_image(CARD_IMAGE)?;
     let raw_bytes = encode_gs_v0_image(&image);
 
-    send_raw_bytes_throttled(&raw_bytes)?;
+    send_raw_bytes_throttled(&raw_bytes, PRINTER_HOST, PRINTER_PORT)?;
 
     debug!(
         addr = PRINTER_HOST,
@@ -41,7 +58,7 @@ pub fn test_img_print_raw_raster() -> Result<(), Box<dyn std::error::Error>> {
     // let raw_bytes = encode_esc_star_image(&image, 576);
     let raw_bytes = encode_gs_v0_image(&image);
 
-    send_raw_bytes_throttled(&raw_bytes)?;
+    send_raw_bytes_throttled(&raw_bytes, PRINTER_HOST, PRINTER_PORT)?;
 
     debug!(
         addr = PRINTER_HOST,
@@ -57,7 +74,7 @@ pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
 
     let payload = encode_gs_v0_image(&image);
 
-    send_raw_bytes_throttled(&payload)?;
+    send_raw_bytes_throttled(&payload, PRINTER_HOST, PRINTER_PORT)?;
 
     debug!(
         addr = PRINTER_HOST,
@@ -70,14 +87,18 @@ pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Connects directly to the network thermal printer, sends chunked raw byte streams with backpressure throttling,
 /// feeds paper according to `PRE_CUT_FEED_LINES`, and executes a hardware cut.
-fn send_raw_bytes_throttled(raw_bytes: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+fn send_raw_bytes_throttled(
+    raw_bytes: &[u8],
+    printer_host: &str,
+    printer_port: u16,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Configurable lines to feed paper forward before issuing cut command
     const PRE_CUT_FEED_LINES: u8 = 2;
 
     // Attempt network connection up to 3 times to allow hardware buffer/socket resets
     let mut stream = None;
     for attempt in 1..=3 {
-        match TcpStream::connect((PRINTER_HOST, PRINTER_PORT)) {
+        match TcpStream::connect((printer_host, printer_port)) {
             Ok(s) => {
                 stream = Some(s);
                 break;
