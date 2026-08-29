@@ -66,7 +66,7 @@ mod tests {
     #[test(tokio::test)]
     #[ignore = "requires network printer hardware at 192.168.2.47"]
     async fn test_integration_print() -> Result<(), Box<dyn std::error::Error>> {
-        let json = fs::read_to_string("./tests/miles_morales_test_card.json")?;
+        let json = fs::read_to_string("./tests/karolina_test_card.json")?;
         let card: OracleScryfallCard = serde_json::from_str(&json)?;
 
         let printer = OraclePrinter::new("192.168.2.47".to_string(), 9100);
