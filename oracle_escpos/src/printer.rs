@@ -1,15 +1,11 @@
 use image::{DynamicImage, ImageReader};
 use std::io::Write;
 use std::net::TcpStream;
-use std::{net::Shutdown, path::PathBuf};
-use tempfile::NamedTempFile;
 use tracing::debug;
 
 const PRINTER_HOST: &str = "192.168.2.47";
+// const PRINTER_HOST: &str = "0.0.0.0";
 const PRINTER_PORT: u16 = 9100;
-
-const MOMIR_IMAGE: &str =
-    "/home/oscar/Documents/Projects/momir_rs_workspace/momir_rs/static/images/momir_small.png";
 
 const CARD_IMAGE: &str =
     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/card.png";
@@ -39,34 +35,18 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// High-level test splitting a Modal Double-Faced Card (MDFC) image into two halves and printing both sequentially via raw raster mode.
+/// High-level test printing an MDFC image via raw raster mode.
 pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let image = load_image(MDFC_IMAGE)?;
 
-    let width = image.width();
-    let half_height = image.height() / 2;
-
-    // Split image into top and bottom halves (front and back of card)
-    let front = image.crop_imm(0, 0, width, half_height);
-    let back = image.crop_imm(0, half_height, width, half_height);
-
-    let left_debug = PathBuf::from("/home/oscar/Downloads/left.png");
-    let right_debug = PathBuf::from("/home/oscar/Downloads/right.png");
-
-    front.save(left_debug)?;
-    back.save(right_debug)?;
-
-    // Combine encoded raster buffers into a single byte stream before transmitting
-    let mut payload = encode_gs_v0_image(&front);
-    let back_payload = encode_gs_v0_image(&back);
-    payload.extend(back_payload);
+    let payload = encode_gs_v0_image(&image);
 
     send_raw_bytes_throttled(&payload)?;
 
     debug!(
         addr = PRINTER_HOST,
         port = PRINTER_PORT,
-        "Successfully printed MDFC card halves via raw GS v 0 raster mode"
+        "Successfully printed MDFC image via raw GS v 0 raster mode"
     );
 
     Ok(())
