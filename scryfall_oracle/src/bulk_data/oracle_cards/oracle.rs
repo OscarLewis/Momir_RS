@@ -191,12 +191,6 @@ impl OracleCards {
         );
 
         let id = ids.iter().filter(eligible).choose(&mut rand::rng())?;
-        // TODO Set set_icon_svg_uri on this cards object to the set svg uri in state.mtg_sets before returning it
-        let set_icon_svg_uri = self
-            .scryfall_sets
-            .as_ref()
-            .and_then(|sets| sets.get_set_from_id(&self.cards.as_ref()?.get(id)?.core.set_id))
-            .and_then(|set| Some(set.icon_svg_uri.clone()));
 
         let mut card = self.cards.as_ref()?.get(id)?.clone();
 
@@ -209,8 +203,6 @@ impl OracleCards {
         }
 
         Some(card)
-
-        // self.cards.as_ref()?.get(id).clone()
     }
 
     // pub fn creatures_legal_in_format(&self, format: &str) {}
