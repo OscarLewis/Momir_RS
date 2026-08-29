@@ -8,7 +8,7 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-const USER_AGENT_VALUE: &str = "momir_rs/0.1.0";
+const DEFAULT_USER_AGENT_VALUE: &str = "oracle_scryfall_rs/0.1.0";
 const REQUEST_INTERVAL: Duration = Duration::from_millis(500);
 
 #[derive(Debug)]
@@ -18,11 +18,15 @@ pub struct ScryfallClient {
 }
 
 impl ScryfallClient {
-    pub fn new() -> Result<Self, reqwest::Error> {
+    pub fn new(user_agent: Option<&str>) -> Result<Self, reqwest::Error> {
+        let user_agent = user_agent.unwrap_or(DEFAULT_USER_AGENT_VALUE);
         let mut headers = HeaderMap::new();
 
         headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
-        headers.insert(USER_AGENT, HeaderValue::from_static(USER_AGENT_VALUE));
+        headers.insert(
+            USER_AGENT,
+            HeaderValue::from_str(user_agent).expect("invalid user agent"),
+        );
 
         let client = Client::builder().default_headers(headers).build()?;
 
@@ -31,7 +35,6 @@ impl ScryfallClient {
             last_request: Mutex::new(Instant::now() - REQUEST_INTERVAL),
         })
     }
-
     pub async fn get<U>(
         &self,
         url: U,

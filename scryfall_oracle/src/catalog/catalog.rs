@@ -46,7 +46,7 @@ mod tests {
     fn test_client() -> &'static ScryfallClient {
         static CLIENT: OnceLock<ScryfallClient> = OnceLock::new();
 
-        CLIENT.get_or_init(|| ScryfallClient::new().expect("failed to create Scryfall client"))
+        CLIENT.get_or_init(|| ScryfallClient::new(None).expect("failed to create Scryfall client"))
     }
 
     #[tokio::test]

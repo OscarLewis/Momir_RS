@@ -36,7 +36,7 @@ mod tests {
 
     #[test(tokio::test)]
     async fn by_id_returns_card() {
-        let client = ScryfallClient::new().expect("failed to create Scryfall client");
+        let client = ScryfallClient::new(None).expect("failed to create Scryfall client");
 
         let result = ScryfallCard::by_id(&client, "08b9a296-3b76-4f8f-9d71-7c9af92bb3b4")
             .await

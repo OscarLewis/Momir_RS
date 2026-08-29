@@ -12,6 +12,8 @@ use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::
 use swash::FontRef;
 use tracing::{debug, info};
 
+const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
+
 #[async_trait]
 pub trait ElementRenderer {
     async fn render(
@@ -45,7 +47,7 @@ impl ElementRenderer for CardArtRenderer {
         );
 
         let card_art = if let Some(image_uris) = image_uris {
-            let client = ScryfallClient::new()?;
+            let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
             Some(image_uris.fetch_art(&client).await?.to_vec())
         } else {
             None
@@ -541,7 +543,7 @@ impl ElementRenderer for SetIconRenderer {
         if card.core.set_icon_svg_uri.is_some() {
             debug!("Loading set icon from Scryfall");
 
-            let client = ScryfallClient::new()?;
+            let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
             let set = ScryfallSet::from_id(&card.core.set_id, &client).await?;
             let svg_data = set.get_svg_bytes(&client).await?;
 

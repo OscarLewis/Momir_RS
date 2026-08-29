@@ -427,7 +427,7 @@ mod tests {
     }
 
     async fn test_oracle() -> OracleCards {
-        let client = ScryfallClient::new().expect("failed to create Scryfall client");
+        let client = ScryfallClient::new(None).expect("failed to create Scryfall client");
 
         OracleCards::new(&client, Some(&cache_dir()), None)
             .await

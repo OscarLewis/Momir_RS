@@ -60,7 +60,7 @@ mod tests {
 
     #[test(tokio::test)]
     async fn search_returns_matching_cards() {
-        let client = ScryfallClient::new().expect("failed to create Scryfall client");
+        let client = ScryfallClient::new(None).expect("failed to create Scryfall client");
 
         let result = ScryfallCard::search(&client, "is:unset")
             .await
