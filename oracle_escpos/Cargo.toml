@@ -18,3 +18,4 @@ tokio = "1.53.1"
 test-log = "0.2.21"
 dithr = { version = "0.3.0", features = ["image"] }
 async-trait = "0.1.92"
+config = "0.15.25"
