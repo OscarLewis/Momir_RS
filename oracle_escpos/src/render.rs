@@ -531,3 +531,88 @@ pub fn text_width(text: &str, font_data: &[u8], font_size: f32, letter_spacing: 
     });
     width
 }
+
+pub(crate) fn draw_vertical_line(
+    image: &mut RgbImage,
+    x: i32,
+    y: i32,
+    length: i32,
+    thickness: i32,
+) {
+    let black = Rgb([0, 0, 0]);
+
+    for py in y..y + length {
+        for px in x..x + thickness {
+            if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                image.put_pixel(px as u32, py as u32, black);
+            }
+        }
+    }
+}
+
+pub(crate) fn draw_horizontal_line(
+    image: &mut RgbImage,
+    x: i32,
+    y: i32,
+    length: i32,
+    thickness: i32,
+) {
+    let black = Rgb([0, 0, 0]);
+
+    for py in y..y + thickness {
+        for px in x..x + length {
+            if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                image.put_pixel(px as u32, py as u32, black);
+            }
+        }
+    }
+}
+
+pub fn wrapped_line_count(
+    text: &str,
+    font: FontRef<'_>,
+    font_size: f32,
+    letter_spacing: f32,
+    max_width: i32,
+) -> i32 {
+    let mut shape_context = ShapeContext::new();
+    let mut line = String::new();
+    let mut line_count = 0;
+
+    for word in text.split_whitespace() {
+        let candidate = if line.is_empty() {
+            word.to_string()
+        } else {
+            format!("{line} {word}")
+        };
+
+        let mut shaper = shape_context
+            .builder(font)
+            .size(font_size)
+            .script(Script::Latin)
+            .build();
+
+        shaper.add_str(&candidate);
+
+        let mut width = 0.0;
+
+        shaper.shape_with(|cluster| {
+            for glyph in cluster.glyphs {
+                width += glyph.advance + letter_spacing;
+            }
+        });
+
+        if width > max_width as f32 && !line.is_empty() {
+            line_count += 1;
+            line = word.to_string();
+        } else {
+            line = candidate;
+        }
+    }
+
+    if !line.is_empty() {
+        line_count += 1;
+    }
+
+    line_count
+}

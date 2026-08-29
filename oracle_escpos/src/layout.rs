@@ -42,6 +42,9 @@ pub struct FontSizes {
     pub name: f32,
     pub long_name: f32,
     pub type_line: f32,
+    pub adventure_type_line: f32,
+    pub adventure_name: f32,
+    pub long_adventure_name: f32,
     pub rules: f32,
     pub small_rules: f32,
     pub flavor: f32,
@@ -50,6 +53,7 @@ pub struct FontSizes {
     pub cost: f32,
     pub long_cost: f32,
     pub artist: f32,
+    pub artist_small: f32,
 }
 
 impl Default for FontSizes {
@@ -58,14 +62,18 @@ impl Default for FontSizes {
             name: 34.0,
             long_name: 22.0,
             type_line: 18.0,
+            adventure_type_line: 16.0,
             small_rules: 15.0,
             rules: 16.0,
-            pow_tough: 28.0,
+            pow_tough: 30.0,
             flavor: 17.0,
-            set_code: 14.0,
-            artist: 14.0,
-            cost: 16.0,
-            long_cost: 12.0,
+            set_code: 16.0,
+            artist: 16.0,
+            artist_small: 14.0,
+            cost: 18.0,
+            long_cost: 14.0,
+            adventure_name: 16.0,
+            long_adventure_name: 14.0,
         }
     }
 }
@@ -140,6 +148,7 @@ impl Default for BorderPathLayout {
         }
     }
 }
+
 impl BorderPathLayout {
     /// Distance along perimeter where text reaches the bottom edge.
     pub fn bottom_threshold(&self) -> f32 {
@@ -152,51 +161,74 @@ impl BorderPathLayout {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BorderStyle {
+pub enum WrapStyle {
     Standard,
-    FullWrap,
     SemiWrap,
-    LongName,
+    FullWrap,
 }
 
-impl BorderStyle {
-    /// Applies layout margin and dimension shifts based on the border style.
-    /// These automatically override the default Standard style.
-    pub fn apply_layout_adjustments(&self, layout: &mut Layout) {
+impl WrapStyle {
+    /// Applies layout adjustments associated with the wrapping style.
+    pub fn apply_layout_adjustments(self, layout: &mut Layout) {
         let fonts = FontSizes::default();
+
         match self {
-            BorderStyle::FullWrap => {
+            Self::Standard => {
+                // Default layout stays intact.
+            }
+
+            Self::SemiWrap => {
+                layout.type_line.x = 35;
+                layout.rules.x = 35;
+                layout.cost.margin_right = 35;
+                layout.rules.wrap_width = 350;
+            }
+
+            Self::FullWrap => {
                 layout.type_line.x = 35;
                 layout.rules.x = 35;
                 layout.rules.wrap_width = 350;
                 layout.rules.font_size = fonts.small_rules;
                 layout.rules.letter_spacing = 1.5;
+
                 layout.set_icon.x = 43;
                 layout.set_icon.y = 468;
+
                 layout.set_code.x = 40;
                 layout.set_code.y = 530;
                 layout.set_code.letter_spacing = 1.0;
+
                 layout.artist.x = 130;
                 layout.artist.y = 530;
                 layout.artist.letter_spacing = 1.5;
+                layout.artist.font_size = fonts.artist_small;
+
                 layout.pow_tough_style.x = 330;
                 layout.pow_tough_style.y = 530;
-                layout.name.font_size = fonts.long_name;
-                layout.name.letter_spacing = 0.5;
+
                 layout.cost.margin_right = 35;
             }
-            BorderStyle::Standard => {
-                // Default margins stay intact
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NameStyle {
+    Standard,
+    LongName,
+}
+
+impl NameStyle {
+    /// Applies layout adjustments associated with the name style.
+    pub fn apply_layout_adjustments(self, layout: &mut Layout) {
+        let fonts = FontSizes::default();
+
+        match self {
+            Self::Standard => {
+                // Default name layout stays intact.
             }
-            BorderStyle::SemiWrap => {
-                layout.type_line.x = 35;
-                layout.name.font_size = fonts.long_name;
-                layout.name.letter_spacing = 1.0;
-                layout.rules.x = 35;
-                layout.cost.margin_right = 35;
-                layout.rules.wrap_width = 350;
-            }
-            BorderStyle::LongName => {
+
+            Self::LongName => {
                 layout.name.font_size = fonts.long_name;
                 layout.name.letter_spacing = 1.0;
             }
@@ -208,7 +240,10 @@ impl BorderStyle {
 pub struct Layout {
     pub width: u32,
     pub height: u32,
-    pub border_style: BorderStyle,
+    pub wrap_style: WrapStyle,
+    pub name_style: NameStyle,
+    pub adventure_oracle_text_main_face: TextStyle,
+    pub adventure_type_line: TextStyle,
     pub font_sizes: FontSizes,
     pub sanserif_font: Vec<u8>,
     pub serif_font: Vec<u8>,
@@ -219,10 +254,14 @@ pub struct Layout {
     pub type_line: TextStyle,
     pub rules: TextStyle,
     pub flavor: TextStyle,
+    pub type_line_end_y: i32,
     pub set_code: TextStyle,
     pub artist: TextStyle,
     pub pow_tough_style: TextStyle,
     pub border_path: BorderPathLayout,
+    pub adventure_oracle_text_alt_face: TextStyle,
+    pub adventure_mana_cost: TextStyle,
+    pub adventure_name: TextStyle,
 }
 
 impl Default for Layout {
@@ -232,14 +271,12 @@ impl Default for Layout {
         Self {
             width: 416,
             height: 576,
-            border_style: BorderStyle::Standard,
+
+            wrap_style: WrapStyle::Standard,
+            name_style: NameStyle::Standard,
+
             border_path: BorderPathLayout::default(),
-            set_icon: SvgLayout {
-                x: 20,
-                y: 496,
-                width: 50,
-                height: 50,
-            },
+
             serif_font: Vec::new(),
             sanserif_font: Vec::new(),
 
@@ -263,6 +300,17 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            adventure_name: TextStyle {
+                x: 20,
+                y: 364,
+                font: Font::Serif,
+                font_size: fonts.adventure_name,
+                long_text_font_size: Some(fonts.long_adventure_name),
+                letter_spacing: 1.5,
+                wrap_width: 372,
+                ..Default::default()
+            },
+
             cost: TextStyle {
                 y: 55,
                 font: Font::Serif,
@@ -273,11 +321,33 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            adventure_mana_cost: TextStyle {
+                y: 384,
+                font: Font::Serif,
+                font_size: fonts.long_cost,
+                letter_spacing: 1.5,
+                wrap_width: 120,
+                margin_left: 20,
+                ..Default::default()
+            },
+
             type_line: TextStyle {
                 x: 20,
                 y: 310,
                 font: Font::Sanserif,
                 font_size: fonts.type_line,
+                wrap_width: 372,
+                letter_spacing: 1.0,
+                ..Default::default()
+            },
+
+            type_line_end_y: 20,
+
+            adventure_type_line: TextStyle {
+                x: 20,
+                y: 310,
+                font: Font::Sanserif,
+                font_size: fonts.adventure_type_line,
                 wrap_width: 372,
                 letter_spacing: 1.0,
                 ..Default::default()
@@ -293,6 +363,27 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            adventure_oracle_text_main_face: TextStyle {
+                x: 224,
+                y: 344,
+                font: Font::Sanserif,
+                font_size: fonts.rules,
+                long_text_font_size: Some(fonts.small_rules),
+                letter_spacing: 1.0,
+                wrap_width: 180,
+                ..Default::default()
+            },
+
+            adventure_oracle_text_alt_face: TextStyle {
+                x: 20,
+                y: 404,
+                font: Font::Sanserif,
+                font_size: fonts.rules,
+                letter_spacing: 1.0,
+                wrap_width: 186,
+                ..Default::default()
+            },
+
             flavor: TextStyle {
                 x: 20,
                 y: 0,
@@ -302,22 +393,31 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            set_icon: SvgLayout {
+                x: 36,
+                y: 508,
+                width: 40,
+                height: 40,
+            },
+
             set_code: TextStyle {
                 x: 30,
                 y: 566,
                 font: Font::Sanserif,
                 font_size: fonts.set_code,
                 wrap_width: 372,
+                letter_spacing: 2.0,
                 ..Default::default()
             },
 
             artist: TextStyle {
-                x: 140,
+                x: 120,
                 y: 566,
                 font: Font::Sanserif,
                 font_size: fonts.artist,
-                wrap_width: 372,
-                letter_spacing: 1.0,
+                long_text_font_size: Some(fonts.artist_small),
+                wrap_width: 200,
+                letter_spacing: 1.5,
                 ..Default::default()
             },
 

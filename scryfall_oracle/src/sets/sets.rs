@@ -168,7 +168,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_scryfall_sets_contains_commander() {
-        let client = ScryfallClient::new().expect("failed to create Scryfall client");
+        let client = ScryfallClient::new(None).expect("failed to create Scryfall client");
 
         let sets = ScryfallSets::new(&client)
             .await
@@ -183,7 +183,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_from_id() {
-        let client = ScryfallClient::new().unwrap();
+        let client = ScryfallClient::new(None).unwrap();
 
         let set = ScryfallSet::from_id("2ec77b94-6d47-4891-a480-5d0b4e5c9372", &client)
             .await
@@ -195,7 +195,7 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn test_from_code() {
-        let client = ScryfallClient::new().unwrap();
+        let client = ScryfallClient::new(None).unwrap();
 
         let set = ScryfallSet::from_code("neo", &client).await.unwrap();
 

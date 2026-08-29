@@ -1,4 +1,5 @@
 use crate::{
+    config::{AppConfig, load_config},
     game_manager::GameManager,
     scss::compile_scss,
     site_console::{ConsoleMessage, SiteConsole},
@@ -14,7 +15,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
-use oracle_escpos::{test_img_print, test_network_receipt_print};
+use oracle_escpos::{OraclePrinter, test_img_print, test_mdfc_img_print};
 use rand::RngExt;
 use scryfall_oracle::{
     ScryfallCard,
@@ -27,11 +28,12 @@ use scryfall_oracle::{
 };
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use serde::Deserialize;
-use std::{path::PathBuf, time::Duration};
+use std::{net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use tracing_subscriber::EnvFilter;
+pub mod config;
 pub(crate) mod database;
 pub(crate) mod game_manager;
 pub(crate) mod scss;
@@ -82,8 +84,9 @@ impl IntoResponse for AppError {
 
 #[derive(Clone)]
 struct AppState {
-    _scryfall_app_name: String,
+    config: AppConfig,
     momir_card: Option<ScryfallCard>,
+    printer: Option<OraclePrinter>,
     db: DatabaseConnection,
     game_manager: GameManager,
     console: SiteConsole,
@@ -95,15 +98,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Init Logging
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug,oracle_escpos=debug,escpos=info")
+            EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug,oracle_escpos=debug")
         }))
         .init();
+
+    // Load config
+    let config = load_config()?;
+    info!(config = ?config, "Config loaded");
 
     // Compile SCSS styles
     debug!("Compiling scss styles");
     compile_scss()?;
 
     // Connect to database
+    // TODO move the path for this into Config
     let mut opt = ConnectOptions::new("sqlite://momir.db?mode=rwc");
     opt.sqlx_logging(true)
         .sqlx_logging_level(log::LevelFilter::Debug)
@@ -121,13 +129,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check database connection
     check_database(&db).await;
 
-    let scryfall = ScryfallClient::new()?;
+    let user_agent = config.server.scryfall_user_agent.as_ref();
+    let scryfall = ScryfallClient::new(Some(user_agent))?;
 
     let sets = ScryfallSets::new(&scryfall).await?;
     debug!(num_sets = sets.len(), "Fetched Sets from Scryfall");
 
     let cache_path = PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
     let oracle = OracleCards::new(&scryfall, Some(&cache_path), Some(sets)).await?;
+
+    let printer = OraclePrinter::new(config.printer.host.clone(), config.printer.port);
+
+    let printer = if printer.check_connection().await {
+        debug!(
+            printer_host = config.printer.host,
+            printer_port = config.printer.port,
+            "Printer connected"
+        );
+        Some(printer)
+    } else {
+        warn!("Printer is not connected");
+        None
+    };
 
     if let Some(cards) = oracle.cards.as_ref() {
         debug!(
@@ -151,7 +174,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ScryfallCard::by_id(&scryfall, MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID).await?;
 
     let shared_state = AppState {
-        _scryfall_app_name: "momir_basic_rs/v0.1".to_string(),
+        config,
+        printer: printer,
         momir_card: Some(momir_avatar.clone()),
         db,
         game_manager: GameManager::new(),
@@ -159,17 +183,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         oracle,
     };
 
+    let addr = format!(
+        "{}:{}",
+        shared_state.config.server.host, shared_state.config.server.port
+    )
+    .parse::<SocketAddr>()?;
+
     let app = Router::new()
         .route("/", get(index))
         .route("/games", get(games_handler))
         .route("/card-by-cmc", get(card_by_cmc))
-        .route("/test/print", get(test_print_handler))
         .route("/test/imgprint", get(test_img_print_handler))
+        .route("/test/mdfcprint", get(test_mdfc_img_print_handler))
         .route("/ws/messages/{game_id}", get(websocket))
         .nest_service("/static", ServeDir::new("momir_rs/static"))
         .with_state(shared_state);
 
-    let listener = TcpListener::bind("0.0.0.0:8080").await?;
+    let listener = TcpListener::bind(addr).await?;
 
     let addr = listener.local_addr()?;
     info!(%addr, "Server startup complete");
@@ -221,12 +251,12 @@ async fn test_img_print_handler(
     Ok((StatusCode::OK, "Testing IMG for printer...".into()))
 }
 
-async fn test_print_handler(
-    State(state): State<AppState>,
+async fn test_mdfc_img_print_handler(
+    State(_state): State<AppState>,
 ) -> Result<(StatusCode, String), AppError> {
-    // TODO Figure out the flow for printing
-    let _ = test_network_receipt_print();
-    Ok((StatusCode::OK, "Testing printer...".into()))
+    test_mdfc_img_print()?;
+
+    Ok((StatusCode::OK, "Testing IMG for printer...".into()))
 }
 
 #[derive(Deserialize)]
@@ -247,7 +277,11 @@ struct CardByCMCParams {
     unset_filter: bool,
 }
 
-async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<AppState>) {
+#[axum::debug_handler]
+async fn card_by_cmc(
+    Query(params): Query<CardByCMCParams>,
+    State(state): State<AppState>,
+) -> Result<(), AppError> {
     let filter_checks = [
         (OracleFilter::UnknownEvent, params.unknown_event_filter),
         (OracleFilter::Modern, params.modern_filter),
@@ -278,9 +312,17 @@ async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<
                 "Momir generated a card"
             );
 
+            // TODO Enable printing
+            // if let Some(printer) = &state.printer {
+            //     printer
+            //         .print_oracle_scryfall_card(&card)
+            //         .await
+            //         .map_err(|e| AppError::Internal(e.to_string()))?;
+            // }
+
             ConsoleMessage::Card {
                 sender: "Momir".to_string(),
-                card: card.clone(),
+                card: card,
             }
         }
 
@@ -291,6 +333,7 @@ async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<
     };
 
     state.console.send(&params.game_id, message);
+    Ok(())
 }
 
 async fn websocket(

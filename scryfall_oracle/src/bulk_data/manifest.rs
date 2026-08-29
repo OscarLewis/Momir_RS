@@ -24,7 +24,7 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_bulk_data() {
-        let client = ScryfallClient::new().expect("failed to create Scryfall client");
+        let client = ScryfallClient::new(None).expect("failed to create Scryfall client");
 
         let bulk_data = BulkData::list(&client)
             .await

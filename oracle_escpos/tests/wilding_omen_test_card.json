@@ -1,0 +1,159 @@
+{
+  "object": "card",
+  "id": "d8b43b00-f4d1-436c-bf3f-6d414cd4ce38",
+  "oracle_id": "7cee6d43-5dec-4989-85ec-c635ec783ec7",
+  "multiverse_ids": [
+    693637
+  ],
+  "mtgo_id": 139271,
+  "arena_id": 95679,
+  "tcgplayer_id": 624250,
+  "cardmarket_id": 818182,
+  "name": "Sagu Wildling // Roost Seek",
+  "lang": "en",
+  "released_at": "2025-04-11",
+  "uri": "https://api.scryfall.com/cards/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38",
+  "scryfall_uri": "https://scryfall.com/card/tdm/157/sagu-wildling-roost-seek?utm_source=api",
+  "layout": "adventure",
+  "highres_image": false,
+  "image_status": "lowres",
+  "image_updated_at": "2026-07-13T01:48:54Z",
+  "image_uris": {
+    "small": "https://cards.scryfall.io/small/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.jpg?1783907334",
+    "normal": "https://cards.scryfall.io/normal/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.jpg?1783907334",
+    "large": "https://cards.scryfall.io/large/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.jpg?1783907334",
+    "png": "https://cards.scryfall.io/png/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.png?1783907334",
+    "art_crop": "https://cards.scryfall.io/art_crop/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.jpg?1783907334",
+    "border_crop": "https://cards.scryfall.io/border_crop/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.jpg?1783907334",
+    "thumb": "https://cards.scryfall.io/thumb/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.webp?1783907334",
+    "grid": "https://cards.scryfall.io/grid/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.webp?1783907334",
+    "display": "https://cards.scryfall.io/display/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.webp?1783907334",
+    "art": "https://cards.scryfall.io/art/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.webp?1783907334",
+    "crop": "https://cards.scryfall.io/crop/front/d/8/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38.webp?1783907334"
+  },
+  "mana_cost": "{4}{G} // {G}",
+  "cmc": 5.0,
+  "type_line": "Creature — Dragon // Sorcery — Omen",
+  "power": "3",
+  "toughness": "3",
+  "colors": [
+    "G"
+  ],
+  "color_identity": [
+    "G"
+  ],
+  "keywords": [
+    "Flying"
+  ],
+  "card_faces": [
+    {
+      "object": "card_face",
+      "name": "Sagu Wildling",
+      "mana_cost": "{4}{G}",
+      "type_line": "Creature — Dragon",
+      "oracle_text": "Flying\nWhen this creature enters, you gain 3 life.",
+      "power": "3",
+      "toughness": "3",
+      "artist": "Gaboleps",
+      "artist_id": "0c37cdfe-5651-4ae6-a3c8-e7153509f970",
+      "illustration_id": "d75df6f1-8b37-4398-a158-16013663db58"
+    },
+    {
+      "object": "card_face",
+      "name": "Roost Seek",
+      "mana_cost": "{G}",
+      "type_line": "Sorcery — Omen",
+      "oracle_text": "Search your library for a basic land card, reveal it, put it into your hand, then shuffle. (Also shuffle this card.)",
+      "artist": "Gaboleps",
+      "artist_id": "0c37cdfe-5651-4ae6-a3c8-e7153509f970"
+    }
+  ],
+  "legalities": {
+    "standard": "legal",
+    "future": "legal",
+    "historic": "legal",
+    "timeless": "legal",
+    "gladiator": "legal",
+    "pioneer": "legal",
+    "modern": "legal",
+    "legacy": "legal",
+    "pauper": "legal",
+    "vintage": "legal",
+    "penny": "not_legal",
+    "commander": "legal",
+    "oathbreaker": "legal",
+    "standardbrawl": "legal",
+    "brawl": "legal",
+    "competitivebrawl": "legal",
+    "alchemy": "legal",
+    "paupercommander": "legal",
+    "duel": "legal",
+    "oldschool": "not_legal",
+    "premodern": "not_legal",
+    "predh": "not_legal",
+    "tlr": "not_legal"
+  },
+  "games": [
+    "paper",
+    "arena",
+    "mtgo"
+  ],
+  "reserved": false,
+  "game_changer": false,
+  "foil": true,
+  "nonfoil": true,
+  "finishes": [
+    "nonfoil",
+    "foil"
+  ],
+  "oversized": false,
+  "promo": false,
+  "reprint": false,
+  "variation": false,
+  "set_id": "1361ca81-1304-49a8-b2e6-e76a4aa4a8c3",
+  "set": "tdm",
+  "set_name": "Tarkir: Dragonstorm",
+  "set_type": "expansion",
+  "set_uri": "https://api.scryfall.com/sets/1361ca81-1304-49a8-b2e6-e76a4aa4a8c3",
+  "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Atdm&unique=prints",
+  "set_icon_svg_uri": "https://svgs.scryfall.io/sets/tdm.svg?1787544000",
+  "scryfall_set_uri": "https://scryfall.com/sets/tdm?utm_source=api",
+  "rulings_uri": "https://api.scryfall.com/cards/d8b43b00-f4d1-436c-bf3f-6d414cd4ce38/rulings",
+  "prints_search_uri": "https://api.scryfall.com/cards/search?order=released&q=oracleid%3A7cee6d43-5dec-4989-85ec-c635ec783ec7&unique=prints",
+  "collector_number": "157",
+  "digital": false,
+  "rarity": "common",
+  "card_back_id": "0aeebaf5-8c7d-4636-9e82-8c27447861f7",
+  "artist": "Gaboleps",
+  "artist_ids": [
+    "0c37cdfe-5651-4ae6-a3c8-e7153509f970"
+  ],
+  "illustration_id": "d75df6f1-8b37-4398-a158-16013663db58",
+  "border_color": "black",
+  "frame": "2015",
+  "full_art": false,
+  "textless": false,
+  "booster": true,
+  "story_spotlight": false,
+  "edhrec_rank": 6649,
+  "penny_rank": 2627,
+  "prices": {
+    "usd": "0.26",
+    "usd_foil": "0.31",
+    "usd_etched": null,
+    "eur": "0.21",
+    "eur_foil": "0.32",
+    "tix": "0.03"
+  },
+  "related_uris": {
+    "gatherer": "https://gatherer.wizards.com/Pages/Card/Details.aspx?multiverseid=693637&printed=false",
+    "tcgplayer_infinite_articles": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Farticles&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Farticles%3FproductLineName%3Dmagic%26q%3DSagu%2BWildling%2B%252F%252F%2BRoost%2BSeek",
+    "tcgplayer_infinite_decks": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&trafcat=tcgplayer.com%2Fsearch%2Fdecks&u=https%3A%2F%2Fwww.tcgplayer.com%2Fsearch%2Fdecks%3FproductLineName%3Dmagic%26q%3DSagu%2BWildling%2B%252F%252F%2BRoost%2BSeek",
+    "edhrec": "https://edhrec.com/route/?cc=Sagu+Wildling"
+  },
+  "purchase_uris": {
+    "tcgplayer": "https://partner.tcgplayer.com/c/4931599/1830156/21018?subId1=api&u=https%3A%2F%2Fwww.tcgplayer.com%2Fproduct%2F624250%3Fpage%3D1",
+    "cardmarket": "https://www.cardmarket.com/en/Magic/Products?idProduct=818182&referrer=scryfall&utm_campaign=card_prices&utm_medium=text&utm_source=scryfall",
+    "cardhoarder": "https://www.cardhoarder.com/cards/139271?affiliate_id=scryfall&ref=card-profile&utm_campaign=affiliate&utm_medium=card&utm_source=scryfall"
+  }
+}

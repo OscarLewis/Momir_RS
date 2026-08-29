@@ -15,7 +15,7 @@ pub struct CoreCardFields {
     pub released_at: Option<String>,
     pub uri: String,
     pub scryfall_uri: String,
-    pub layout: String,
+    pub layout: CardLayout,
 
     // Gameplay
     pub mana_cost: Option<String>,
@@ -141,6 +141,7 @@ pub struct ImageUris {
     pub png: Option<String>,
     pub art_crop: Option<String>,
     pub border_crop: Option<String>,
+    pub art: Option<String>,
 }
 
 impl ImageUris {
@@ -165,6 +166,21 @@ impl ImageUris {
     ) -> Result<Vec<u8>, ScryfallApiError> {
         let uri = self
             .art_crop
+            .as_deref()
+            .ok_or(ScryfallApiError::MissingImageUri)?;
+
+        Ok(client
+            .get(uri, None)
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?
+            .to_vec())
+    }
+
+    pub async fn fetch_art(&self, client: &ScryfallClient) -> Result<Vec<u8>, ScryfallApiError> {
+        let uri = self
+            .art
             .as_deref()
             .ok_or(ScryfallApiError::MissingImageUri)?;
 
@@ -220,6 +236,122 @@ pub struct PreviewInfo {
     pub source: Option<String>,
     pub source_uri: Option<String>,
     pub previewed_at: Option<String>,
+}
+
+// Layout of the Card
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum CardLayout {
+    #[serde(rename = "normal")]
+    Normal,
+
+    #[serde(rename = "split")]
+    Split,
+
+    #[serde(rename = "flip")]
+    Flip,
+
+    #[serde(rename = "transform")]
+    Transform,
+
+    #[serde(rename = "modal_dfc")]
+    ModalDFC,
+
+    #[serde(rename = "meld")]
+    Meld,
+
+    #[serde(rename = "leveler")]
+    Leveler,
+
+    #[serde(rename = "class")]
+    Class,
+
+    #[serde(rename = "case")]
+    Case,
+
+    #[serde(rename = "saga")]
+    Saga,
+
+    #[serde(rename = "adventure")]
+    Adventure,
+
+    #[serde(rename = "mutate")]
+    Mutate,
+
+    #[serde(rename = "prototype")]
+    Prototype,
+
+    #[serde(rename = "battle")]
+    Battle,
+
+    #[serde(rename = "planar")]
+    Planar,
+
+    #[serde(rename = "scheme")]
+    Scheme,
+
+    #[serde(rename = "vanguard")]
+    Vanguard,
+
+    #[serde(rename = "token")]
+    Token,
+
+    #[serde(rename = "double_faced_token")]
+    DoubleFacedToken,
+
+    #[serde(rename = "emblem")]
+    Emblem,
+
+    #[serde(rename = "augment")]
+    Augment,
+
+    #[serde(rename = "host")]
+    Host,
+
+    #[serde(rename = "art_series")]
+    ArtSeries,
+
+    #[serde(rename = "reversible_card")]
+    ReversibleCard,
+
+    #[serde(rename = "front_card")]
+    FrontCard,
+
+    #[serde(rename = "prepare")]
+    Prepare,
+}
+impl std::fmt::Display for CardLayout {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let layout = match self {
+            Self::Normal => "normal",
+            Self::Split => "split",
+            Self::Flip => "flip",
+            Self::Transform => "transform",
+            Self::ModalDFC => "modal_dfc",
+            Self::Meld => "meld",
+            Self::Leveler => "leveler",
+            Self::Class => "class",
+            Self::Case => "case",
+            Self::Saga => "saga",
+            Self::Adventure => "adventure",
+            Self::Prepare => "prepare",
+            Self::Mutate => "mutate",
+            Self::Prototype => "prototype",
+            Self::Battle => "battle",
+            Self::Planar => "planar",
+            Self::Scheme => "scheme",
+            Self::Vanguard => "vanguard",
+            Self::Token => "token",
+            Self::DoubleFacedToken => "double_faced_token",
+            Self::Emblem => "emblem",
+            Self::Augment => "augment",
+            Self::Host => "host",
+            Self::ArtSeries => "art_series",
+            Self::ReversibleCard => "reversible_card",
+            Self::FrontCard => "front_card",
+        };
+
+        f.write_str(layout)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash)]

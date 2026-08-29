@@ -4,7 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-escpos = { version = "0.19.1", features = ["full"] }
 image = "0.25.10"
 tempfile = "3.27.0"
 tracing = "0.1.44"
@@ -18,3 +17,5 @@ tiny-skia = "0.12.0"
 tokio = "1.53.1"
 test-log = "0.2.21"
 dithr = { version = "0.3.0", features = ["image"] }
+async-trait = "0.1.92"
+config = "0.15.25"
