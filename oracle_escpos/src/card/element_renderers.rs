@@ -1,6 +1,6 @@
 use crate::{
     art::CardArtPipeline,
-    layout::{BorderStyle, Layout},
+    layout::{Layout, NameStyle, WrapStyle},
     render::{draw_border, draw_svg, draw_text, draw_text_around_border, text_width},
 };
 use async_trait::async_trait;
@@ -83,8 +83,7 @@ impl ElementRenderer for NameRenderer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let is_funny = card.core.set_type == "funny";
         let name = face.map(|f| &f.name).unwrap_or_else(|| &card.core.name);
-
-        let border_style = {
+        let (name_style, wrap_style) = {
             let name_style = &layout.name;
             let name_font_data = layout.font_data(name_style.font);
             let name_width = layout.text_width(name, name_style);
@@ -95,28 +94,28 @@ impl ElementRenderer for NameRenderer {
                     let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
 
                     if total_text_len > layout.border_path.bottom_threshold() && is_funny {
-                        BorderStyle::FullWrap
+                        (NameStyle::LongName, WrapStyle::FullWrap)
                     } else if total_text_len > standard_wrap_limit && is_funny {
-                        BorderStyle::SemiWrap
+                        (NameStyle::LongName, WrapStyle::SemiWrap)
                     } else {
-                        BorderStyle::LongName
+                        (NameStyle::LongName, WrapStyle::Standard)
                     }
                 } else {
-                    BorderStyle::Standard
+                    (NameStyle::Standard, WrapStyle::Standard)
                 }
             } else {
-                BorderStyle::Standard
+                (NameStyle::Standard, WrapStyle::Standard)
             }
         };
 
-        layout.border_style = border_style;
-        border_style.apply_layout_adjustments(layout);
+        name_style.apply_layout_adjustments(layout);
+        wrap_style.apply_layout_adjustments(layout);
 
         let name_style = &layout.name;
         let name_font_data = layout.font_data(name_style.font);
 
-        match layout.border_style {
-            BorderStyle::FullWrap | BorderStyle::SemiWrap => {
+        match wrap_style {
+            WrapStyle::FullWrap | WrapStyle::SemiWrap => {
                 draw_text_around_border(
                     canvas,
                     name,
@@ -126,7 +125,7 @@ impl ElementRenderer for NameRenderer {
                     &layout.border_path,
                 );
             }
-            BorderStyle::Standard | BorderStyle::LongName => {
+            WrapStyle::Standard => {
                 draw_text(
                     canvas,
                     name,

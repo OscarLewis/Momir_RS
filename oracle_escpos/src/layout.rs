@@ -50,6 +50,7 @@ pub struct FontSizes {
     pub cost: f32,
     pub long_cost: f32,
     pub artist: f32,
+    pub artist_small: f32,
 }
 
 impl Default for FontSizes {
@@ -60,12 +61,13 @@ impl Default for FontSizes {
             type_line: 18.0,
             small_rules: 15.0,
             rules: 16.0,
-            pow_tough: 28.0,
+            pow_tough: 30.0,
             flavor: 17.0,
-            set_code: 14.0,
-            artist: 14.0,
-            cost: 16.0,
-            long_cost: 12.0,
+            set_code: 16.0,
+            artist: 16.0,
+            artist_small: 14.0,
+            cost: 18.0,
+            long_cost: 14.0,
         }
     }
 }
@@ -140,6 +142,7 @@ impl Default for BorderPathLayout {
         }
     }
 }
+
 impl BorderPathLayout {
     /// Distance along perimeter where text reaches the bottom edge.
     pub fn bottom_threshold(&self) -> f32 {
@@ -152,51 +155,74 @@ impl BorderPathLayout {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BorderStyle {
+pub enum WrapStyle {
     Standard,
-    FullWrap,
     SemiWrap,
-    LongName,
+    FullWrap,
 }
 
-impl BorderStyle {
-    /// Applies layout margin and dimension shifts based on the border style.
-    /// These automatically override the default Standard style.
-    pub fn apply_layout_adjustments(&self, layout: &mut Layout) {
+impl WrapStyle {
+    /// Applies layout adjustments associated with the wrapping style.
+    pub fn apply_layout_adjustments(self, layout: &mut Layout) {
         let fonts = FontSizes::default();
+
         match self {
-            BorderStyle::FullWrap => {
+            Self::Standard => {
+                // Default layout stays intact.
+            }
+
+            Self::SemiWrap => {
+                layout.type_line.x = 35;
+                layout.rules.x = 35;
+                layout.cost.margin_right = 35;
+                layout.rules.wrap_width = 350;
+            }
+
+            Self::FullWrap => {
                 layout.type_line.x = 35;
                 layout.rules.x = 35;
                 layout.rules.wrap_width = 350;
                 layout.rules.font_size = fonts.small_rules;
                 layout.rules.letter_spacing = 1.5;
+
                 layout.set_icon.x = 43;
                 layout.set_icon.y = 468;
+
                 layout.set_code.x = 40;
                 layout.set_code.y = 530;
                 layout.set_code.letter_spacing = 1.0;
+
                 layout.artist.x = 130;
                 layout.artist.y = 530;
                 layout.artist.letter_spacing = 1.5;
+                layout.artist.font_size = fonts.artist_small;
+
                 layout.pow_tough_style.x = 330;
                 layout.pow_tough_style.y = 530;
-                layout.name.font_size = fonts.long_name;
-                layout.name.letter_spacing = 0.5;
+
                 layout.cost.margin_right = 35;
             }
-            BorderStyle::Standard => {
-                // Default margins stay intact
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NameStyle {
+    Standard,
+    LongName,
+}
+
+impl NameStyle {
+    /// Applies layout adjustments associated with the name style.
+    pub fn apply_layout_adjustments(self, layout: &mut Layout) {
+        let fonts = FontSizes::default();
+
+        match self {
+            Self::Standard => {
+                // Default name layout stays intact.
             }
-            BorderStyle::SemiWrap => {
-                layout.type_line.x = 35;
-                layout.name.font_size = fonts.long_name;
-                layout.name.letter_spacing = 1.0;
-                layout.rules.x = 35;
-                layout.cost.margin_right = 35;
-                layout.rules.wrap_width = 350;
-            }
-            BorderStyle::LongName => {
+
+            Self::LongName => {
                 layout.name.font_size = fonts.long_name;
                 layout.name.letter_spacing = 1.0;
             }
@@ -208,7 +234,8 @@ impl BorderStyle {
 pub struct Layout {
     pub width: u32,
     pub height: u32,
-    pub border_style: BorderStyle,
+    pub wrap_style: WrapStyle,
+    pub name_style: NameStyle,
     pub font_sizes: FontSizes,
     pub sanserif_font: Vec<u8>,
     pub serif_font: Vec<u8>,
@@ -233,7 +260,10 @@ impl Default for Layout {
         Self {
             width: 416,
             height: 576,
-            border_style: BorderStyle::Standard,
+
+            wrap_style: WrapStyle::Standard,
+            name_style: NameStyle::Standard,
+
             border_path: BorderPathLayout::default(),
 
             serif_font: Vec::new(),
@@ -278,6 +308,7 @@ impl Default for Layout {
                 letter_spacing: 1.0,
                 ..Default::default()
             },
+
             type_line_end_y: 20,
 
             rules: TextStyle {
@@ -301,9 +332,9 @@ impl Default for Layout {
 
             set_icon: SvgLayout {
                 x: 36,
-                y: 496,
-                width: 50,
-                height: 50,
+                y: 508,
+                width: 40,
+                height: 40,
             },
 
             set_code: TextStyle {
@@ -312,12 +343,12 @@ impl Default for Layout {
                 font: Font::Sanserif,
                 font_size: fonts.set_code,
                 wrap_width: 372,
-                letter_spacing: 1.5,
+                letter_spacing: 2.0,
                 ..Default::default()
             },
 
             artist: TextStyle {
-                x: 140,
+                x: 125,
                 y: 566,
                 font: Font::Sanserif,
                 font_size: fonts.artist,

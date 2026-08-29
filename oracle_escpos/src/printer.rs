@@ -10,28 +10,61 @@ use image::ImageReader;
 use tempfile::NamedTempFile;
 use tracing::debug;
 
-pub fn test_network_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
-    let host = "192.168.2.47";
-    let host_port = 9100;
-    let driver = NetworkDriver::open(host, host_port, None)?;
-    let mut printer = Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()));
+const PRINTER_HOST: &str = "192.168.2.47";
+const PRINTER_PORT: u16 = 9100;
 
-    let image = ImageReader::open(
-        "/home/oscar/Documents/Projects/momir_rs_workspace/momir_rs/static/images/momir_small.png",
-    )?
-    .decode()?
-    .rotate270();
+const MOMIR_IMAGE: &str =
+    "/home/oscar/Documents/Projects/momir_rs_workspace/momir_rs/static/images/momir_small.png";
 
+const CARD_IMAGE: &str =
+    "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/card.png";
+
+const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png";
+
+fn printer() -> Result<Printer<NetworkDriver>, Box<dyn std::error::Error>> {
+    let driver = NetworkDriver::open(PRINTER_HOST, PRINTER_PORT, None)?;
+
+    Ok(Printer::new(
+        driver,
+        Protocol::default(),
+        Some(PrinterOptions::default()),
+    ))
+}
+
+fn load_image(path: &str) -> Result<image::DynamicImage, Box<dyn std::error::Error>> {
+    Ok(ImageReader::open(path)?.decode()?.rotate270())
+}
+
+fn save_temp_image(
+    image: &image::DynamicImage,
+) -> Result<NamedTempFile, Box<dyn std::error::Error>> {
     let temp_file = NamedTempFile::with_suffix(".png")?;
-    image.to_luma8().save(temp_file.path())?;
+    image.save(temp_file.path())?;
+    Ok(temp_file)
+}
 
-    let image_path = temp_file.path().to_str().ok_or("Invalid image path")?;
+fn image_path(file: &NamedTempFile) -> Result<&str, Box<dyn std::error::Error>> {
+    file.path()
+        .to_str()
+        .ok_or_else(|| "Invalid image path".into())
+}
 
-    // TODO
-    // Consider using 'swash' to build text then send to printer as
-    // a rasterized Image instead of trying to get everything composed
-    // as print commands.
-    // https://docs.rs/swash/latest/swash/
+fn log_print_attempt(message: &str) {
+    debug!(addr = PRINTER_HOST, port = PRINTER_PORT, "{message}");
+}
+
+pub fn test_network_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
+    let mut printer = printer()?;
+    let image = load_image(MOMIR_IMAGE)?;
+
+    let temp_file = {
+        let image = image.to_luma8();
+        let temp_file = NamedTempFile::with_suffix(".png")?;
+        image.save(temp_file.path())?;
+        temp_file
+    };
+
+    let image_path = image_path(&temp_file)?;
 
     printer
         .debug_mode(Some(DebugMode::Hex))
@@ -45,38 +78,16 @@ pub fn test_network_receipt_print() -> Result<(), Box<dyn std::error::Error>> {
         .feed()?
         .print_cut()?;
 
-    debug!(
-        addr = host,
-        port = host_port,
-        "Attempting to print test page via network"
-    );
+    log_print_attempt("Attempting to print test page via network");
 
     Ok(())
 }
 
 pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
-    let host = "192.168.2.47";
-    let host_port = 9100;
-    let driver = NetworkDriver::open(host, host_port, None)?;
-    let mut printer = Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()));
-
-    let image = ImageReader::open(
-        "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/card.png",
-    )?
-    .decode()?
-    .rotate270();
-
-    let temp_file = NamedTempFile::with_suffix(".png")?;
-    // image.to_luma8().save(temp_file.path())?;
-    image.save(temp_file.path())?;
-
-    let image_path = temp_file.path().to_str().ok_or("Invalid image path")?;
-
-    // TODO
-    // Consider using 'swash' to build text then send to printer as
-    // a rasterized Image instead of trying to get everything composed
-    // as print commands.
-    // https://docs.rs/swash/latest/swash/
+    let mut printer = printer()?;
+    let image = load_image(CARD_IMAGE)?;
+    let temp_file = save_temp_image(&image)?;
+    let image_path = image_path(&temp_file)?;
 
     printer
         .debug_mode(Some(DebugMode::Hex))
@@ -89,48 +100,32 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
         .feed()?
         .print_cut()?;
 
-    debug!(
-        addr = host,
-        port = host_port,
-        "Attempting to print test page via network"
-    );
+    log_print_attempt("Attempting to print test page via network");
 
     Ok(())
 }
+
 pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
-    // let host = "0.0.0.0";
-
-    let host = "192.168.2.47";
-    let host_port = 9100;
-    let driver = NetworkDriver::open(host, host_port, None)?;
-    let mut printer = Printer::new(driver, Protocol::default(), Some(PrinterOptions::default()));
-
-    let image = ImageReader::open(
-    "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png",
-)?
-.decode()?
-.rotate270();
+    let mut printer = printer()?;
+    let image = load_image(MDFC_IMAGE)?;
 
     let width = image.width();
-    let height = image.height();
-    let half_width = width / 2;
+    let half_height = image.height() / 2;
 
-    let half_height = height / 2;
     let front = image.crop_imm(0, 0, width, half_height);
     let back = image.crop_imm(0, half_height, width, half_height);
 
-    let temp_left = NamedTempFile::with_suffix(".png")?;
-    let temp_right = NamedTempFile::with_suffix(".png")?;
+    let left_temp = save_temp_image(&front)?;
+    let right_temp = save_temp_image(&back)?;
 
-    let right_debug = PathBuf::from("/home/oscar/Downloads/right.png");
+    let left_path = image_path(&left_temp)?;
+    let right_path = image_path(&right_temp)?;
+
     let left_debug = PathBuf::from("/home/oscar/Downloads/left.png");
-    front.save(left_debug)?;
-    front.save(temp_left.path())?;
-    back.save(temp_right.path())?;
-    back.save(right_debug)?;
+    let right_debug = PathBuf::from("/home/oscar/Downloads/right.png");
 
-    let left_path = temp_left.path().to_str().ok_or("Invalid left path")?;
-    let right_path = temp_right.path().to_str().ok_or("Invalid right path")?;
+    front.save(left_debug)?;
+    back.save(right_debug)?;
 
     printer
         .debug_mode(Some(DebugMode::Hex))
@@ -149,11 +144,7 @@ pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
         .feed()?
         .print_cut()?;
 
-    debug!(
-        addr = host,
-        port = host_port,
-        "Attempting to print MDFC test page via network"
-    );
+    log_print_attempt("Attempting to print MDFC test page via network");
 
     Ok(())
 }

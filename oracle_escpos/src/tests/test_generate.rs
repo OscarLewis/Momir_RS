@@ -2,7 +2,7 @@
 mod tests {
     use crate::card::card_type::CardType;
     use crate::card::image_gen::CardPrint;
-    use scryfall_oracle::OracleScryfallCard;
+    use scryfall_oracle::{CardLayout, OracleScryfallCard};
     use std::{fs, path::PathBuf};
     use test_log::test;
 
@@ -26,10 +26,50 @@ mod tests {
     #[ignore]
     async fn test_spidey() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/miles_morales_test_card.json")?;
-        let card_type = CardType::MDFC(card);
+
+        // Spidey is a MDFC but we want to get that from the data itself
+        let card_type = match card.core.layout {
+            CardLayout::ModalDFC => CardType::MDFC(card),
+            _ => CardType::Regular(card),
+        };
+
         let print = CardPrint::new(&card_type);
         print
             .render(&PathBuf::from("./renders/miles_morales_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_etali() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/etali_test_card.json")?;
+
+        let card_type = match card.core.layout {
+            CardLayout::Transform => CardType::MDFC(card),
+            _ => CardType::Regular(card),
+        };
+
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/etali_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_boom_bust() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/boom_bust_card.json")?;
+
+        let card_type = match card.core.layout {
+            CardLayout::Split => CardType::MDFC(card),
+            _ => CardType::Regular(card),
+        };
+
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/boom_bust_card.png"))
             .await?;
         Ok(())
     }
@@ -66,6 +106,18 @@ mod tests {
         let print = CardPrint::new(&card_type);
         print
             .render(&PathBuf::from("./renders/zeta_mull_drifter_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_kaelin_adventure() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/kaelin_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/kaelin_adventure_card.png"))
             .await?;
         Ok(())
     }
