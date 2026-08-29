@@ -155,10 +155,22 @@ impl<'a> CardRenderer for MDFCCardRenderer<'a> {
         let front_img = render_card_face(self.card, Some(&faces[0]), layout).await?;
         let back_img = render_card_face(self.card, Some(&faces[1]), layout).await?;
 
-        // Composite side-by-side
-        let mut composed = RgbImage::new(front_img.width() * 2, front_img.height());
+        // Composite side-by-side with 20 px white buffer
+        let buffer = 20;
+
+        let mut composed = RgbImage::from_pixel(
+            front_img.width() * 2 + buffer,
+            front_img.height(),
+            Rgb([255, 255, 255]),
+        );
+
         imageops::overlay(&mut composed, &front_img, 0, 0);
-        imageops::overlay(&mut composed, &back_img, front_img.width() as i64, 0);
+        imageops::overlay(
+            &mut composed,
+            &back_img,
+            (front_img.width() + buffer) as i64,
+            0,
+        );
 
         Ok(composed)
     }
