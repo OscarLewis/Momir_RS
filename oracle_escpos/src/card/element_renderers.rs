@@ -46,7 +46,7 @@ impl ElementRenderer for CardArtRenderer {
 
         let card_art = if let Some(image_uris) = image_uris {
             let client = ScryfallClient::new()?;
-            Some(image_uris.fetch_art_crop(&client).await?.to_vec())
+            Some(image_uris.fetch_art(&client).await?.to_vec())
         } else {
             None
         };
@@ -494,7 +494,7 @@ impl ElementRenderer for ArtistRenderer {
             let line_count = wrapped_line_count(
                 &text,
                 font,
-                artist_style.font_size,
+                font_size,
                 artist_style.letter_spacing,
                 artist_style.wrap_width,
             );

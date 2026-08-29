@@ -141,6 +141,7 @@ pub struct ImageUris {
     pub png: Option<String>,
     pub art_crop: Option<String>,
     pub border_crop: Option<String>,
+    pub art: Option<String>,
 }
 
 impl ImageUris {
@@ -165,6 +166,21 @@ impl ImageUris {
     ) -> Result<Vec<u8>, ScryfallApiError> {
         let uri = self
             .art_crop
+            .as_deref()
+            .ok_or(ScryfallApiError::MissingImageUri)?;
+
+        Ok(client
+            .get(uri, None)
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?
+            .to_vec())
+    }
+
+    pub async fn fetch_art(&self, client: &ScryfallClient) -> Result<Vec<u8>, ScryfallApiError> {
+        let uri = self
+            .art
             .as_deref()
             .ok_or(ScryfallApiError::MissingImageUri)?;
 
