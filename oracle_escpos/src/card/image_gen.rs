@@ -225,6 +225,8 @@ impl<'a> CardPrint<'a> {
             CardType::Regular(card) => RegularCardRenderer { card }.render(&layout).await?,
             CardType::MDFC(card) => MDFCCardRenderer { card }.render(&layout).await?,
             CardType::Adventure(card) => AdventureCardRenderer { card }.render(&layout).await?,
+            CardType::Omen(card) => AdventureCardRenderer { card }.render(&layout).await?,
+            CardType::Prepare(card) => AdventureCardRenderer { card }.render(&layout).await?,
         };
 
         image.save(out_path)?;

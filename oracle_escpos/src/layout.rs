@@ -368,6 +368,7 @@ impl Default for Layout {
                 y: 344,
                 font: Font::Sanserif,
                 font_size: fonts.rules,
+                long_text_font_size: Some(fonts.small_rules),
                 letter_spacing: 1.0,
                 wrap_width: 180,
                 ..Default::default()

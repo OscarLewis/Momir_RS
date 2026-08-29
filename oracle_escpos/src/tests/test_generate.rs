@@ -136,6 +136,30 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_bear_prepare() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/bear_prepare_test_card.json")?;
+        let card_type = CardType::Prepare(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/bear_prepare_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_wilding_omen() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/wilding_omen_test_card.json")?;
+        let card_type = CardType::Omen(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/wilding_omen_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_bmf() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/bfm_test_card.json")?;
         let card_type = CardType::Regular(card);

@@ -6,6 +6,8 @@ pub enum CardType {
     Regular(OracleScryfallCard),
     MDFC(OracleScryfallCard),
     Adventure(OracleScryfallCard),
+    Omen(OracleScryfallCard),
+    Prepare(OracleScryfallCard),
 }
 
 pub trait CardRenderer {

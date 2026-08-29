@@ -341,6 +341,22 @@ impl ElementRenderer for OracleAdventureTextRenderer {
 
         let main_face_oracle_style = &layout.adventure_oracle_text_main_face;
         let main_face_font_data = layout.font_data(main_face_oracle_style.font);
+        let main_face_font = FontRef::from_index(main_face_font_data, 0).expect("invalid font");
+        let main_face_line_count = wrapped_line_count(
+            &adventure_text,
+            main_face_font,
+            main_face_oracle_style.font_size,
+            main_face_oracle_style.letter_spacing,
+            main_face_oracle_style.wrap_width,
+        );
+
+        let alt_face_font_size = if main_face_line_count > 5 {
+            main_face_oracle_style
+                .long_text_font_size
+                .unwrap_or(main_face_oracle_style.font_size)
+        } else {
+            main_face_oracle_style.font_size
+        };
 
         let adventure_type_line_style = &layout.adventure_type_line;
         let adventure_type_font_data = layout.font_data(adventure_type_line_style.font);
@@ -349,12 +365,6 @@ impl ElementRenderer for OracleAdventureTextRenderer {
         let alt_face_font_data = layout.font_data(alt_face_oracle_style.font);
 
         let rules_y = main_face_oracle_style.y.max(layout.type_line_end_y);
-
-        debug!(
-            font_size = main_face_oracle_style.font_size,
-            oracle_text_length = oracle_text.len(),
-            "Rendering oracle text"
-        );
 
         draw_vertical_line(canvas, (layout.width / 2) as i32, rules_y, 180, 2);
 
@@ -441,7 +451,7 @@ impl ElementRenderer for OracleAdventureTextRenderer {
             alt_face_oracle_style.x,
             alt_face_oracle_style.y.max(cmc_y),
             alt_face_font_data,
-            alt_face_oracle_style.font_size,
+            alt_face_font_size,
             alt_face_oracle_style.letter_spacing,
             alt_face_oracle_style.wrap_width,
         );
