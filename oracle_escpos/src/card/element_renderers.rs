@@ -3,11 +3,13 @@ use crate::{
     layout::{Layout, NameStyle, WrapStyle},
     render::{
         draw_border, draw_svg, draw_text, draw_text_around_border, draw_vertical_line, text_width,
+        wrapped_line_count,
     },
 };
 use async_trait::async_trait;
 use image::{Rgb, RgbImage, imageops};
 use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
+use swash::FontRef;
 use tracing::{debug, info};
 
 #[async_trait]
@@ -326,6 +328,17 @@ impl ElementRenderer for OracleAdventureTextRenderer {
             .and_then(|face| face.oracle_text.as_deref())
             .unwrap_or_default();
 
+        let adventure_name = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(1))
+            .map(|face| face.name.as_str())
+            .unwrap_or_default();
+
+        let adventure_name_style = &layout.adventure_name;
+        let adventure_name_font_data = layout.font_data(adventure_name_style.font);
+
         let main_face_oracle_style = &layout.adventure_oracle_text_main_face;
         let main_face_font_data = layout.font_data(main_face_oracle_style.font);
 
@@ -343,6 +356,8 @@ impl ElementRenderer for OracleAdventureTextRenderer {
             "Rendering oracle text"
         );
 
+        draw_vertical_line(canvas, (layout.width / 2) as i32, rules_y, 180, 2);
+
         draw_text(
             canvas,
             &oracle_text,
@@ -353,8 +368,6 @@ impl ElementRenderer for OracleAdventureTextRenderer {
             main_face_oracle_style.letter_spacing,
             main_face_oracle_style.wrap_width,
         );
-
-        draw_vertical_line(canvas, (layout.width / 2) as i32, rules_y, 180, 2);
 
         let sub_type_y = draw_text(
             canvas,
@@ -367,32 +380,17 @@ impl ElementRenderer for OracleAdventureTextRenderer {
             adventure_type_line_style.wrap_width,
         );
 
-        draw_text(
+        let name_y = draw_text(
             canvas,
-            adventure_text,
-            alt_face_oracle_style.x,
-            alt_face_oracle_style.y,
-            alt_face_font_data,
-            alt_face_oracle_style.font_size,
-            alt_face_oracle_style.letter_spacing,
-            alt_face_oracle_style.wrap_width,
+            &adventure_name,
+            adventure_name_style.x,
+            sub_type_y,
+            adventure_name_font_data,
+            adventure_name_style.font_size,
+            adventure_name_style.letter_spacing,
+            adventure_name_style.wrap_width,
         );
 
-        Ok(())
-    }
-}
-
-/// Renders Adventure oracle text (both Normal and Adventure)
-pub struct AdventureCostRenderer;
-#[async_trait]
-impl ElementRenderer for AdventureCostRenderer {
-    async fn render(
-        &self,
-        card: &OracleScryfallCard,
-        _face: Option<&CardFace>,
-        canvas: &mut RgbImage,
-        layout: &mut Layout,
-    ) -> Result<(), Box<dyn std::error::Error>> {
         let mana_cost = card
             .core
             .card_faces
@@ -402,7 +400,7 @@ impl ElementRenderer for AdventureCostRenderer {
 
         let mana_cost_style = &layout.adventure_mana_cost;
         let mana_cost_font_data = layout.font_data(mana_cost_style.font);
-
+        let mut cmc_y = 0;
         if let Some(mana_cost) = mana_cost {
             let cost_width = layout.text_width(mana_cost, mana_cost_style);
 
@@ -425,17 +423,28 @@ impl ElementRenderer for AdventureCostRenderer {
                 )
             };
 
-            draw_text(
+            cmc_y = draw_text(
                 canvas,
                 mana_cost,
                 cost_x,
-                mana_cost_style.y,
+                name_y,
                 mana_cost_font_data,
                 cost_font_size,
                 mana_cost_style.letter_spacing,
                 mana_cost_style.wrap_width,
             );
         }
+
+        draw_text(
+            canvas,
+            adventure_text,
+            alt_face_oracle_style.x,
+            alt_face_oracle_style.y.max(cmc_y),
+            alt_face_font_data,
+            alt_face_oracle_style.font_size,
+            alt_face_oracle_style.letter_spacing,
+            alt_face_oracle_style.wrap_width,
+        );
 
         Ok(())
     }
@@ -454,15 +463,51 @@ impl ElementRenderer for ArtistRenderer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(artist_name) = &card.print.artist {
             let artist_style = &layout.artist;
-            let artist_font_data = layout.font_data(artist_style.font);
+            let text = format!("Art by {}", artist_name);
+
+            let artist_font_data = layout.font_data(artist_style.font); // Parse the raw &[u8] bytes into a FontRef
+
+            let name_width = layout.text_width(&text, artist_style);
+            let font = FontRef::from_index(artist_font_data, 0).expect("invalid font");
+
+            let (font_size, wrap) = if name_width > artist_style.wrap_width as f32 {
+                (
+                    artist_style
+                        .long_text_font_size
+                        .unwrap_or(artist_style.font_size),
+                    true,
+                )
+            } else {
+                (artist_style.font_size, false)
+            };
+
+            let line_count = wrapped_line_count(
+                &text,
+                font,
+                artist_style.font_size,
+                artist_style.letter_spacing,
+                artist_style.wrap_width,
+            );
+
+            // Calculate additional height from wrapped lines (saturating_sub ensures 1 line adds 0 offset)
+            let extra_lines = (line_count - 1).max(0) as f32;
+
+            let line_height = (artist_style.font_size * 1.2) as i32;
+            let extra_lines = extra_lines as i32;
+
+            let y = if wrap {
+                artist_style.y - extra_lines * line_height
+            } else {
+                artist_style.y
+            };
 
             draw_text(
                 canvas,
-                &format!("Art by {}", &artist_name),
+                &text,
                 artist_style.x,
-                artist_style.y,
+                y,
                 artist_font_data,
-                artist_style.font_size,
+                font_size,
                 artist_style.letter_spacing,
                 artist_style.wrap_width,
             );

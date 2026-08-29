@@ -43,6 +43,8 @@ pub struct FontSizes {
     pub long_name: f32,
     pub type_line: f32,
     pub adventure_type_line: f32,
+    pub adventure_name: f32,
+    pub long_adventure_name: f32,
     pub rules: f32,
     pub small_rules: f32,
     pub flavor: f32,
@@ -70,6 +72,8 @@ impl Default for FontSizes {
             artist_small: 14.0,
             cost: 18.0,
             long_cost: 14.0,
+            adventure_name: 16.0,
+            long_adventure_name: 14.0,
         }
     }
 }
@@ -161,12 +165,6 @@ pub enum WrapStyle {
     Standard,
     SemiWrap,
     FullWrap,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum OracleStyle {
-    Standard,
-    Adventure,
 }
 
 impl WrapStyle {
@@ -263,6 +261,7 @@ pub struct Layout {
     pub border_path: BorderPathLayout,
     pub adventure_oracle_text_alt_face: TextStyle,
     pub adventure_mana_cost: TextStyle,
+    pub adventure_name: TextStyle,
 }
 
 impl Default for Layout {
@@ -301,6 +300,17 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            adventure_name: TextStyle {
+                x: 20,
+                y: 364,
+                font: Font::Serif,
+                font_size: fonts.adventure_name,
+                long_text_font_size: Some(fonts.long_adventure_name),
+                letter_spacing: 1.5,
+                wrap_width: 372,
+                ..Default::default()
+            },
+
             cost: TextStyle {
                 y: 55,
                 font: Font::Serif,
@@ -312,10 +322,10 @@ impl Default for Layout {
             },
 
             adventure_mana_cost: TextStyle {
-                y: 364,
+                y: 384,
                 font: Font::Serif,
                 font_size: fonts.long_cost,
-                letter_spacing: 1.0,
+                letter_spacing: 1.5,
                 wrap_width: 120,
                 margin_left: 20,
                 ..Default::default()
@@ -365,11 +375,11 @@ impl Default for Layout {
 
             adventure_oracle_text_alt_face: TextStyle {
                 x: 20,
-                y: 384,
+                y: 404,
                 font: Font::Sanserif,
                 font_size: fonts.rules,
                 letter_spacing: 1.0,
-                wrap_width: 200,
+                wrap_width: 186,
                 ..Default::default()
             },
 
@@ -400,11 +410,12 @@ impl Default for Layout {
             },
 
             artist: TextStyle {
-                x: 125,
+                x: 120,
                 y: 566,
                 font: Font::Sanserif,
                 font_size: fonts.artist,
-                wrap_width: 372,
+                long_text_font_size: Some(fonts.artist_small),
+                wrap_width: 200,
                 letter_spacing: 1.5,
                 ..Default::default()
             },

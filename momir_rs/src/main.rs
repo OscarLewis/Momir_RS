@@ -14,7 +14,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
-use oracle_escpos::{test_img_print, test_mdfc_img_print, test_network_receipt_print};
+use oracle_escpos::{test_img_print, test_mdfc_img_print};
 use rand::RngExt;
 use scryfall_oracle::{
     ScryfallCard,
@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Init Logging
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug,oracle_escpos=debug,escpos=info")
+            EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug,oracle_escpos=debug")
         }))
         .init();
 
@@ -163,7 +163,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/", get(index))
         .route("/games", get(games_handler))
         .route("/card-by-cmc", get(card_by_cmc))
-        .route("/test/print", get(test_print_handler))
         .route("/test/imgprint", get(test_img_print_handler))
         .route("/test/mdfcprint", get(test_mdfc_img_print_handler))
         .route("/ws/messages/{game_id}", get(websocket))
@@ -228,14 +227,6 @@ async fn test_mdfc_img_print_handler(
     test_mdfc_img_print()?;
 
     Ok((StatusCode::OK, "Testing IMG for printer...".into()))
-}
-
-async fn test_print_handler(
-    State(state): State<AppState>,
-) -> Result<(StatusCode, String), AppError> {
-    // TODO Figure out the flow for printing
-    let _ = test_network_receipt_print();
-    Ok((StatusCode::OK, "Testing printer...".into()))
 }
 
 #[derive(Deserialize)]

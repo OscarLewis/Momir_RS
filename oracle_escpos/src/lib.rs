@@ -8,4 +8,3 @@ pub mod tests;
 // pub use card::image::CardImage;
 pub use printer::test_img_print;
 pub use printer::test_mdfc_img_print;
-pub use printer::test_network_receipt_print;

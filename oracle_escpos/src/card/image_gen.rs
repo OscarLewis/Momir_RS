@@ -2,10 +2,9 @@ use crate::{
     card::{
         card_type::{CardRenderer, CardType},
         element_renderers::{
-            AdventureCostRenderer, ArtistRenderer, BorderRenderer, CardArtRenderer,
-            ElementRenderer, ManaCostRenderer, NameRenderer, OracleAdventureTextRenderer,
-            OracleTextRenderer, PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer,
-            TypeLineRenderer,
+            ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
+            NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer, PowerToughnessRenderer,
+            SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
         },
     },
     layout::Layout,
@@ -99,7 +98,6 @@ async fn render_adventure_card_face(
         (RenderFace::Main, Box::new(ManaCostRenderer)),
         (RenderFace::Main, Box::new(TypeLineRenderer)),
         (RenderFace::Main, Box::new(OracleAdventureTextRenderer)),
-        (RenderFace::None, Box::new(AdventureCostRenderer)),
         (RenderFace::None, Box::new(ArtistRenderer)),
         (RenderFace::None, Box::new(SetIconRenderer)),
         (RenderFace::None, Box::new(SetCodeRenderer)),

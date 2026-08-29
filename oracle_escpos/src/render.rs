@@ -567,3 +567,52 @@ pub(crate) fn draw_horizontal_line(
         }
     }
 }
+
+pub fn wrapped_line_count(
+    text: &str,
+    font: FontRef<'_>,
+    font_size: f32,
+    letter_spacing: f32,
+    max_width: i32,
+) -> i32 {
+    let mut shape_context = ShapeContext::new();
+    let mut line = String::new();
+    let mut line_count = 0;
+
+    for word in text.split_whitespace() {
+        let candidate = if line.is_empty() {
+            word.to_string()
+        } else {
+            format!("{line} {word}")
+        };
+
+        let mut shaper = shape_context
+            .builder(font)
+            .size(font_size)
+            .script(Script::Latin)
+            .build();
+
+        shaper.add_str(&candidate);
+
+        let mut width = 0.0;
+
+        shaper.shape_with(|cluster| {
+            for glyph in cluster.glyphs {
+                width += glyph.advance + letter_spacing;
+            }
+        });
+
+        if width > max_width as f32 && !line.is_empty() {
+            line_count += 1;
+            line = word.to_string();
+        } else {
+            line = candidate;
+        }
+    }
+
+    if !line.is_empty() {
+        line_count += 1;
+    }
+
+    line_count
+}

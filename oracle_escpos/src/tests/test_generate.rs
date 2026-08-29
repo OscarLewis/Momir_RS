@@ -124,6 +124,18 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_beluna_adventure() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/beluna_test_card.json")?;
+        let card_type = CardType::Adventure(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/beluna_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_bmf() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/bfm_test_card.json")?;
         let card_type = CardType::Regular(card);
