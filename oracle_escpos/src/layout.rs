@@ -42,6 +42,7 @@ pub struct FontSizes {
     pub name: f32,
     pub long_name: f32,
     pub type_line: f32,
+    pub adventure_type_line: f32,
     pub rules: f32,
     pub small_rules: f32,
     pub flavor: f32,
@@ -59,6 +60,7 @@ impl Default for FontSizes {
             name: 34.0,
             long_name: 22.0,
             type_line: 18.0,
+            adventure_type_line: 16.0,
             small_rules: 15.0,
             rules: 16.0,
             pow_tough: 30.0,
@@ -161,6 +163,12 @@ pub enum WrapStyle {
     FullWrap,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OracleStyle {
+    Standard,
+    Adventure,
+}
+
 impl WrapStyle {
     /// Applies layout adjustments associated with the wrapping style.
     pub fn apply_layout_adjustments(self, layout: &mut Layout) {
@@ -236,6 +244,8 @@ pub struct Layout {
     pub height: u32,
     pub wrap_style: WrapStyle,
     pub name_style: NameStyle,
+    pub adventure_oracle_text_main_face: TextStyle,
+    pub adventure_type_line: TextStyle,
     pub font_sizes: FontSizes,
     pub sanserif_font: Vec<u8>,
     pub serif_font: Vec<u8>,
@@ -251,6 +261,8 @@ pub struct Layout {
     pub artist: TextStyle,
     pub pow_tough_style: TextStyle,
     pub border_path: BorderPathLayout,
+    pub adventure_oracle_text_alt_face: TextStyle,
+    pub adventure_mana_cost: TextStyle,
 }
 
 impl Default for Layout {
@@ -299,6 +311,16 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            adventure_mana_cost: TextStyle {
+                y: 364,
+                font: Font::Serif,
+                font_size: fonts.long_cost,
+                letter_spacing: 1.0,
+                wrap_width: 120,
+                margin_left: 20,
+                ..Default::default()
+            },
+
             type_line: TextStyle {
                 x: 20,
                 y: 310,
@@ -311,6 +333,16 @@ impl Default for Layout {
 
             type_line_end_y: 20,
 
+            adventure_type_line: TextStyle {
+                x: 20,
+                y: 310,
+                font: Font::Sanserif,
+                font_size: fonts.adventure_type_line,
+                wrap_width: 372,
+                letter_spacing: 1.0,
+                ..Default::default()
+            },
+
             rules: TextStyle {
                 x: 20,
                 y: 344,
@@ -318,6 +350,26 @@ impl Default for Layout {
                 font_size: fonts.rules,
                 letter_spacing: 1.0,
                 wrap_width: 372,
+                ..Default::default()
+            },
+
+            adventure_oracle_text_main_face: TextStyle {
+                x: 224,
+                y: 344,
+                font: Font::Sanserif,
+                font_size: fonts.rules,
+                letter_spacing: 1.0,
+                wrap_width: 180,
+                ..Default::default()
+            },
+
+            adventure_oracle_text_alt_face: TextStyle {
+                x: 20,
+                y: 384,
+                font: Font::Sanserif,
+                font_size: fonts.rules,
+                letter_spacing: 1.0,
+                wrap_width: 200,
                 ..Default::default()
             },
 

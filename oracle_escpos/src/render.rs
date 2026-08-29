@@ -531,3 +531,39 @@ pub fn text_width(text: &str, font_data: &[u8], font_size: f32, letter_spacing: 
     });
     width
 }
+
+pub(crate) fn draw_vertical_line(
+    image: &mut RgbImage,
+    x: i32,
+    y: i32,
+    length: i32,
+    thickness: i32,
+) {
+    let black = Rgb([0, 0, 0]);
+
+    for py in y..y + length {
+        for px in x..x + thickness {
+            if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                image.put_pixel(px as u32, py as u32, black);
+            }
+        }
+    }
+}
+
+pub(crate) fn draw_horizontal_line(
+    image: &mut RgbImage,
+    x: i32,
+    y: i32,
+    length: i32,
+    thickness: i32,
+) {
+    let black = Rgb([0, 0, 0]);
+
+    for py in y..y + thickness {
+        for px in x..x + length {
+            if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                image.put_pixel(px as u32, py as u32, black);
+            }
+        }
+    }
+}

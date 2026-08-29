@@ -1,7 +1,9 @@
 use crate::{
     art::CardArtPipeline,
     layout::{Layout, NameStyle, WrapStyle},
-    render::{draw_border, draw_svg, draw_text, draw_text_around_border, text_width},
+    render::{
+        draw_border, draw_svg, draw_text, draw_text_around_border, draw_vertical_line, text_width,
+    },
 };
 use async_trait::async_trait;
 use image::{Rgb, RgbImage, imageops};
@@ -286,6 +288,154 @@ impl ElementRenderer for OracleTextRenderer {
             rules_style.letter_spacing,
             rules_style.wrap_width,
         );
+
+        Ok(())
+    }
+}
+
+/// Renders Adventure oracle text (both Normal and Adventure)
+pub struct OracleAdventureTextRenderer;
+#[async_trait]
+impl ElementRenderer for OracleAdventureTextRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let oracle_text = face
+            .and_then(|f| f.oracle_text.as_ref())
+            .or_else(|| card.core.oracle_text.as_ref())
+            .cloned()
+            .unwrap_or_default();
+
+        let adventure_type_text = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(1))
+            .and_then(|face| face.type_line.as_deref())
+            .unwrap_or_default();
+
+        let adventure_text = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(1))
+            .and_then(|face| face.oracle_text.as_deref())
+            .unwrap_or_default();
+
+        let main_face_oracle_style = &layout.adventure_oracle_text_main_face;
+        let main_face_font_data = layout.font_data(main_face_oracle_style.font);
+
+        let adventure_type_line_style = &layout.adventure_type_line;
+        let adventure_type_font_data = layout.font_data(adventure_type_line_style.font);
+
+        let alt_face_oracle_style = &layout.adventure_oracle_text_alt_face;
+        let alt_face_font_data = layout.font_data(alt_face_oracle_style.font);
+
+        let rules_y = main_face_oracle_style.y.max(layout.type_line_end_y);
+
+        debug!(
+            font_size = main_face_oracle_style.font_size,
+            oracle_text_length = oracle_text.len(),
+            "Rendering oracle text"
+        );
+
+        draw_text(
+            canvas,
+            &oracle_text,
+            main_face_oracle_style.x,
+            rules_y,
+            main_face_font_data,
+            main_face_oracle_style.font_size,
+            main_face_oracle_style.letter_spacing,
+            main_face_oracle_style.wrap_width,
+        );
+
+        draw_vertical_line(canvas, (layout.width / 2) as i32, rules_y, 180, 2);
+
+        let sub_type_y = draw_text(
+            canvas,
+            adventure_type_text,
+            adventure_type_line_style.x,
+            rules_y,
+            adventure_type_font_data,
+            adventure_type_line_style.font_size,
+            adventure_type_line_style.letter_spacing,
+            adventure_type_line_style.wrap_width,
+        );
+
+        draw_text(
+            canvas,
+            adventure_text,
+            alt_face_oracle_style.x,
+            alt_face_oracle_style.y,
+            alt_face_font_data,
+            alt_face_oracle_style.font_size,
+            alt_face_oracle_style.letter_spacing,
+            alt_face_oracle_style.wrap_width,
+        );
+
+        Ok(())
+    }
+}
+
+/// Renders Adventure oracle text (both Normal and Adventure)
+pub struct AdventureCostRenderer;
+#[async_trait]
+impl ElementRenderer for AdventureCostRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        _face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mana_cost = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(1))
+            .and_then(|face| face.mana_cost.as_deref());
+
+        let mana_cost_style = &layout.adventure_mana_cost;
+        let mana_cost_font_data = layout.font_data(mana_cost_style.font);
+
+        if let Some(mana_cost) = mana_cost {
+            let cost_width = layout.text_width(mana_cost, mana_cost_style);
+
+            let (cost_font_size, cost_x) = if cost_width > mana_cost_style.wrap_width as f32 {
+                debug!(scenario = "long_cost", cost_width, "Using long cost sizing");
+
+                (
+                    layout.font_sizes.long_cost,
+                    mana_cost_style.margin_left as i32,
+                )
+            } else {
+                debug!(
+                    scenario = "normal_cost",
+                    cost_width, "Using normal cost sizing"
+                );
+
+                (
+                    mana_cost_style.font_size,
+                    mana_cost_style.margin_left as i32,
+                )
+            };
+
+            draw_text(
+                canvas,
+                mana_cost,
+                cost_x,
+                mana_cost_style.y,
+                mana_cost_font_data,
+                cost_font_size,
+                mana_cost_style.letter_spacing,
+                mana_cost_style.wrap_width,
+            );
+        }
 
         Ok(())
     }

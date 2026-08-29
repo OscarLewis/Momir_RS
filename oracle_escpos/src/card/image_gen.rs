@@ -1,9 +1,12 @@
 use crate::{
-    card::card_type::{CardRenderer, CardType},
-    card::element_renderers::{
-        ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
-        NameRenderer, OracleTextRenderer, PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer,
-        TypeLineRenderer,
+    card::{
+        card_type::{CardRenderer, CardType},
+        element_renderers::{
+            AdventureCostRenderer, ArtistRenderer, BorderRenderer, CardArtRenderer,
+            ElementRenderer, ManaCostRenderer, NameRenderer, OracleAdventureTextRenderer,
+            OracleTextRenderer, PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer,
+            TypeLineRenderer,
+        },
     },
     layout::Layout,
 };
@@ -62,6 +65,68 @@ async fn render_card_face(
     Ok(card_img)
 }
 
+/// Handles rendering a single card face
+async fn render_adventure_card_face(
+    card: &OracleScryfallCard,
+    main_face: Option<&CardFace>,
+    adventure_face: Option<&CardFace>,
+    layout: &Layout,
+) -> Result<RgbImage, Box<dyn std::error::Error>> {
+    let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
+    let mut layout = layout.clone();
+
+    let scryfall_id = &card.core.id;
+    let card_name = &card.core.name;
+
+    info!(
+        scryfall_id = %scryfall_id,
+        card_name = %card_name,
+        width = layout.width,
+        height = layout.height,
+        layout = %card.core.layout,
+        "Generating card image"
+    );
+
+    enum RenderFace {
+        Main,
+        Adventure,
+        None,
+    }
+
+    let renderers: Vec<(RenderFace, Box<dyn ElementRenderer>)> = vec![
+        (RenderFace::None, Box::new(CardArtRenderer)),
+        (RenderFace::Main, Box::new(NameRenderer)),
+        (RenderFace::Main, Box::new(ManaCostRenderer)),
+        (RenderFace::Main, Box::new(TypeLineRenderer)),
+        (RenderFace::Main, Box::new(OracleAdventureTextRenderer)),
+        (RenderFace::None, Box::new(AdventureCostRenderer)),
+        (RenderFace::None, Box::new(ArtistRenderer)),
+        (RenderFace::None, Box::new(SetIconRenderer)),
+        (RenderFace::None, Box::new(SetCodeRenderer)),
+        (RenderFace::None, Box::new(PowerToughnessRenderer)),
+        (RenderFace::None, Box::new(BorderRenderer)),
+    ];
+
+    for (render_face, renderer) in renderers {
+        let face = match render_face {
+            RenderFace::Main => main_face,
+            RenderFace::Adventure => adventure_face,
+            RenderFace::None => None,
+        };
+
+        renderer
+            .render(card, face, &mut card_img, &mut layout)
+            .await?;
+    }
+
+    info!(
+        scryfall_id = %scryfall_id,
+        "Card image generated successfully"
+    );
+
+    Ok(card_img)
+}
+
 /// Regular card renderer
 pub struct RegularCardRenderer<'a> {
     pub card: &'a OracleScryfallCard,
@@ -80,8 +145,7 @@ pub struct MDFCCardRenderer<'a> {
 
 impl<'a> CardRenderer for MDFCCardRenderer<'a> {
     async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
-        let card = self.card;
-        let faces = card.core.card_faces.as_ref().ok_or("No card faces")?;
+        let faces = self.card.core.card_faces.as_ref().ok_or("No card faces")?;
         // debug!(faces = ?faces, "MDFC Card Faces");
 
         if faces.len() < 2 {
@@ -90,8 +154,8 @@ impl<'a> CardRenderer for MDFCCardRenderer<'a> {
         if faces.len() > 2 {
             return Err("Expected only 2 faces".into());
         }
-        let front_img = render_card_face(card, Some(&faces[0]), layout).await?;
-        let back_img = render_card_face(card, Some(&faces[1]), layout).await?;
+        let front_img = render_card_face(self.card, Some(&faces[0]), layout).await?;
+        let back_img = render_card_face(self.card, Some(&faces[1]), layout).await?;
 
         // Composite side-by-side
         let mut composed = RgbImage::new(front_img.width() * 2, front_img.height());
@@ -99,22 +163,29 @@ impl<'a> CardRenderer for MDFCCardRenderer<'a> {
         imageops::overlay(&mut composed, &back_img, front_img.width() as i64, 0);
 
         Ok(composed)
-
-        // // Render both faces
-        // let front_img = render_card_face(&card.core.card_faces[0], card, layout).await?;
-        // let back_img = render_card_face(&card.core.card_faces[1], card, layout).await?;
-
-        // // Composite side-by-side
-        // let mut composed = RgbImage::new(front_img.width() * 2, front_img.height());
-        // imageops::overlay(&mut composed, &front_img, 0, 0);
-        // imageops::overlay(&mut composed, &back_img, front_img.width() as i64, 0);
-
-        // // Render shared elements once on the composed image
-        // render_shared_elements(&mut composed, card, layout).await?;
-
-        // Ok(composed)
     }
 }
+
+/// Regular card renderer
+pub struct AdventureCardRenderer<'a> {
+    pub card: &'a OracleScryfallCard,
+}
+
+impl<'a> CardRenderer for AdventureCardRenderer<'a> {
+    async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
+        let faces = self.card.core.card_faces.as_ref().ok_or("No card faces")?;
+        // debug!(faces = ?faces, "MDFC Card Faces");
+
+        if faces.len() < 2 {
+            return Err("Expected at least 2 faces".into());
+        }
+        if faces.len() > 2 {
+            return Err("Expected only 2 faces".into());
+        }
+        render_adventure_card_face(self.card, Some(&faces[0]), Some(&faces[1]), layout).await
+    }
+}
+
 /// Main card print handler
 pub struct CardPrint<'a> {
     card_type: &'a CardType,
@@ -143,6 +214,7 @@ impl<'a> CardPrint<'a> {
         let image = match self.card_type {
             CardType::Regular(card) => RegularCardRenderer { card }.render(&layout).await?,
             CardType::MDFC(card) => MDFCCardRenderer { card }.render(&layout).await?,
+            CardType::Adventure(card) => AdventureCardRenderer { card }.render(&layout).await?,
         };
 
         image.save(out_path)?;

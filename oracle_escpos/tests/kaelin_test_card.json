@@ -134,6 +134,7 @@
   "set_name": "Wilds of Eldraine",
   "set_type": "expansion",
   "set_uri": "https://api.scryfall.com/sets/79139661-13ee-43c4-8bad-a8c069f1a1df",
+  "set_icon_svg_uri": "https://svgs.scryfall.io/sets/woe.svg?1787544000",
   "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Awoe&unique=prints",
   "scryfall_set_uri": "https://scryfall.com/sets/woe?utm_source=api",
   "rulings_uri": "https://api.scryfall.com/cards/ec5e2680-8b42-4571-ab45-4936aec51901/rulings",

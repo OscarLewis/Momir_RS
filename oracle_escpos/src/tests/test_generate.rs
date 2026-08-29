@@ -114,7 +114,7 @@ mod tests {
     #[ignore]
     async fn test_kaelin_adventure() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/kaelin_test_card.json")?;
-        let card_type = CardType::Regular(card);
+        let card_type = CardType::Adventure(card);
         let print = CardPrint::new(&card_type);
         print
             .render(&PathBuf::from("./renders/kaelin_adventure_card.png"))
