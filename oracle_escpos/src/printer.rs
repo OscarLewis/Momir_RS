@@ -126,12 +126,6 @@ fn send_raw_bytes_throttled(raw_bytes: &[u8]) -> Result<(), Box<dyn std::error::
 /// Encodes an image using GS v 0 raster mode (0x1D 0x76 0x30 0x00).
 /// Native 203 DPI raster streaming; bypasses motor stepping and line-spacing quirks.
 pub fn encode_gs_v0_image(img: &DynamicImage) -> Vec<u8> {
-    // Resize image maintaining aspect ratio targeting exact dot width of thermal print head (e.g. 576 dots)
-    // let resized = img.resize(
-    //     target_width,
-    //     u32::MAX,
-    //     image::imageops::FilterType::Triangle,
-    // );
     let luma = img.to_luma8();
     let (width, height) = luma.dimensions();
 
