@@ -26,7 +26,7 @@ async fn render_card_face(
     let scryfall_id = &card.core.id;
     let card_name = &card.core.name;
 
-    info!(
+    debug!(
         scryfall_id = %scryfall_id,
         card_name = %card_name,
         width = layout.width,
@@ -215,6 +215,8 @@ impl<'a> CardPrint<'a> {
             "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
         let sanserif_font_path =
             "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/tahoma.ttf";
+        // let sanserif_font_path =
+        //     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/DejaVuSans.ttf";
 
         let (serif_font, sanserif_font) = Layout::load_fonts(serif_font_path, sanserif_font_path)?;
 

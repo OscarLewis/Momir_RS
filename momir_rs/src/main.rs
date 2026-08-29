@@ -32,7 +32,8 @@ use std::{net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
 use tracing::{debug, info, warn};
-use tracing_subscriber::EnvFilter;
+use tracing_appender::{non_blocking, rolling};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 pub mod config;
 pub(crate) mod database;
 pub(crate) mod game_manager;
@@ -96,10 +97,15 @@ struct AppState {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Init Logging
-    tracing_subscriber::fmt()
-        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+    let file_appender = rolling::daily("logs", "momir_rs.jsonl");
+    let (non_blocking, _guard) = non_blocking(file_appender);
+
+    tracing_subscriber::registry()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
             EnvFilter::new("momir_rs=debug,sea_orm=debug,scryfall_oracle=debug,oracle_escpos=debug")
         }))
+        .with(fmt::layer())
+        .with(fmt::layer().json().with_writer(non_blocking))
         .init();
 
     // Load config
@@ -313,12 +319,12 @@ async fn card_by_cmc(
             );
 
             // TODO Enable printing
-            // if let Some(printer) = &state.printer {
-            //     printer
-            //         .print_oracle_scryfall_card(&card)
-            //         .await
-            //         .map_err(|e| AppError::Internal(e.to_string()))?;
-            // }
+            if let Some(printer) = &state.printer {
+                printer
+                    .print_oracle_scryfall_card(&card)
+                    .await
+                    .map_err(|e| AppError::Internal(e.to_string()))?;
+            }
 
             ConsoleMessage::Card {
                 sender: "Momir".to_string(),

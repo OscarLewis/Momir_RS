@@ -2,6 +2,7 @@ use core::fmt;
 
 use scryfall_oracle::{CardLayout, OracleScryfallCard};
 use tokio::net::TcpStream;
+use tracing::debug;
 
 use crate::{
     card::{card_type::CardType, image_gen::CardPrint},
@@ -68,7 +69,7 @@ impl OraclePrinter {
 
         print_img(img, &self.host, self.port).map_err(|e| PrinterError::Print(e.to_string()))?;
 
-        tracing::info!("Successfully printed image");
+        debug!("Successfully printed image");
 
         Ok(())
     }
