@@ -88,12 +88,36 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_chronologist_level_up() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/chronologist_level_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/chronologist_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_janeway() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/janeway_test_card.json")?;
         let card_type = CardType::Regular(card);
         let print = CardPrint::new(&card_type);
         print
             .render(&PathBuf::from("./renders/janeway_card.png"))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_elspeth_plansewalker() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/eslpeth_planeswalker_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(&PathBuf::from("./renders/eslpeth_card.png"))
             .await?;
         Ok(())
     }
