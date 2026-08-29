@@ -35,6 +35,22 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Executes a raw network raster print test using encoded `GS v 0` bytes.
+pub fn test_img_print_raw_raster() -> Result<(), Box<dyn std::error::Error>> {
+    let image = load_image(BIG_CARD_IMAGE)?;
+    // let raw_bytes = encode_esc_star_image(&image, 576);
+    let raw_bytes = encode_gs_v0_image(&image);
+
+    send_raw_bytes_throttled(&raw_bytes)?;
+
+    debug!(
+        addr = PRINTER_HOST,
+        port = PRINTER_PORT,
+        "Attempting 24-dot raw ESC * bit-image print without linefeeds via network"
+    );
+    Ok(())
+}
+
 /// High-level test printing an MDFC image via raw raster mode.
 pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let image = load_image(MDFC_IMAGE)?;
@@ -142,22 +158,6 @@ pub fn encode_gs_v0_image(img: &DynamicImage) -> Vec<u8> {
     }
 
     stream
-}
-
-/// Executes a raw network raster print test using encoded `GS v 0` bytes.
-pub fn test_img_print_raw_raster() -> Result<(), Box<dyn std::error::Error>> {
-    let image = load_image(BIG_CARD_IMAGE)?;
-    // let raw_bytes = encode_esc_star_image(&image, 576);
-    let raw_bytes = encode_gs_v0_image(&image);
-
-    send_raw_bytes_throttled(&raw_bytes)?;
-
-    debug!(
-        addr = PRINTER_HOST,
-        port = PRINTER_PORT,
-        "Attempting 24-dot raw ESC * bit-image print without linefeeds via network"
-    );
-    Ok(())
 }
 
 // Tests
