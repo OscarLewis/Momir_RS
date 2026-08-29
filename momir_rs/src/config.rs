@@ -10,7 +10,7 @@ pub struct AppConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct PrinterConfig {
     pub host: String,
-    pub port: i32,
+    pub port: u16,
 }
 
 #[derive(Debug, Deserialize, Clone)]

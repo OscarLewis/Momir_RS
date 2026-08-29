@@ -15,7 +15,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
-use oracle_escpos::{test_img_print, test_mdfc_img_print};
+use oracle_escpos::{OraclePrinter, test_img_print, test_mdfc_img_print};
 use rand::RngExt;
 use scryfall_oracle::{
     ScryfallCard,
@@ -31,7 +31,7 @@ use serde::Deserialize;
 use std::{net::SocketAddr, path::PathBuf, time::Duration};
 use tokio::net::TcpListener;
 use tower_http::services::ServeDir;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use tracing_subscriber::EnvFilter;
 pub mod config;
 pub(crate) mod database;
@@ -86,6 +86,7 @@ impl IntoResponse for AppError {
 struct AppState {
     config: AppConfig,
     momir_card: Option<ScryfallCard>,
+    printer: Option<OraclePrinter>,
     db: DatabaseConnection,
     game_manager: GameManager,
     console: SiteConsole,
@@ -137,6 +138,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cache_path = PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
     let oracle = OracleCards::new(&scryfall, Some(&cache_path), Some(sets)).await?;
 
+    let printer = OraclePrinter::new(config.printer.host.clone(), config.printer.port);
+
+    let printer = if printer.check_connection().await {
+        debug!(
+            printer_host = config.printer.host,
+            printer_port = config.printer.port,
+            "Printer connected"
+        );
+        Some(printer)
+    } else {
+        warn!("Printer is not connected");
+        None
+    };
+
     if let Some(cards) = oracle.cards.as_ref() {
         debug!(
             num_cards_in_oracle_map = cards.len(),
@@ -160,6 +175,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let shared_state = AppState {
         config,
+        printer: printer,
         momir_card: Some(momir_avatar.clone()),
         db,
         game_manager: GameManager::new(),
@@ -261,7 +277,11 @@ struct CardByCMCParams {
     unset_filter: bool,
 }
 
-async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<AppState>) {
+#[axum::debug_handler]
+async fn card_by_cmc(
+    Query(params): Query<CardByCMCParams>,
+    State(state): State<AppState>,
+) -> Result<(), AppError> {
     let filter_checks = [
         (OracleFilter::UnknownEvent, params.unknown_event_filter),
         (OracleFilter::Modern, params.modern_filter),
@@ -292,9 +312,17 @@ async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<
                 "Momir generated a card"
             );
 
+            // TODO Enable printing
+            // if let Some(printer) = &state.printer {
+            //     printer
+            //         .print_oracle_scryfall_card(&card)
+            //         .await
+            //         .map_err(|e| AppError::Internal(e.to_string()))?;
+            // }
+
             ConsoleMessage::Card {
                 sender: "Momir".to_string(),
-                card: card.clone(),
+                card: card,
             }
         }
 
@@ -305,6 +333,7 @@ async fn card_by_cmc(Query(params): Query<CardByCMCParams>, State(state): State<
     };
 
     state.console.send(&params.game_id, message);
+    Ok(())
 }
 
 async fn websocket(

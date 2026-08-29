@@ -15,7 +15,7 @@ use tracing::{debug, info};
 const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
 
 #[async_trait]
-pub trait ElementRenderer {
+pub trait ElementRenderer: Send + Sync {
     async fn render(
         &self,
         card: &OracleScryfallCard,
