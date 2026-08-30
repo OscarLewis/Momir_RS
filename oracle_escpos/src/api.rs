@@ -1,6 +1,7 @@
 use core::fmt;
 use std::path::PathBuf;
 
+use momir_oracle_config::AppConfig;
 use scryfall_oracle::{CardLayout, OracleScryfallCard};
 use tokio::net::TcpStream;
 use tracing::debug;
@@ -31,6 +32,15 @@ impl std::error::Error for PrinterError {}
 pub struct OraclePrinter {
     host: String,
     port: u16,
+}
+
+impl From<&AppConfig> for OraclePrinter {
+    fn from(config: &AppConfig) -> Self {
+        Self {
+            host: config.printer.host.clone(),
+            port: config.printer.port,
+        }
+    }
 }
 
 impl OraclePrinter {

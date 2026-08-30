@@ -18,7 +18,7 @@ use momir_oracle_config::{AppConfig, load_config};
 use oracle_escpos::{OraclePrinter, test_img_print, test_mdfc_img_print};
 use rand::RngExt;
 use scryfall_oracle::{
-    ScryfallCard,
+    OracleScryfallCard,
     bulk_data::oracle_cards::{
         OracleCards,
         filters::{OracleFilter, OracleFilters},
@@ -85,8 +85,7 @@ impl IntoResponse for AppError {
 #[derive(Clone)]
 struct AppState {
     config: AppConfig,
-    momir_card: Option<ScryfallCard>,
-    printer: Option<OraclePrinter>,
+    momir_card: Option<OracleScryfallCard>,
     db: DatabaseConnection,
     client: ScryfallClient,
     game_manager: GameManager,
@@ -180,11 +179,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let momir_avatar =
-        ScryfallCard::by_id(&scryfall, MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID).await?;
+        OracleScryfallCard::by_id_live(&scryfall, MOMIR_VIG_SIMIC_VISIONARY_AVATAR_SCRYFALL_ID)
+            .await?;
 
     let shared_state = AppState {
         config,
-        printer: printer,
         momir_card: Some(momir_avatar.clone()),
         db,
         client: scryfall,
@@ -206,6 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/test/imgprint", get(test_img_print_handler))
         .route("/test/mdfcprint", get(test_mdfc_img_print_handler))
         .route("/ws/messages/{game_id}", get(websocket))
+        .route("/print/token", get(print_momir_token))
         .nest_service("/static", ServeDir::new("momir_rs/static"))
         .with_state(shared_state);
 
@@ -227,7 +227,7 @@ async fn check_database(db: &DatabaseConnection) {
 #[template(path = "index.html")]
 struct IndexHtmlTemplate {
     game_id: String,
-    momir_card: Option<ScryfallCard>,
+    momir_card: Option<OracleScryfallCard>,
 }
 
 async fn index(State(state): State<AppState>) -> Result<Html<String>, AppError> {
@@ -334,7 +334,9 @@ async fn card_by_cmc(
             //         .map_err(|e| AppError::Internal(e.to_string()))?;
             // }
 
-            if let Some(printer) = state.printer.clone() {
+            let printer = OraclePrinter::from(&state.config);
+
+            if printer.check_connection().await {
                 let card = card.clone();
 
                 tokio::spawn(async move {
@@ -346,6 +348,8 @@ async fn card_by_cmc(
                         );
                     }
                 });
+            } else {
+                warn!("Printer is not reachable");
             }
 
             ConsoleMessage::Card {
@@ -373,22 +377,27 @@ struct PrintResponse {
 async fn print_momir_token(
     State(state): State<AppState>,
 ) -> Result<Json<PrintResponse>, StatusCode> {
-    if let Some(printer) = state.printer.clone() {
-        // let card = card.clone();
-        if let Some(momir) = state.momir_card {
-            // use momir
-        }
+    let printer = OraclePrinter::from(&state.config);
 
-        // tokio::spawn(async move {
-        //     if let Err(e) = printer.print_oracle_scryfall_card(&card, None).await {
-        //         warn!(
-        //             error = %e,
-        //             card_name = %card.core.name,
-        //             "Failed to print card"
-        //         );
-        //     }
-        // });
+    if !printer.check_connection().await {
+        return Err(StatusCode::SERVICE_UNAVAILABLE);
     }
+
+    let momir = state.momir_card.clone().ok_or(StatusCode::NOT_FOUND)?;
+
+    printer
+        .print_oracle_scryfall_card(&momir, None)
+        .await
+        .map_err(|e| {
+            warn!(
+                error = %e,
+                card_name = %momir.core.name,
+                "Failed to print card"
+            );
+
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
     Ok(Json(PrintResponse {
         success: true,
         message: "Token printed!".to_string(),
@@ -400,35 +409,38 @@ async fn websocket(
     Path(game_id): Path<String>,
     State(state): State<AppState>,
 ) -> Response {
-    ws.on_upgrade(move |socket| handle_socket(socket, game_id, state.console, state.printer))
+    ws.on_upgrade(move |socket| handle_socket(socket, game_id, state.console, state.config.clone()))
 }
 
 async fn handle_socket(
     mut socket: WebSocket,
     game_id: String,
     console: SiteConsole,
-    printer: Option<OraclePrinter>,
+    config: AppConfig,
 ) {
-    let mut rx = console.subscribe(&game_id);
-
     console.send(
         &game_id,
         ConsoleMessage::Text {
             sender: "System".to_string(),
-            body: "WebSocket connected.".to_string(),
+            body: "Websocket connected".to_string(),
         },
     );
 
-    if let Some(printer) = printer.as_ref() {
-        if printer.check_connection().await {
-            console.send(
-                &game_id,
-                ConsoleMessage::Text {
-                    sender: "System".to_string(),
-                    body: "Printer connected.".to_string(),
-                },
-            );
-        }
+    let mut rx = console.subscribe(&game_id);
+
+    let printer = OraclePrinter::from(&config);
+
+    if printer.check_connection().await {
+        console.send(
+            &game_id,
+            ConsoleMessage::Text {
+                sender: "System".to_string(),
+                body: format!(
+                    "Printer connected at {}:{}",
+                    &config.printer.host, config.printer.port
+                ),
+            },
+        );
     }
 
     while let Ok(message) = rx.recv().await {
