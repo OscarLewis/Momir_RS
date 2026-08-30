@@ -1,4 +1,5 @@
 $background: #3f3f4a;
+$surface-dark: #403e68;
 $surface: #59578b;
 $surface-light: #7e7ba7;
 $text: #eeeeee;
@@ -70,7 +71,7 @@ body {
 }
 
 .content {
-    width: min(800px, calc(100% - 2rem));
+    width: min(1200px, calc(100% - 2rem));
     margin: 2rem 0;
 }
 
@@ -145,7 +146,7 @@ button {
 .controls {
     display: flex;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 1.5rem;
 }
 
 .controls-main {
@@ -157,6 +158,12 @@ button {
     display: flex;
     flex-direction: column;
     gap: 1rem;
+}
+
+.controls-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
 }
 
 .momir-img-block {
@@ -287,9 +294,17 @@ button {
     }
 }
 
+.filter-group {
+    width: fit-content;
+    background: $surface-dark;
+    border: 1px solid $surface;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+
 .filter-grid {
     display: grid;
-    grid-template-columns: repeat(3, max-content);
+    grid-template-columns: repeat(5, max-content);
     gap: 0.5rem 1.5rem;
 
     @media (max-width: 640px) {

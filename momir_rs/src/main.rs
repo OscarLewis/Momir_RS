@@ -27,9 +27,9 @@ use scryfall_oracle::{
     sets::sets::ScryfallSets,
 };
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
-use serde::Deserialize;
-use std::{net::SocketAddr, path::PathBuf, time::Duration};
-use tokio::net::TcpListener;
+use serde::{Deserialize, Serialize};
+use std::{net::SocketAddr, time::Duration};
+use tokio::{fs, net::TcpListener};
 use tower_http::services::ServeDir;
 use tracing::{debug, info, warn};
 use tracing_appender::{non_blocking, rolling};
@@ -88,6 +88,7 @@ struct AppState {
     momir_card: Option<ScryfallCard>,
     printer: Option<OraclePrinter>,
     db: DatabaseConnection,
+    client: ScryfallClient,
     game_manager: GameManager,
     console: SiteConsole,
     oracle: OracleCards,
@@ -96,6 +97,8 @@ struct AppState {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Init Logging
+    let log_dir = std::path::Path::new("logs");
+    clean_old_logs(log_dir).await?;
     let file_appender = rolling::daily("logs", "momir_rs.jsonl");
     let (non_blocking, _guard) = non_blocking(file_appender);
 
@@ -140,7 +143,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sets = ScryfallSets::new(&scryfall).await?;
     debug!(num_sets = sets.len(), "Fetched Sets from Scryfall");
 
-    let cache_path = PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
+    let cache_path =
+        std::path::PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
     let oracle = OracleCards::new(&scryfall, Some(&cache_path), Some(sets)).await?;
 
     let printer = OraclePrinter::new(config.printer.host.clone(), config.printer.port);
@@ -183,6 +187,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         printer: printer,
         momir_card: Some(momir_avatar.clone()),
         db,
+        client: scryfall,
         game_manager: GameManager::new(),
         console: SiteConsole::new(),
         oracle,
@@ -359,6 +364,37 @@ async fn card_by_cmc(
     Ok(())
 }
 
+#[derive(Serialize)]
+struct PrintResponse {
+    success: bool,
+    message: String,
+}
+
+async fn print_momir_token(
+    State(state): State<AppState>,
+) -> Result<Json<PrintResponse>, StatusCode> {
+    if let Some(printer) = state.printer.clone() {
+        // let card = card.clone();
+        if let Some(momir) = state.momir_card {
+            // use momir
+        }
+
+        // tokio::spawn(async move {
+        //     if let Err(e) = printer.print_oracle_scryfall_card(&card, None).await {
+        //         warn!(
+        //             error = %e,
+        //             card_name = %card.core.name,
+        //             "Failed to print card"
+        //         );
+        //     }
+        // });
+    }
+    Ok(Json(PrintResponse {
+        success: true,
+        message: "Token printed!".to_string(),
+    }))
+}
+
 async fn websocket(
     ws: WebSocketUpgrade,
     Path(game_id): Path<String>,
@@ -418,4 +454,33 @@ struct MessageFragmentTemplate<'a> {
 
 fn render_message(message: &ConsoleMessage) -> Result<String, askama::Error> {
     MessageFragmentTemplate { message }.render()
+}
+
+async fn clean_old_logs(log_dir: &std::path::Path) -> std::io::Result<()> {
+    if !tokio::fs::try_exists(log_dir).await? {
+        tokio::fs::create_dir_all(log_dir).await?;
+    }
+
+    let mut entries = tokio::fs::read_dir(log_dir).await?;
+    let mut logs = Vec::new();
+
+    while let Some(entry) = entries.next_entry().await? {
+        let name = entry.file_name();
+
+        if name
+            .to_str()
+            .is_some_and(|name| name.starts_with("momir_rs.jsonl."))
+        {
+            logs.push(entry);
+        }
+    }
+
+    logs.sort_by_key(|entry| entry.file_name());
+
+    while logs.len() > 3 {
+        let oldest = logs.remove(0);
+        tokio::fs::remove_file(oldest.path()).await?;
+    }
+
+    Ok(())
 }

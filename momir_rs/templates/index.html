@@ -42,71 +42,77 @@
             </div>
 
             <div class="controls-stack">
-                <div class="filter-grid">
-                    <div class="filter-item">
-                        <div class="filter-toggle">
-                            <span>Unsets</span>
-                            <label class="switch">
-                                <input type="checkbox" name="unset_filter" value="true" checked>
-                                <span class="slider"></span>
-                            </label>
+                <details open class="filter-group">
+                    <summary>Filters</summary>
+                    <div class="filter-grid">
+                        <div class="filter-item">
+                            <div class="filter-toggle">
+                                <span>Unsets</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="unset_filter" value="true" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="filter-item">
-                        <div class="filter-toggle">
-                            <span>Pre-Modern</span>
-                            <label class="switch">
-                                <input type="checkbox" name="premodern_filter" value="true" checked>
-                                <span class="slider"></span>
-                            </label>
+                        <div class="filter-item">
+                            <div class="filter-toggle">
+                                <span>Pre-Modern</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="premodern_filter" value="true" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="filter-item">
-                        <div class="filter-toggle">
-                            <span>Modern</span>
-                            <label class="switch">
-                                <input type="checkbox" name="modern_filter" value="true" checked>
-                                <span class="slider"></span>
-                            </label>
+                        <div class="filter-item">
+                            <div class="filter-toggle">
+                                <span>Modern</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="modern_filter" value="true" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="filter-item">
-                        <div class="filter-toggle">
-                            <span>Unknown Events</span>
-                            <label class="switch">
-                                <input type="checkbox" name="unknown_event_filter" value="true" checked>
-                                <span class="slider"></span>
-                            </label>
+                        <div class="filter-item">
+                            <div class="filter-toggle">
+                                <span>Unknown Events</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="unknown_event_filter" value="true" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="filter-item">
-                        <div class="filter-toggle">
-                            <span>Everything Else</span>
-                            <label class="switch">
-                                <input type="checkbox" name="everything_else_filter" value="true" checked>
-                                <span class="slider"></span>
-                            </label>
+                        <div class="filter-item">
+                            <div class="filter-toggle">
+                                <span>Everything Else</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="everything_else_filter" value="true" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
                     </div>
+                </details>
+                <div class="controls-bar">
+                    <div>
+                        <input type="hidden" name="game_id" value="{{ game_id }}">
+
+                        <label for="cmc">Converted Mana Cost</label>
+
+                        <input id="cmc" type="number" name="cmc" value="1" min="0">
+
+                        <button hx-get="/card-by-cmc"
+                                hx-include="[name='cmc'], [name='game_id'], [name='unknown_event_filter'], [name='modern_filter'], [name='premodern_filter'], [name='unset_filter'], [name='everything_else_filter']"
+                                hx-swap="none">
+                            Randomize
+                        </button>
+                    </div>
+                    <button>Print Token</button>
                 </div>
 
-                <div>
-                    <input type="hidden" name="game_id" value="{{ game_id }}">
-
-                    <label for="cmc">Converted Mana Cost</label>
-
-                    <input id="cmc" type="number" name="cmc" value="1" min="0">
-
-                    <button hx-get="/card-by-cmc"
-                            hx-include="[name='cmc'], [name='game_id'], [name='unknown_event_filter'], [name='modern_filter'], [name='premodern_filter'], [name='unset_filter'], [name='everything_else_filter']"
-                            hx-swap="none">
-                        Randomize
-                    </button>
-                </div>
             </div>
         </div>
 

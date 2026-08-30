@@ -4,6 +4,7 @@ use reqwest::{
 };
 use std::{
     collections::HashMap,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use tokio::sync::Mutex;
@@ -11,10 +12,10 @@ use tokio::sync::Mutex;
 const DEFAULT_USER_AGENT_VALUE: &str = "oracle_scryfall_rs/0.1.0";
 const REQUEST_INTERVAL: Duration = Duration::from_millis(500);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ScryfallClient {
     client: Client,
-    last_request: Mutex<Instant>,
+    last_request: Arc<Mutex<Instant>>,
 }
 
 impl ScryfallClient {
@@ -32,7 +33,7 @@ impl ScryfallClient {
 
         Ok(Self {
             client,
-            last_request: Mutex::new(Instant::now() - REQUEST_INTERVAL),
+            last_request: Arc::new(Mutex::new(Instant::now() - REQUEST_INTERVAL)),
         })
     }
     pub async fn get<U>(
