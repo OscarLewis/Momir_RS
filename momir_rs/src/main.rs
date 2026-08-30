@@ -418,6 +418,8 @@ async fn handle_socket(
     console: SiteConsole,
     config: AppConfig,
 ) {
+    let mut rx = console.subscribe(&game_id);
+
     console.send(
         &game_id,
         ConsoleMessage::Text {
@@ -425,8 +427,6 @@ async fn handle_socket(
             body: "Websocket connected".to_string(),
         },
     );
-
-    let mut rx = console.subscribe(&game_id);
 
     let printer = OraclePrinter::from(&config);
 
