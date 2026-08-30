@@ -1,5 +1,5 @@
 use crate::{
-    ScryfallCard, ScryfallClient,
+    OracleScryfallCard, ScryfallClient,
     cards::models::{ScryfallApiError, ScryfallCardList, ScryfallPageResponse},
 };
 use std::collections::HashMap;
@@ -7,7 +7,7 @@ use tracing::debug;
 
 const SCRYFALL_SEARCH_URL: &str = "https://api.scryfall.com/cards/search";
 
-impl ScryfallCard {
+impl OracleScryfallCard {
     /// Executes a search query, following all `next_page` pagination links to collect every card
     pub async fn search(
         client: &ScryfallClient,
@@ -24,7 +24,7 @@ impl ScryfallCard {
             .await?
             .error_for_status()?;
 
-        let mut page: ScryfallPageResponse<ScryfallCard> = response.json().await?;
+        let mut page: ScryfallPageResponse<OracleScryfallCard> = response.json().await?;
         let total_cards = page.total_cards;
         all_cards.append(&mut page.data);
 
@@ -62,7 +62,7 @@ mod tests {
     async fn search_returns_matching_cards() {
         let client = ScryfallClient::new(None).expect("failed to create Scryfall client");
 
-        let result = ScryfallCard::search(&client, "is:unset")
+        let result = OracleScryfallCard::search(&client, "is:unset")
             .await
             .expect("Scryfall search failed");
 

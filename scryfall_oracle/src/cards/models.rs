@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::ScryfallCard;
+use crate::OracleScryfallCard;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ScryfallApiError {
@@ -26,7 +26,7 @@ pub struct ScryfallPageResponse<T> {
 #[derive(Debug, Clone)]
 pub struct ScryfallCardList {
     pub total_cards: Option<u32>,
-    pub data: Vec<ScryfallCard>,
+    pub data: Vec<OracleScryfallCard>,
 }
 
 impl ScryfallCardList {

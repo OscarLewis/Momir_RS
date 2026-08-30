@@ -1,6 +1,5 @@
 use crate::FormatLegality;
 use crate::OracleScryfallCard;
-use crate::ScryfallCard;
 use crate::ScryfallClient;
 use crate::bulk_data::BulkData;
 use crate::bulk_data::oracle_cards::cardset_parser::parse_card_set;
@@ -72,7 +71,7 @@ impl OracleCards {
         let data_path = write_data(target_dir, oracle_cards_bulk, client).await?;
         let local_card_set = parse_card_set(data_path).await?;
 
-        let unset_creature_ids = ScryfallCard::search(client, "is:unset t:creature")
+        let unset_creature_ids = OracleScryfallCard::search(client, "is:unset t:creature")
             .await?
             .into_card_ids()
             .into_iter()

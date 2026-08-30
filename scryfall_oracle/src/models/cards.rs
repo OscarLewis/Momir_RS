@@ -106,20 +106,6 @@ pub struct PrintFields {
     pub preview: Option<PreviewInfo>,
 }
 
-// Public Models
-// Why are there two? great question? maybe? no.
-//
-//
-/// Full Scryfall Card (Default API Endpoint & 'Default Cards' Bulk JSONL File)
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ScryfallCard {
-    #[serde(flatten)]
-    pub core: CoreCardFields,
-
-    #[serde(flatten)]
-    pub print: PrintFields,
-}
-
 /// Oracle Scryfall Card ('Oracle Cards' Bulk JSONL File)
 /// Shares core and print data via composition, keeping code DRY.
 #[derive(Debug, Serialize, Deserialize, Clone)]
