@@ -1,4 +1,5 @@
 use core::fmt;
+use std::path::PathBuf;
 
 use scryfall_oracle::{CardLayout, OracleScryfallCard};
 use tokio::net::TcpStream;
@@ -40,9 +41,11 @@ impl OraclePrinter {
     pub async fn check_connection(&self) -> bool {
         TcpStream::connect((&*self.host, self.port)).await.is_ok()
     }
+
     pub async fn print_oracle_scryfall_card(
         &self,
         card: &OracleScryfallCard,
+        image_out_path: Option<&PathBuf>,
     ) -> Result<(), PrinterError> {
         let card_type = if card
             .core
@@ -56,6 +59,8 @@ impl OraclePrinter {
                 CardLayout::ModalDFC => CardType::MDFC(card.clone()),
                 CardLayout::Adventure => CardType::Adventure(card.clone()),
                 CardLayout::Prepare => CardType::Prepare(card.clone()),
+                CardLayout::Transform => CardType::MDFC(card.clone()),
+                CardLayout::Split => CardType::MDFC(card.clone()),
                 _ => CardType::Regular(card.clone()),
             }
         };
@@ -69,12 +74,8 @@ impl OraclePrinter {
 
         print_img(img, &self.host, self.port).map_err(|e| PrinterError::Print(e.to_string()))?;
 
-        debug!("Successfully printed image");
-
         Ok(())
     }
-
-    // async fn print_scryfall_card(&self, card: ScryfallCard) {}
 }
 
 #[cfg(test)]
@@ -92,7 +93,7 @@ mod tests {
 
         let printer = OraclePrinter::new("192.168.2.47".to_string(), 9100);
 
-        printer.print_oracle_scryfall_card(&card).await?;
+        printer.print_oracle_scryfall_card(&card, None).await?;
 
         Ok(())
     }

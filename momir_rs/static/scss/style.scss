@@ -260,8 +260,7 @@ button {
                 transform: translateX($switch-width - $knob-size - ($knob-offset * 2));
             }
         }
-
-        &:focus-visible + .slider {
+        > &:focus-visible + .slider {
             box-shadow: 0 0 5px darken($surface-light, 10%);
         }
     }
@@ -290,11 +289,11 @@ button {
 
 .filter-grid {
     display: grid;
-    grid-template-columns: repeat(2, max-content);
+    grid-template-columns: repeat(3, max-content);
     gap: 0.5rem 1.5rem;
 
     @media (max-width: 640px) {
-        grid-template-columns: repeat(1, max-content);
+        grid-template-columns: repeat(2, max-content);
     }
 }
 
@@ -314,6 +313,7 @@ button {
 .set-icon {
     width: 1.2em;
     height: 1.2em;
+    background-color: #ffffff;
     // fill: white;
     vertical-align: text-bottom;
     margin-left: 0.25rem;

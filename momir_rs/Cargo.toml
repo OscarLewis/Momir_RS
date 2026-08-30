@@ -18,6 +18,7 @@ rand = "0.10.2"
 reqwest = { version = "0.13.4", features = ["query"] }
 scryfall_oracle = { version = "0.1.0", path = "../scryfall_oracle" }
 oracle_escpos = { version = "0.1.0", path = "../oracle_escpos" }
+momir_oracle_config = { version = "0.1.0", path = "../momir_oracle_config" }
 sea-orm = { version = "2.0.2", features = [
     "entity-registry",
     "runtime-tokio-native-tls",

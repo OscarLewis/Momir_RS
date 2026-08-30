@@ -1,5 +1,4 @@
 use crate::{
-    config::{AppConfig, load_config},
     game_manager::GameManager,
     scss::compile_scss,
     site_console::{ConsoleMessage, SiteConsole},
@@ -15,6 +14,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
+use momir_oracle_config::{AppConfig, load_config};
 use oracle_escpos::{OraclePrinter, test_img_print, test_mdfc_img_print};
 use rand::RngExt;
 use scryfall_oracle::{
@@ -34,7 +34,6 @@ use tower_http::services::ServeDir;
 use tracing::{debug, info, warn};
 use tracing_appender::{non_blocking, rolling};
 use tracing_subscriber::{EnvFilter, fmt, prelude::*};
-pub mod config;
 pub(crate) mod database;
 pub(crate) mod game_manager;
 pub(crate) mod scss;
@@ -281,6 +280,9 @@ struct CardByCMCParams {
 
     #[serde(default)]
     unset_filter: bool,
+
+    #[serde(default)]
+    everything_else_filter: bool,
 }
 
 #[axum::debug_handler]
@@ -293,6 +295,7 @@ async fn card_by_cmc(
         (OracleFilter::Modern, params.modern_filter),
         (OracleFilter::Premodern, params.premodern_filter),
         (OracleFilter::Unsets, params.unset_filter),
+        (OracleFilter::EverythingElse, params.everything_else_filter),
     ];
 
     let filters = {
@@ -319,11 +322,25 @@ async fn card_by_cmc(
             );
 
             // TODO Enable printing
-            if let Some(printer) = &state.printer {
-                printer
-                    .print_oracle_scryfall_card(&card)
-                    .await
-                    .map_err(|e| AppError::Internal(e.to_string()))?;
+            // if let Some(printer) = &state.printer {
+            //     printer
+            //         .print_oracle_scryfall_card(&card, None)
+            //         .await
+            //         .map_err(|e| AppError::Internal(e.to_string()))?;
+            // }
+
+            if let Some(printer) = state.printer.clone() {
+                let card = card.clone();
+
+                tokio::spawn(async move {
+                    if let Err(e) = printer.print_oracle_scryfall_card(&card, None).await {
+                        warn!(
+                            error = %e,
+                            card_name = %card.core.name,
+                            "Failed to print card"
+                        );
+                    }
+                });
             }
 
             ConsoleMessage::Card {
@@ -347,10 +364,15 @@ async fn websocket(
     Path(game_id): Path<String>,
     State(state): State<AppState>,
 ) -> Response {
-    ws.on_upgrade(move |socket| handle_socket(socket, game_id, state.console))
+    ws.on_upgrade(move |socket| handle_socket(socket, game_id, state.console, state.printer))
 }
 
-async fn handle_socket(mut socket: WebSocket, game_id: String, console: SiteConsole) {
+async fn handle_socket(
+    mut socket: WebSocket,
+    game_id: String,
+    console: SiteConsole,
+    printer: Option<OraclePrinter>,
+) {
     let mut rx = console.subscribe(&game_id);
 
     console.send(
@@ -360,6 +382,18 @@ async fn handle_socket(mut socket: WebSocket, game_id: String, console: SiteCons
             body: "WebSocket connected.".to_string(),
         },
     );
+
+    if let Some(printer) = printer.as_ref() {
+        if printer.check_connection().await {
+            console.send(
+                &game_id,
+                ConsoleMessage::Text {
+                    sender: "System".to_string(),
+                    body: "Printer connected.".to_string(),
+                },
+            );
+        }
+    }
 
     while let Ok(message) = rx.recv().await {
         let rendered = match render_message(&message) {

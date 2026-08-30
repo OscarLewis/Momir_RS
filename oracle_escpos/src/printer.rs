@@ -1,11 +1,8 @@
 use image::{DynamicImage, ImageBuffer, ImageReader};
+use momir_oracle_config::load_config;
 use std::io::Write;
 use std::net::TcpStream;
-use tracing::debug;
-
-const PRINTER_HOST: &str = "192.168.2.47";
-// const PRINTER_HOST: &str = "0.0.0.0";
-const PRINTER_PORT: u16 = 9100;
+use tracing::{debug, info};
 
 const CARD_IMAGE: &str =
     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/card.png";
@@ -24,9 +21,9 @@ pub fn print_img(
     let raw_bytes = encode_gs_v0_image(&dyn_img);
     send_raw_bytes_throttled(&raw_bytes, printer_host, printer_port)?;
 
-    debug!(
-        addr = PRINTER_HOST,
-        port = PRINTER_PORT,
+    info!(
+        addr = printer_host,
+        port = printer_port,
         "Successfully printed full card image via raw GS v 0 raster mode"
     );
     Ok(())
@@ -41,12 +38,13 @@ fn load_image(path: &str) -> Result<image::DynamicImage, Box<dyn std::error::Err
 pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let image = load_image(CARD_IMAGE)?;
     let raw_bytes = encode_gs_v0_image(&image);
+    let config = load_config()?;
 
-    send_raw_bytes_throttled(&raw_bytes, PRINTER_HOST, PRINTER_PORT)?;
+    send_raw_bytes_throttled(&raw_bytes, &config.printer.host, config.printer.port)?;
 
     debug!(
-        addr = PRINTER_HOST,
-        port = PRINTER_PORT,
+        addr = config.printer.host,
+        port = config.printer.port,
         "Successfully printed full card image via raw GS v 0 raster mode"
     );
     Ok(())
@@ -57,12 +55,13 @@ pub fn test_img_print_raw_raster() -> Result<(), Box<dyn std::error::Error>> {
     let image = load_image(BIG_CARD_IMAGE)?;
     // let raw_bytes = encode_esc_star_image(&image, 576);
     let raw_bytes = encode_gs_v0_image(&image);
+    let config = load_config()?;
 
-    send_raw_bytes_throttled(&raw_bytes, PRINTER_HOST, PRINTER_PORT)?;
+    send_raw_bytes_throttled(&raw_bytes, &config.printer.host, config.printer.port)?;
 
     debug!(
-        addr = PRINTER_HOST,
-        port = PRINTER_PORT,
+        addr = &config.printer.host,
+        port = config.printer.port,
         "Attempting 24-dot raw ESC * bit-image print without linefeeds via network"
     );
     Ok(())
@@ -71,14 +70,14 @@ pub fn test_img_print_raw_raster() -> Result<(), Box<dyn std::error::Error>> {
 /// High-level test printing an MDFC image via raw raster mode.
 pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let image = load_image(MDFC_IMAGE)?;
+    let raw_bytes = encode_gs_v0_image(&image);
+    let config = load_config()?;
 
-    let payload = encode_gs_v0_image(&image);
-
-    send_raw_bytes_throttled(&payload, PRINTER_HOST, PRINTER_PORT)?;
+    send_raw_bytes_throttled(&raw_bytes, &config.printer.host, config.printer.port)?;
 
     debug!(
-        addr = PRINTER_HOST,
-        port = PRINTER_PORT,
+        addr = &config.printer.host,
+        port = config.printer.port,
         "Successfully printed MDFC image via raw GS v 0 raster mode"
     );
 

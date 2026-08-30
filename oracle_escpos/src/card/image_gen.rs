@@ -56,7 +56,7 @@ async fn render_card_face(
             .await?;
     }
 
-    info!(
+    debug!(
         scryfall_id = %scryfall_id,
         "Card image generated successfully"
     );

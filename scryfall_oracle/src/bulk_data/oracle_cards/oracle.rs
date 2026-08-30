@@ -146,35 +146,32 @@ impl OracleCards {
         let ids = self.creatures_by_cmc.get(&cmc.to_bits())?;
 
         let eligible = |id: &&String| {
-            let Some(oracle_filters) = filters else {
+            let Some(filters) = filters else {
                 return true;
             };
 
-            oracle_filters.filters.iter().all(|filter| {
-                match filter {
-                    OracleFilter::Unsets => {
-                        // Filter out all creature cards that are part of an unset
-                        !self.unset_creature_ids.contains(*id)
-                    }
-                    OracleFilter::Modern => {
-                        // Filter out all creature cards that are legal in Modern
-                        !self
-                            .creatures_by_format
-                            .get(&FormatLegality::Modern)
-                            .is_some_and(|ids| ids.contains(*id))
-                    }
-                    OracleFilter::Premodern => {
-                        // Filter out all creature cards that are legal in Pre-Modern
-                        !self
-                            .creatures_by_format
-                            .get(&FormatLegality::Premodern)
-                            .is_some_and(|ids| ids.contains(*id))
-                    }
-                    OracleFilter::UnknownEvent => {
-                        // Filter out all creature cards that are part of Gavin's 'Unknown Events'
-                        !self.unknown_events_creature_ids.contains(*id)
-                    }
-                }
+            let is_unsets = self.unset_creature_ids.contains(*id);
+
+            let is_modern = self
+                .creatures_by_format
+                .get(&FormatLegality::Modern)
+                .is_some_and(|ids| ids.contains(*id));
+
+            let is_premodern = self
+                .creatures_by_format
+                .get(&FormatLegality::Premodern)
+                .is_some_and(|ids| ids.contains(*id));
+
+            let is_unknown_event = self.unknown_events_creature_ids.contains(*id);
+
+            let is_everything_else = !is_unsets && !is_modern && !is_premodern && !is_unknown_event;
+
+            filters.filters.iter().all(|filter| match filter {
+                OracleFilter::Unsets => !is_unsets,
+                OracleFilter::Modern => !is_modern,
+                OracleFilter::Premodern => !is_premodern,
+                OracleFilter::UnknownEvent => !is_unknown_event,
+                OracleFilter::EverythingElse => !is_everything_else,
             })
         };
 

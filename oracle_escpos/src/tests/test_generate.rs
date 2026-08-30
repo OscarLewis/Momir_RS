@@ -61,6 +61,23 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_tormentor() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/tomentor_mist_transform_test_card.json")?;
+
+        let card_type = match card.core.layout {
+            CardLayout::Transform => CardType::MDFC(card),
+            _ => CardType::Regular(card),
+        };
+
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/tomentor_mist_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_boom_bust() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/boom_bust_card.json")?;
 

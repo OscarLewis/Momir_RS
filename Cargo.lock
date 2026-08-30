@@ -2638,6 +2638,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "momir_oracle_config"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "serde",
+]
+
+[[package]]
 name = "momir_rs"
 version = "0.1.0"
 dependencies = [
@@ -2649,6 +2657,7 @@ dependencies = [
  "grass",
  "image 0.25.10",
  "log",
+ "momir_oracle_config",
  "native-tls",
  "notify",
  "oracle_escpos",
@@ -2903,6 +2912,7 @@ dependencies = [
  "config",
  "dithr",
  "image 0.25.10",
+ "momir_oracle_config",
  "resvg",
  "scryfall_oracle",
  "serde",

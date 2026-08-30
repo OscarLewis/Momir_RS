@@ -1,14 +1,15 @@
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum OracleFilter {
     Unsets,
     Modern,
     Premodern,
     UnknownEvent,
+    EverythingElse,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct OracleFilters {
     pub filters: Vec<OracleFilter>,
 }
@@ -32,6 +33,7 @@ impl fmt::Display for OracleFilter {
             OracleFilter::Modern => "Modern",
             OracleFilter::Premodern => "Premodern",
             OracleFilter::UnknownEvent => "Unknown Event",
+            OracleFilter::EverythingElse => "Everything Else",
         };
 
         write!(f, "{value}")
