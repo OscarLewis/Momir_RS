@@ -6,6 +6,7 @@ use crate::{
             NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer, PowerToughnessRenderer,
             SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
         },
+        fonts::fonts,
     },
     layout::Layout,
 };
@@ -263,12 +264,9 @@ impl<'a> CardPrint<'a> {
             "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/tahoma.ttf";
         // let sanserif_font_path =
         //     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/DejaVuSans.ttf";
-
-        let (serif_font, sanserif_font) = Layout::load_fonts(serif_font_path, sanserif_font_path)?;
-
         let layout = Layout {
-            serif_font,
-            sanserif_font,
+            serif_font: fonts::MPLANTIN,
+            sanserif_font: fonts::TAHOMA,
             ..Layout::default()
         };
 

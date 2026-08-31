@@ -1,12 +1,7 @@
-use crate::render::text_width;
-use std::path::PathBuf;
-use tracing::debug;
-
-#[derive(Debug, Clone, Copy)]
-pub enum Font {
-    Serif,
-    Sanserif,
-}
+use crate::{
+    card::fonts::{Font, fonts},
+    render::text_width,
+};
 
 #[derive(Debug, Clone)]
 pub struct TextStyle {
@@ -29,7 +24,7 @@ impl Default for TextStyle {
             font_size: 0.0,
             margin_left: 0,
             margin_right: 0,
-            font: Font::Sanserif,
+            font: Font::Sansserif,
             long_text_font_size: None,
             letter_spacing: 0.0,
             wrap_width: 372,
@@ -245,8 +240,8 @@ pub struct Layout {
     pub adventure_oracle_text_main_face: TextStyle,
     pub adventure_type_line: TextStyle,
     pub font_sizes: FontSizes,
-    pub sanserif_font: Vec<u8>,
-    pub serif_font: Vec<u8>,
+    pub sanserif_font: &'static [u8],
+    pub serif_font: &'static [u8],
     pub art: ArtLayout,
     pub name: TextStyle,
     pub cost: TextStyle,
@@ -276,9 +271,6 @@ impl Default for Layout {
             name_style: NameStyle::Standard,
 
             border_path: BorderPathLayout::default(),
-
-            serif_font: Vec::new(),
-            sanserif_font: Vec::new(),
 
             font_sizes: fonts.clone(),
 
@@ -334,7 +326,7 @@ impl Default for Layout {
             type_line: TextStyle {
                 x: 20,
                 y: 310,
-                font: Font::Sanserif,
+                font: Font::Sansserif,
                 font_size: fonts.type_line,
                 wrap_width: 372,
                 letter_spacing: 1.0,
@@ -346,7 +338,7 @@ impl Default for Layout {
             adventure_type_line: TextStyle {
                 x: 20,
                 y: 310,
-                font: Font::Sanserif,
+                font: Font::Sansserif,
                 font_size: fonts.adventure_type_line,
                 wrap_width: 372,
                 letter_spacing: 1.0,
@@ -356,7 +348,7 @@ impl Default for Layout {
             rules: TextStyle {
                 x: 20,
                 y: 344,
-                font: Font::Sanserif,
+                font: Font::Sansserif,
                 font_size: fonts.rules,
                 letter_spacing: 1.0,
                 wrap_width: 372,
@@ -366,7 +358,7 @@ impl Default for Layout {
             adventure_oracle_text_main_face: TextStyle {
                 x: 224,
                 y: 344,
-                font: Font::Sanserif,
+                font: Font::Sansserif,
                 font_size: fonts.rules,
                 long_text_font_size: Some(fonts.small_rules),
                 letter_spacing: 1.0,
@@ -377,7 +369,7 @@ impl Default for Layout {
             adventure_oracle_text_alt_face: TextStyle {
                 x: 20,
                 y: 404,
-                font: Font::Sanserif,
+                font: Font::Sansserif,
                 font_size: fonts.rules,
                 letter_spacing: 1.0,
                 wrap_width: 186,
@@ -403,7 +395,7 @@ impl Default for Layout {
             set_code: TextStyle {
                 x: 30,
                 y: 566,
-                font: Font::Sanserif,
+                font: Font::Sansserif,
                 font_size: fonts.set_code,
                 wrap_width: 372,
                 letter_spacing: 2.0,
@@ -413,7 +405,7 @@ impl Default for Layout {
             artist: TextStyle {
                 x: 120,
                 y: 566,
-                font: Font::Sanserif,
+                font: Font::Sansserif,
                 font_size: fonts.artist,
                 long_text_font_size: Some(fonts.artist_small),
                 wrap_width: 200,
@@ -430,6 +422,8 @@ impl Default for Layout {
                 wrap_width: 62,
                 ..Default::default()
             },
+            serif_font: fonts::MPLANTIN,
+            sanserif_font: fonts::TAHOMA,
         }
     }
 }
@@ -438,24 +432,8 @@ impl Layout {
     pub fn font_data(&self, font: Font) -> &[u8] {
         match font {
             Font::Serif => &self.serif_font,
-            Font::Sanserif => &self.sanserif_font,
+            Font::Sansserif => &self.sanserif_font,
         }
-    }
-
-    pub fn load_fonts(
-        serif_font_path: impl Into<PathBuf>,
-        sanserif_font_path: impl Into<PathBuf>,
-    ) -> Result<(Vec<u8>, Vec<u8>), std::io::Error> {
-        let serif_font_path = serif_font_path.into();
-        let sanserif_font_path = sanserif_font_path.into();
-
-        debug!(path = ?serif_font_path, "Loading serif font");
-        let serif_font = std::fs::read(&serif_font_path)?;
-
-        debug!(path = ?sanserif_font_path, "Loading sans-serif font");
-        let sanserif_font = std::fs::read(&sanserif_font_path)?;
-
-        Ok((serif_font, sanserif_font))
     }
 
     pub fn text_width(&self, text: &str, style: &TextStyle) -> f32 {
