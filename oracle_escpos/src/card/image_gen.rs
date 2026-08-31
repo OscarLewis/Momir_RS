@@ -196,6 +196,52 @@ impl<'a> CardRenderer for AdventureCardRenderer<'a> {
     }
 }
 
+/// MDFC card renderer (renders side-by-side)
+pub struct MeldCardRenderer<'a> {
+    pub card: &'a OracleScryfallCard,
+}
+
+impl<'a> CardRenderer for MeldCardRenderer<'a> {
+    async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
+        let related_cards = self
+            .card
+            .core
+            .all_parts
+            .as_ref()
+            .ok_or("No related cards")?;
+        let faces = self.card.core.card_faces.as_ref().ok_or("No card faces")?;
+        // debug!(faces = ?faces, "MDFC Card Faces");
+
+        if faces.len() < 2 {
+            return Err("Expected at least 2 faces".into());
+        }
+        if faces.len() > 2 {
+            return Err("Expected only 2 faces".into());
+        }
+        let front_img = render_card_face(self.card, Some(&faces[0]), layout).await?;
+        let back_img = render_card_face(self.card, Some(&faces[1]), layout).await?;
+
+        // Composite side-by-side with 20 px white buffer
+        let buffer = 20;
+
+        let mut composed = RgbImage::from_pixel(
+            front_img.width() * 2 + buffer,
+            front_img.height(),
+            Rgb([255, 255, 255]),
+        );
+
+        imageops::overlay(&mut composed, &front_img, 0, 0);
+        imageops::overlay(
+            &mut composed,
+            &back_img,
+            (front_img.width() + buffer) as i64,
+            0,
+        );
+
+        Ok(composed)
+    }
+}
+
 /// Main card print handler
 pub struct CardPrint<'a> {
     card_type: &'a CardType,
@@ -232,6 +278,7 @@ impl<'a> CardPrint<'a> {
             CardType::Adventure(card) => AdventureCardRenderer { card }.render(&layout).await?,
             CardType::Omen(card) => AdventureCardRenderer { card }.render(&layout).await?,
             CardType::Prepare(card) => AdventureCardRenderer { card }.render(&layout).await?,
+            CardType::Meld(card) => MeldCardRenderer { card }.render(&layout).await?,
         };
 
         if let Some(out_path) = out_path {
