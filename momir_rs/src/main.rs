@@ -14,8 +14,8 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::get,
 };
-use momir_oracle_config::{AppConfig, load_config};
-use oracle_escpos::{OracleNetworkPrinter, test_img_print, test_mdfc_img_print};
+use momir_oracle_config::{AppConfig, PrintMethod, load_config};
+use oracle_escpos::{OracleNetworkPrinter, OracleUsbPrinter, test_img_print, test_mdfc_img_print};
 use rand::RngExt;
 use scryfall_oracle::{
     OracleScryfallCard,
@@ -146,21 +146,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::path::PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
     let oracle = OracleCards::new(&scryfall, Some(&cache_path), Some(sets)).await?;
 
-    
+    match config.printer.print_method {
+        Some(PrintMethod::Network) => {
+            if let Some(printer) = OracleNetworkPrinter::from_config(&config) {
+                if printer.check_connection().await {
+                    debug!(
+                        printer_host = config.printer.host,
+                        printer_port = config.printer.port,
+                        "Printer connected"
+                    );
+                } else {
+                    warn!("Printer is not connected");
+                }
+            } else {
+                warn!("Network printer is not configured");
+            }
+        }
 
-    // let printer = OraclePrinter::new(config.printer.host.clone(), config.printer.port);
+        Some(PrintMethod::Usb) => {
+            if let Some(printer) = OracleUsbPrinter::from_config(&config) {
+                if printer.check_connection() {
+                    debug!("Printer connected");
+                } else {
+                    warn!("Printer is not connected");
+                }
+            } else {
+                warn!("USB printer is not configured");
+            }
+        }
 
-    // let printer = if printer.check_connection().await {
-    //     debug!(
-    //         printer_host = config.printer.host,
-    //         printer_port = config.printer.port,
-    //         "Printer connected"
-    //     );
-    //     Some(printer)
-    // } else {
-    //     warn!("Printer is not connected");
-    //     None
-    // };
+        None => {
+            warn!("No printer method configured");
+        }
+    }
 
     if let Some(cards) = oracle.cards.as_ref() {
         debug!(
@@ -329,31 +347,59 @@ async fn card_by_cmc(
             );
 
             // TODO Enable printing
-            // if let Some(printer) = &state.printer {
-            //     printer
-            //         .print_oracle_scryfall_card(&card, None)
-            //         .await
-            //         .map_err(|e| AppError::Internal(e.to_string()))?;
-            // }
+            match state.config.printer.print_method {
+                Some(PrintMethod::Network) => {
+                    if let Some(printer) = OracleNetworkPrinter::from_config(&state.config) {
+                        if printer.check_connection().await {
+                            let card = card.clone();
 
-            // let printer = OraclePrinter::from(&state.config);
+                            tokio::spawn(async move {
+                                if let Err(e) =
+                                    printer.print_oracle_scryfall_card(&card, None).await
+                                {
+                                    warn!(
+                                        error = %e,
+                                        card_name = %card.core.name,
+                                        "Failed to print card"
+                                    );
+                                }
+                            });
+                        } else {
+                            warn!("Network printer is not reachable");
+                        }
+                    } else {
+                        warn!("Network printer is not configured");
+                    }
+                }
 
-            // if printer.check_connection().await {
-            //     let card = card.clone();
+                Some(PrintMethod::Usb) => {
+                    if let Some(printer) = OracleUsbPrinter::from_config(&state.config) {
+                        if printer.check_connection() {
+                            let card = card.clone();
 
-            //     tokio::spawn(async move {
-            //         if let Err(e) = printer.print_oracle_scryfall_card(&card, None).await {
-            //             warn!(
-            //                 error = %e,
-            //                 card_name = %card.core.name,
-            //                 "Failed to print card"
-            //             );
-            //         }
-            //     });
-            // } else {
-            //     warn!("Printer is not reachable");
-            // }
+                            tokio::spawn(async move {
+                                if let Err(e) =
+                                    printer.print_oracle_scryfall_card(&card, None).await
+                                {
+                                    warn!(
+                                        error = %e,
+                                        card_name = %card.core.name,
+                                        "Failed to print card"
+                                    );
+                                }
+                            });
+                        } else {
+                            warn!("USB printer is not reachable");
+                        }
+                    } else {
+                        warn!("USB printer is not configured");
+                    }
+                }
 
+                None => {
+                    warn!("No printer method configured");
+                }
+            }
             ConsoleMessage::Card {
                 sender: "Momir".to_string(),
                 card: card,
@@ -379,26 +425,58 @@ struct PrintResponse {
 async fn print_momir_token(
     State(state): State<AppState>,
 ) -> Result<Json<PrintResponse>, StatusCode> {
-    // let printer = OraclePrinter::from(&state.config);
-
-    // if !printer.check_connection().await {
-    //     return Err(StatusCode::SERVICE_UNAVAILABLE);
-    // }
-
     let momir = state.momir_card.clone().ok_or(StatusCode::NOT_FOUND)?;
 
-    // printer
-    //     .print_oracle_scryfall_card(&momir, None)
-    //     .await
-    //     .map_err(|e| {
-    //         warn!(
-    //             error = %e,
-    //             card_name = %momir.core.name,
-    //             "Failed to print card"
-    //         );
+    match state.config.printer.print_method {
+        Some(PrintMethod::Network) => {
+            let printer = OracleNetworkPrinter::from_config(&state.config)
+                .ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
 
-    //         StatusCode::INTERNAL_SERVER_ERROR
-    //     })?;
+            if !printer.check_connection().await {
+                return Err(StatusCode::SERVICE_UNAVAILABLE);
+            }
+
+            printer
+                .print_oracle_scryfall_card(&momir, None)
+                .await
+                .map_err(|e| {
+                    warn!(
+                        error = %e,
+                        card_name = %momir.core.name,
+                        "Failed to print card"
+                    );
+
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
+        }
+
+        Some(PrintMethod::Usb) => {
+            let printer = OracleUsbPrinter::from_config(&state.config)
+                .ok_or(StatusCode::SERVICE_UNAVAILABLE)?;
+
+            if !printer.check_connection() {
+                return Err(StatusCode::SERVICE_UNAVAILABLE);
+            }
+
+            printer
+                .print_oracle_scryfall_card(&momir, None)
+                .await
+                .map_err(|e| {
+                    warn!(
+                        error = %e,
+                        card_name = %momir.core.name,
+                        "Failed to print card"
+                    );
+
+                    StatusCode::INTERNAL_SERVER_ERROR
+                })?;
+        }
+
+        None => {
+            warn!("No printer method configured");
+            return Err(StatusCode::SERVICE_UNAVAILABLE);
+        }
+    }
 
     Ok(Json(PrintResponse {
         success: true,

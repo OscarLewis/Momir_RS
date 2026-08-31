@@ -1,12 +1,13 @@
 use core::fmt;
-use std::path::PathBuf;
 use image::ImageBuffer;
 use momir_oracle_config::AppConfig;
 use scryfall_oracle::{CardLayout, OracleScryfallCard};
+use std::path::PathBuf;
 use tokio::net::TcpStream;
 
 use crate::{
-    card::{card_type::CardType, image_gen::CardPrint}, printer::{print_img_network, print_img_usb},
+    card::{card_type::CardType, image_gen::CardPrint},
+    printer::{print_img_network, print_img_usb},
 };
 
 #[derive(Debug)]
@@ -32,15 +33,6 @@ pub struct OracleNetworkPrinter {
     port: u16,
 }
 
-impl OracleNetworkPrinter {
-    fn from_config(config: &AppConfig) -> Option<Self> {
-        Some(Self {
-            host: config.printer.host.clone()?,
-            port: config.printer.port?,
-        })
-    }
-}
-
 pub struct OracleUsbPrinter {
     path: PathBuf,
 }
@@ -50,10 +42,15 @@ impl OracleNetworkPrinter {
         Self { host, port }
     }
 
+    pub fn from_config(config: &AppConfig) -> Option<Self> {
+        Some(Self {
+            host: config.printer.host.clone()?,
+            port: config.printer.port?,
+        })
+    }
+
     pub async fn check_connection(&self) -> bool {
-        TcpStream::connect((&*self.host, self.port))
-            .await
-            .is_ok()
+        TcpStream::connect((&*self.host, self.port)).await.is_ok()
     }
 
     pub async fn print_oracle_scryfall_card(
@@ -75,6 +72,12 @@ impl OracleUsbPrinter {
         Self { path }
     }
 
+    pub fn from_config(config: &AppConfig) -> Option<Self> {
+        Some(Self {
+            path: PathBuf::from(config.printer.usb_path.clone()?),
+        })
+    }
+
     pub fn check_connection(&self) -> bool {
         self.path.exists()
     }
@@ -86,8 +89,7 @@ impl OracleUsbPrinter {
     ) -> Result<(), PrinterError> {
         let img = render_card(card).await?;
 
-        print_img_usb(img, &self.path)
-            .map_err(|e| PrinterError::Print(e.to_string()))?;
+        print_img_usb(img, &self.path).map_err(|e| PrinterError::Print(e.to_string()))?;
 
         Ok(())
     }
@@ -100,11 +102,7 @@ async fn render_card(
         .core
         .type_line
         .as_deref()
-        .is_some_and(|type_line| {
-            type_line
-                .split_whitespace()
-                .any(|word| word == "Omen")
-        })
+        .is_some_and(|type_line| type_line.split_whitespace().any(|word| word == "Omen"))
     {
         CardType::Omen(card.clone())
     } else {

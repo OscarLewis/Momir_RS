@@ -1,20 +1,30 @@
 use config::Config;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Clone)]
+
+#[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum PrintMethod {
+    Network,
+    Usb,
+}
+
+
+#[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
 pub struct AppConfig {
     pub printer: PrinterConfig,
     pub server: ServerConfig,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
 pub struct PrinterConfig {
     pub host: Option<String>,
     pub port: Option<u16>,
     pub usb_path: Option<String>,
+    pub print_method: Option<PrintMethod>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
 pub struct ServerConfig {
     pub host: String,
     pub port: i32,

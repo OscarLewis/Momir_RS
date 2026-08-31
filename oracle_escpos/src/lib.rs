@@ -11,3 +11,4 @@ pub use printer::test_img_print;
 pub use printer::test_mdfc_img_print;
 
 pub use api::OracleNetworkPrinter;
+pub use api::OracleUsbPrinter;
