@@ -298,7 +298,12 @@ button:active {
   grid-template-columns: repeat(5, max-content);
   gap: 0.5rem 1.5rem;
 }
-@media (max-width: 640px) {
+@media (width < 1200px) {
+  .filter-grid {
+    grid-template-columns: repeat(3, max-content);
+  }
+}
+@media (width < 640px) {
   .filter-grid {
     grid-template-columns: repeat(2, max-content);
   }
