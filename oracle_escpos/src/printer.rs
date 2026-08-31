@@ -1,8 +1,15 @@
 use image::{DynamicImage, ImageBuffer, ImageReader};
 use momir_oracle_config::load_config;
-use std::io::Write;
 use std::net::TcpStream;
 use tracing::{debug, info};
+use std::{
+    fs::OpenOptions,
+    path::Path,io::Write,
+    thread,
+    time::Duration,
+};
+
+const TEST_ADDR: &str = "192.168.88.253";
 
 const CARD_IMAGE: &str =
     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/card.png";
@@ -12,7 +19,21 @@ const BIG_CARD_IMAGE: &str =
 
 const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png";
 
-pub fn print_img(
+pub fn print_img_usb(
+    image: ImageBuffer<image::Rgb<u8>, Vec<u8>>,
+    path: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let dyn_img = DynamicImage::ImageRgb8(image).rotate270();
+    let raw_bytes = encode_gs_v0_image(&dyn_img);
+    
+    send_raw_bytes_usb(&raw_bytes, path)?;
+  info!(usb_path=?path,
+        "Successfully printed full card image via usb"
+    );
+    Ok(())
+}
+
+pub fn print_img_network(
     image: ImageBuffer<image::Rgb<u8>, Vec<u8>>,
     printer_host: &str,
     printer_port: u16,
@@ -24,7 +45,7 @@ pub fn print_img(
     info!(
         addr = printer_host,
         port = printer_port,
-        "Successfully printed full card image via raw GS v 0 raster mode"
+        "Successfully printed full card image via network"
     );
     Ok(())
 }
@@ -40,10 +61,10 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let raw_bytes = encode_gs_v0_image(&image);
     let config = load_config()?;
 
-    send_raw_bytes_throttled(&raw_bytes, &config.printer.host, config.printer.port)?;
+    send_raw_bytes_throttled(&raw_bytes, TEST_ADDR, config.printer.port.expect("No port configured"))?;
 
     debug!(
-        addr = config.printer.host,
+        addr = TEST_ADDR,
         port = config.printer.port,
         "Successfully printed full card image via raw GS v 0 raster mode"
     );
@@ -57,10 +78,10 @@ pub fn test_img_print_raw_raster() -> Result<(), Box<dyn std::error::Error>> {
     let raw_bytes = encode_gs_v0_image(&image);
     let config = load_config()?;
 
-    send_raw_bytes_throttled(&raw_bytes, &config.printer.host, config.printer.port)?;
+    send_raw_bytes_throttled(&raw_bytes, TEST_ADDR, config.printer.port.expect("No port configured"))?;
 
     debug!(
-        addr = &config.printer.host,
+        addr = TEST_ADDR,
         port = config.printer.port,
         "Attempting 24-dot raw ESC * bit-image print without linefeeds via network"
     );
@@ -73,13 +94,14 @@ pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let raw_bytes = encode_gs_v0_image(&image);
     let config = load_config()?;
 
-    send_raw_bytes_throttled(&raw_bytes, &config.printer.host, config.printer.port)?;
-
     debug!(
-        addr = &config.printer.host,
+        addr = TEST_ADDR,
         port = config.printer.port,
         "Successfully printed MDFC image via raw GS v 0 raster mode"
     );
+    send_raw_bytes_throttled(&raw_bytes, TEST_ADDR, config.printer.port.expect("No port configured"))?;
+
+
 
     Ok(())
 }
@@ -135,6 +157,85 @@ fn send_raw_bytes_throttled(
 
     // Allow cutter motor hardware to complete cycle before TCP socket drops naturally
     std::thread::sleep(std::time::Duration::from_millis(250));
+
+    Ok(())
+}
+
+
+// fn send_raw_bytes_usb(
+//     raw_bytes: &[u8],
+//     printer_path: impl AsRef<Path>,
+// ) -> Result<(), Box<dyn std::error::Error>> {
+//     const PRE_CUT_FEED_LINES: u8 = 2;
+//     const CHUNK_SIZE: usize = 4096;
+
+//     let mut printer = OpenOptions::new()
+//         .write(true)
+//         .open(printer_path)?;
+
+//     // ESC @ — initialize printer
+//     printer.write_all(&[0x1B, 0x40])?;
+
+//     // Send payload in chunks with a small delay for printer buffering.
+//     for chunk in raw_bytes.chunks(CHUNK_SIZE) {
+//         printer.write_all(chunk)?;
+//         printer.flush()?;
+
+//         thread::sleep(Duration::from_millis(25));
+//     }
+
+//     // Give the print head a moment to finish.
+//     thread::sleep(Duration::from_millis(100));
+
+//     // Feed N lines + full cut.
+//     printer.write_all(&[
+//         0x1B,
+//         0x64,
+//         PRE_CUT_FEED_LINES,
+//         0x1D,
+//         0x56,
+//         0x41,
+//         0x00,
+//     ])?;
+
+//     printer.flush()?;
+
+//     // Let the cutter finish before closing the device.
+//     thread::sleep(Duration::from_millis(250));
+
+//     Ok(())
+// }
+
+fn send_raw_bytes_usb(
+    raw_bytes: &[u8],
+    printer_path: impl AsRef<Path>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    const PRE_CUT_FEED_LINES: u8 = 2;
+
+    let mut printer = OpenOptions::new()
+        .write(true)
+        .open(printer_path)?;
+
+    // ESC @
+    printer.write_all(&[0x1B, 0x40])?;
+
+    // Send the entire ESC/POS payload in one write.
+    printer.write_all(raw_bytes)?;
+
+    // Feed + cut.
+    printer.write_all(&[
+        0x1B,
+        0x64,
+        PRE_CUT_FEED_LINES,
+        0x1D,
+        0x56,
+        0x41,
+        0x00,
+    ])?;
+
+    printer.flush()?;
+
+    thread::sleep(Duration::from_millis(250));
 
     Ok(())
 }
@@ -206,6 +307,8 @@ mod tests {
     #[test]
     #[ignore = "requires network printer hardware at 192.168.2.47"]
     fn test_img_print_raw_raster_executes() {
+        let config = load_config().expect("unable to load conf");
+
         let result = test_img_print_raw_raster();
         assert!(
             result.is_ok(),
@@ -213,4 +316,16 @@ mod tests {
             result.err()
         );
     }
+
+    #[test]
+    #[ignore = "requires USB printer"]
+    fn test_img_usb() -> Result<(), Box<dyn std::error::Error>> {
+        let image = load_image(MDFC_IMAGE)?;
+        let raw_bytes = encode_gs_v0_image(&image);
+
+        send_raw_bytes_usb(&raw_bytes, "/dev/usb/lp0")?;
+
+        Ok(())
+    }
+
 }

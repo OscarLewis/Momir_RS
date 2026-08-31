@@ -10,4 +10,4 @@ pub mod tests;
 pub use printer::test_img_print;
 pub use printer::test_mdfc_img_print;
 
-pub use api::OraclePrinter;
+pub use api::OracleNetworkPrinter;

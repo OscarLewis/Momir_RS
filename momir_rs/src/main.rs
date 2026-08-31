@@ -15,7 +15,7 @@ use axum::{
     routing::get,
 };
 use momir_oracle_config::{AppConfig, load_config};
-use oracle_escpos::{OraclePrinter, test_img_print, test_mdfc_img_print};
+use oracle_escpos::{OracleNetworkPrinter, test_img_print, test_mdfc_img_print};
 use rand::RngExt;
 use scryfall_oracle::{
     OracleScryfallCard,
@@ -146,19 +146,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::path::PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
     let oracle = OracleCards::new(&scryfall, Some(&cache_path), Some(sets)).await?;
 
-    let printer = OraclePrinter::new(config.printer.host.clone(), config.printer.port);
+    
 
-    let printer = if printer.check_connection().await {
-        debug!(
-            printer_host = config.printer.host,
-            printer_port = config.printer.port,
-            "Printer connected"
-        );
-        Some(printer)
-    } else {
-        warn!("Printer is not connected");
-        None
-    };
+    // let printer = OraclePrinter::new(config.printer.host.clone(), config.printer.port);
+
+    // let printer = if printer.check_connection().await {
+    //     debug!(
+    //         printer_host = config.printer.host,
+    //         printer_port = config.printer.port,
+    //         "Printer connected"
+    //     );
+    //     Some(printer)
+    // } else {
+    //     warn!("Printer is not connected");
+    //     None
+    // };
 
     if let Some(cards) = oracle.cards.as_ref() {
         debug!(
@@ -334,23 +336,23 @@ async fn card_by_cmc(
             //         .map_err(|e| AppError::Internal(e.to_string()))?;
             // }
 
-            let printer = OraclePrinter::from(&state.config);
+            // let printer = OraclePrinter::from(&state.config);
 
-            if printer.check_connection().await {
-                let card = card.clone();
+            // if printer.check_connection().await {
+            //     let card = card.clone();
 
-                tokio::spawn(async move {
-                    if let Err(e) = printer.print_oracle_scryfall_card(&card, None).await {
-                        warn!(
-                            error = %e,
-                            card_name = %card.core.name,
-                            "Failed to print card"
-                        );
-                    }
-                });
-            } else {
-                warn!("Printer is not reachable");
-            }
+            //     tokio::spawn(async move {
+            //         if let Err(e) = printer.print_oracle_scryfall_card(&card, None).await {
+            //             warn!(
+            //                 error = %e,
+            //                 card_name = %card.core.name,
+            //                 "Failed to print card"
+            //             );
+            //         }
+            //     });
+            // } else {
+            //     warn!("Printer is not reachable");
+            // }
 
             ConsoleMessage::Card {
                 sender: "Momir".to_string(),
@@ -377,26 +379,26 @@ struct PrintResponse {
 async fn print_momir_token(
     State(state): State<AppState>,
 ) -> Result<Json<PrintResponse>, StatusCode> {
-    let printer = OraclePrinter::from(&state.config);
+    // let printer = OraclePrinter::from(&state.config);
 
-    if !printer.check_connection().await {
-        return Err(StatusCode::SERVICE_UNAVAILABLE);
-    }
+    // if !printer.check_connection().await {
+    //     return Err(StatusCode::SERVICE_UNAVAILABLE);
+    // }
 
     let momir = state.momir_card.clone().ok_or(StatusCode::NOT_FOUND)?;
 
-    printer
-        .print_oracle_scryfall_card(&momir, None)
-        .await
-        .map_err(|e| {
-            warn!(
-                error = %e,
-                card_name = %momir.core.name,
-                "Failed to print card"
-            );
+    // printer
+    //     .print_oracle_scryfall_card(&momir, None)
+    //     .await
+    //     .map_err(|e| {
+    //         warn!(
+    //             error = %e,
+    //             card_name = %momir.core.name,
+    //             "Failed to print card"
+    //         );
 
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    //         StatusCode::INTERNAL_SERVER_ERROR
+    //     })?;
 
     Ok(Json(PrintResponse {
         success: true,
@@ -428,20 +430,20 @@ async fn handle_socket(
         },
     );
 
-    let printer = OraclePrinter::from(&config);
+    // let printer = OraclePrinter::from(&config);
 
-    if printer.check_connection().await {
-        console.send(
-            &game_id,
-            ConsoleMessage::Text {
-                sender: "System".to_string(),
-                body: format!(
-                    "Printer connected at {}:{}",
-                    &config.printer.host, config.printer.port
-                ),
-            },
-        );
-    }
+    // if printer.check_connection().await {
+    //     console.send(
+    //         &game_id,
+    //         ConsoleMessage::Text {
+    //             sender: "System".to_string(),
+    //             body: format!(
+    //                 "Printer connected at {}:{}",
+    //                 &config.printer.host, config.printer.port
+    //             ),
+    //         },
+    //     );
+    // }
 
     while let Ok(message) = rx.recv().await {
         let rendered = match render_message(&message) {

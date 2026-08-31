@@ -9,8 +9,9 @@ pub struct AppConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct PrinterConfig {
-    pub host: String,
-    pub port: u16,
+    pub host: Option<String>,
+    pub port: Option<u16>,
+    pub usb_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -23,8 +24,6 @@ pub struct ServerConfig {
 pub fn load_config() -> Result<AppConfig, config::ConfigError> {
     let config = Config::builder()
         // Defaults
-        .set_default("printer.host", "0.0.0.0")?
-        .set_default("printer.port", 9100)?
         .set_default("server.host", "0.0.0.0")?
         .set_default("server.port", 8080)?
         .set_default("server.scryfall_user_agent", "momir_basic_rs/v0.1")?
