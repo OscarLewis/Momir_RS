@@ -130,7 +130,7 @@ mod tests {
     use test_log::test;
 
     #[test(tokio::test)]
-    #[ignore = "requires network printer hardware at 192.168.2.47"]
+    #[ignore = "requires network printer hardware"]
     async fn test_integration_print() -> Result<(), Box<dyn std::error::Error>> {
         let json = fs::read_to_string("./tests/karolina_test_card.json")?;
         let card: OracleScryfallCard = serde_json::from_str(&json)?;

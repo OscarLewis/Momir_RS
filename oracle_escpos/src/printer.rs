@@ -1,13 +1,8 @@
 use image::{DynamicImage, ImageBuffer, ImageReader};
 use momir_oracle_config::load_config;
 use std::net::TcpStream;
+use std::{fs::OpenOptions, io::Write, path::Path, thread, time::Duration};
 use tracing::{debug, info};
-use std::{
-    fs::OpenOptions,
-    path::Path,io::Write,
-    thread,
-    time::Duration,
-};
 
 const TEST_ADDR: &str = "192.168.88.253";
 
@@ -25,9 +20,9 @@ pub fn print_img_usb(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let dyn_img = DynamicImage::ImageRgb8(image).rotate270();
     let raw_bytes = encode_gs_v0_image(&dyn_img);
-    
+
     send_raw_bytes_usb(&raw_bytes, path)?;
-  info!(usb_path=?path,
+    info!(usb_path=?path,
         "Successfully printed full card image via usb"
     );
     Ok(())
@@ -61,7 +56,11 @@ pub fn test_img_print() -> Result<(), Box<dyn std::error::Error>> {
     let raw_bytes = encode_gs_v0_image(&image);
     let config = load_config()?;
 
-    send_raw_bytes_throttled(&raw_bytes, TEST_ADDR, config.printer.port.expect("No port configured"))?;
+    send_raw_bytes_throttled(
+        &raw_bytes,
+        TEST_ADDR,
+        config.printer.port.expect("No port configured"),
+    )?;
 
     debug!(
         addr = TEST_ADDR,
@@ -78,7 +77,11 @@ pub fn test_img_print_raw_raster() -> Result<(), Box<dyn std::error::Error>> {
     let raw_bytes = encode_gs_v0_image(&image);
     let config = load_config()?;
 
-    send_raw_bytes_throttled(&raw_bytes, TEST_ADDR, config.printer.port.expect("No port configured"))?;
+    send_raw_bytes_throttled(
+        &raw_bytes,
+        TEST_ADDR,
+        config.printer.port.expect("No port configured"),
+    )?;
 
     debug!(
         addr = TEST_ADDR,
@@ -99,9 +102,11 @@ pub fn test_mdfc_img_print() -> Result<(), Box<dyn std::error::Error>> {
         port = config.printer.port,
         "Successfully printed MDFC image via raw GS v 0 raster mode"
     );
-    send_raw_bytes_throttled(&raw_bytes, TEST_ADDR, config.printer.port.expect("No port configured"))?;
-
-
+    send_raw_bytes_throttled(
+        &raw_bytes,
+        TEST_ADDR,
+        config.printer.port.expect("No port configured"),
+    )?;
 
     Ok(())
 }
@@ -161,7 +166,6 @@ fn send_raw_bytes_throttled(
     Ok(())
 }
 
-
 // fn send_raw_bytes_usb(
 //     raw_bytes: &[u8],
 //     printer_path: impl AsRef<Path>,
@@ -212,9 +216,7 @@ fn send_raw_bytes_usb(
 ) -> Result<(), Box<dyn std::error::Error>> {
     const PRE_CUT_FEED_LINES: u8 = 2;
 
-    let mut printer = OpenOptions::new()
-        .write(true)
-        .open(printer_path)?;
+    let mut printer = OpenOptions::new().write(true).open(printer_path)?;
 
     // ESC @
     printer.write_all(&[0x1B, 0x40])?;
@@ -223,15 +225,7 @@ fn send_raw_bytes_usb(
     printer.write_all(raw_bytes)?;
 
     // Feed + cut.
-    printer.write_all(&[
-        0x1B,
-        0x64,
-        PRE_CUT_FEED_LINES,
-        0x1D,
-        0x56,
-        0x41,
-        0x00,
-    ])?;
+    printer.write_all(&[0x1B, 0x64, PRE_CUT_FEED_LINES, 0x1D, 0x56, 0x41, 0x00])?;
 
     printer.flush()?;
 
@@ -287,14 +281,14 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "requires network printer hardware at 192.168.2.47"]
+    #[ignore = "requires network printer hardware"]
     fn test_img_print_executes() {
         let result = test_img_print();
         assert!(result.is_ok(), "Image print failed: {:?}", result.err());
     }
 
     #[test]
-    #[ignore = "requires network printer hardware at 192.168.2.47"]
+    #[ignore = "requires network printer hardware"]
     fn test_mdfc_img_print_executes() {
         let result = test_mdfc_img_print();
         assert!(
@@ -305,7 +299,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "requires network printer hardware at 192.168.2.47"]
+    #[ignore = "requires network printer hardware"]
     fn test_img_print_raw_raster_executes() {
         let config = load_config().expect("unable to load conf");
 
@@ -327,5 +321,4 @@ mod tests {
 
         Ok(())
     }
-
 }
