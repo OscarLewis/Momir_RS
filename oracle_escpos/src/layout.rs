@@ -49,6 +49,7 @@ pub struct FontSizes {
     pub long_cost: f32,
     pub artist: f32,
     pub artist_small: f32,
+    pub loyalty: f32,
 }
 
 impl Default for FontSizes {
@@ -69,6 +70,7 @@ impl Default for FontSizes {
             long_cost: 14.0,
             adventure_name: 16.0,
             long_adventure_name: 14.0,
+            loyalty: 34.0,
         }
     }
 }
@@ -256,6 +258,8 @@ pub struct Layout {
     pub set_code: TextStyle,
     pub artist: TextStyle,
     pub pow_tough_style: TextStyle,
+    pub planeswalker_loyalty_style: TextStyle,
+    pub planeswalker_loyalty_shield: SvgLayout,
     pub border_path: BorderPathLayout,
     pub adventure_oracle_text_alt_face: TextStyle,
     pub adventure_mana_cost: TextStyle,
@@ -415,6 +419,13 @@ impl Default for Layout {
                 height: 40,
             },
 
+            planeswalker_loyalty_shield: SvgLayout {
+                x: 320,
+                y: 500,
+                width: 90,
+                height: 50,
+            },
+
             set_code: TextStyle {
                 x: 30,
                 y: 566,
@@ -441,6 +452,16 @@ impl Default for Layout {
                 y: 566,
                 font: Font::Serif,
                 font_size: fonts.pow_tough,
+                letter_spacing: 1.0,
+                wrap_width: 62,
+                ..Default::default()
+            },
+
+            planeswalker_loyalty_style: TextStyle {
+                x: 355,
+                y: 540,
+                font: Font::Serif,
+                font_size: fonts.loyalty,
                 letter_spacing: 1.0,
                 wrap_width: 62,
                 ..Default::default()

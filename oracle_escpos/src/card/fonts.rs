@@ -4,8 +4,8 @@ pub enum Font {
     Sansserif,
 }
 pub mod fonts {
-    pub static MPLANTIN: &[u8] = include_bytes!("../../fonts/Mplantin.ttf");
-    pub static TAHOMA: &[u8] = include_bytes!("../../fonts/tahoma.ttf");
+    pub static MPLANTIN: &[u8] = include_bytes!("../../static/fonts/Mplantin.ttf");
+    pub static TAHOMA: &[u8] = include_bytes!("../../static/fonts/tahoma.ttf");
 }
 
 pub fn get_font(font: Font) -> &'static [u8] {

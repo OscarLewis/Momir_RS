@@ -3,11 +3,12 @@ use crate::{
         card_type::{CardRenderer, CardType},
         element_renderers::{
             ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
-            MeldBackCardArtRenderer, MeldNameRenderer, NameRenderer, OracleAdventureTextRenderer,
-            OracleTextRenderer, PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer,
+            OracleAdventureTextRenderer, OracleTextRenderer, PlaneswalkerLoyaltyRenderer,
+            PlaneswalkerShieldRenderer, PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer,
             TypeLineRenderer,
         },
         fonts::fonts,
+        meld_element_renderers::{MeldBackCardArtRenderer, MeldNameRenderer, NameRenderer},
     },
     layout::Layout,
 };
@@ -40,7 +41,7 @@ async fn render_card_face(
     );
 
     // Compose renderers in order
-    let renderers: Vec<Box<dyn ElementRenderer>> = vec![
+    let mut renderers: Vec<Box<dyn ElementRenderer>> = vec![
         Box::new(CardArtRenderer),
         Box::new(NameRenderer),
         Box::new(ManaCostRenderer),
@@ -52,6 +53,11 @@ async fn render_card_face(
         Box::new(PowerToughnessRenderer),
         Box::new(BorderRenderer),
     ];
+
+    if let Some(loyalty) = card.core.loyalty.as_ref() {
+        renderers.push(Box::new(PlaneswalkerLoyaltyRenderer));
+        renderers.push(Box::new(PlaneswalkerShieldRenderer));
+    }
 
     // Execute each renderer
     for renderer in renderers {
@@ -152,12 +158,18 @@ async fn render_meld_back_face(
 
     // Position 1 is the main card art of the oversized Meld Result cards
     // Position 2 is the main oracle text box of the oversized Meld Result cards
+
     // Compose renderers in order
-    let renderers: Vec<Box<dyn ElementRenderer>> = vec![
-        Box::new(MeldBackCardArtRenderer),
-        Box::new(MeldNameRenderer),
-        Box::new(BorderRenderer),
-    ];
+    let mut renderers: Vec<Box<dyn ElementRenderer>> = Vec::new();
+
+    if position == 2 {
+        renderers.push(Box::new(MeldBackCardArtRenderer));
+        renderers.push(Box::new(MeldNameRenderer));
+    }
+
+    if position == 1 {}
+
+    renderers.push(Box::new(BorderRenderer));
     // Execute each renderer
     for renderer in renderers {
         renderer
@@ -320,12 +332,6 @@ impl<'a> CardPrint<'a> {
         out_path: Option<&PathBuf>,
     ) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, Box<dyn std::error::Error>> {
         // Load fonts once
-        let serif_font_path =
-            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
-        let sanserif_font_path =
-            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/tahoma.ttf";
-        // let sanserif_font_path =
-        //     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/DejaVuSans.ttf";
         let layout = Layout {
             serif_font: fonts::MPLANTIN,
             sanserif_font: fonts::TAHOMA,
