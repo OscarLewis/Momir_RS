@@ -55,6 +55,10 @@ async fn render_card_face(
     ];
 
     if let Some(loyalty) = card.core.loyalty.as_ref() {
+        // TODO These should center with the loyalty number inside of the shield
+        /* This is so these should probably get rendered in the same Renderer,
+        but for now we can just render them in order and it will work for most cases. */
+
         renderers.push(Box::new(PlaneswalkerLoyaltyRenderer));
         renderers.push(Box::new(PlaneswalkerShieldRenderer));
     }

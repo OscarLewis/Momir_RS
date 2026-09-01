@@ -12,6 +12,7 @@ use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::
 use swash::FontRef;
 use tracing::{debug, info};
 
+const LOYALTY_SHIELD_SVG: &[u8] = include_bytes!("../../static/loyalty_shield.svg");
 const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
 
 #[async_trait]
@@ -603,8 +604,6 @@ impl ElementRenderer for PlaneswalkerLoyaltyRenderer {
         Ok(())
     }
 }
-
-const LOYALTY_SHIELD_SVG: &[u8] = include_bytes!("../../static/loyalty_shield.svg");
 
 /// Renders set icon
 pub struct PlaneswalkerShieldRenderer;
