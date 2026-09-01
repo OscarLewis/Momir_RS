@@ -1,5 +1,6 @@
 use crate::{
     art::CardArtPipeline,
+    card::svg::LOYALTY_SHIELD_SVG,
     layout::{Layout, NameStyle, WrapStyle},
     render::{
         draw_border, draw_svg, draw_text, draw_text_around_border, draw_text_rotated_270,
@@ -12,7 +13,6 @@ use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::
 use swash::FontRef;
 use tracing::{debug, info};
 
-const LOYALTY_SHIELD_SVG: &[u8] = include_bytes!("../../static/loyalty_shield.svg");
 const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
 
 #[async_trait]
@@ -481,8 +481,8 @@ impl ElementRenderer for SetIconRenderer {
                 &svg_data,
                 set_icon.x,
                 set_icon.y,
-                set_icon.width,
-                set_icon.height,
+                set_icon.max_width,
+                set_icon.max_height,
             )?;
         }
 
@@ -623,8 +623,8 @@ impl ElementRenderer for PlaneswalkerShieldRenderer {
             LOYALTY_SHIELD_SVG,
             shield_style.x,
             shield_style.y,
-            shield_style.width,
-            shield_style.height,
+            shield_style.max_width,
+            shield_style.max_height,
         )?;
 
         Ok(())
@@ -644,6 +644,80 @@ impl ElementRenderer for BorderRenderer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         debug!("Rendering card border");
         draw_border(canvas);
+        Ok(())
+    }
+}
+
+/// Renders card name with border wrapping logic
+pub struct NameRenderer;
+
+#[async_trait]
+impl ElementRenderer for NameRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let is_funny = card.core.set_type == "funny";
+        let name = face.map(|f| &f.name).unwrap_or_else(|| &card.core.name);
+        let (name_style, wrap_style) = {
+            let name_style = &layout.name;
+            let name_font_data = layout.font_data(name_style.font);
+            let name_width = layout.text_width(name, name_style);
+
+            if let Some(long_text_font_size) = name_style.long_text_font_size {
+                if name_width > name_style.wrap_width as f32 {
+                    let total_text_len = text_width(name, name_font_data, long_text_font_size, 0.5);
+                    let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
+
+                    if total_text_len > layout.border_path.bottom_threshold() && is_funny {
+                        (NameStyle::LongName, WrapStyle::FullWrap)
+                    } else if total_text_len > standard_wrap_limit && is_funny {
+                        (NameStyle::LongName, WrapStyle::SemiWrap)
+                    } else {
+                        (NameStyle::LongName, WrapStyle::Standard)
+                    }
+                } else {
+                    (NameStyle::Standard, WrapStyle::Standard)
+                }
+            } else {
+                (NameStyle::Standard, WrapStyle::Standard)
+            }
+        };
+
+        name_style.apply_layout_adjustments(layout);
+        wrap_style.apply_layout_adjustments(layout);
+
+        let name_style = &layout.name;
+        let name_font_data = layout.font_data(name_style.font);
+
+        match wrap_style {
+            WrapStyle::FullWrap | WrapStyle::SemiWrap => {
+                draw_text_around_border(
+                    canvas,
+                    name,
+                    name_font_data,
+                    name_style.font_size,
+                    name_style.letter_spacing,
+                    &layout.border_path,
+                );
+            }
+            WrapStyle::Standard => {
+                draw_text(
+                    canvas,
+                    name,
+                    name_style.x,
+                    name_style.y,
+                    name_font_data,
+                    name_style.font_size,
+                    name_style.letter_spacing,
+                    name_style.wrap_width,
+                );
+            }
+        }
+
         Ok(())
     }
 }

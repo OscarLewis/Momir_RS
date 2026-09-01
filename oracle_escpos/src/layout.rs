@@ -1,6 +1,6 @@
 use crate::{
     card::fonts::{Font, fonts},
-    render::text_width,
+    render::{text_width, wrapped_text_width},
 };
 
 #[derive(Debug, Clone)]
@@ -50,6 +50,8 @@ pub struct FontSizes {
     pub artist: f32,
     pub artist_small: f32,
     pub loyalty: f32,
+    pub meld_type_line: f32,
+    pub meld_oracle: f32,
 }
 
 impl Default for FontSizes {
@@ -71,6 +73,8 @@ impl Default for FontSizes {
             adventure_name: 16.0,
             long_adventure_name: 14.0,
             loyalty: 34.0,
+            meld_type_line: 28.0,
+            meld_oracle: 20.0,
         }
     }
 }
@@ -88,8 +92,8 @@ pub struct ArtLayout {
 pub struct SvgLayout {
     pub x: u32,
     pub y: u32,
-    pub width: u32,
-    pub height: u32,
+    pub max_width: u32,
+    pub max_height: u32,
 }
 
 /// Layout dimensions and coordinate bounds for wrapping text along card borders.
@@ -236,34 +240,39 @@ impl NameStyle {
 
 #[derive(Debug, Clone)]
 pub struct Layout {
-    pub width: u32,
-    pub height: u32,
-    pub wrap_style: WrapStyle,
-    pub name_style: NameStyle,
-    pub adventure_oracle_text_main_face: TextStyle,
-    pub adventure_type_line: TextStyle,
-    pub font_sizes: FontSizes,
-    pub sanserif_font: &'static [u8],
-    pub serif_font: &'static [u8],
-    pub art: ArtLayout,
-    pub meld_card_back_art: ArtLayout,
-    pub meld_name: TextStyle,
-    pub name: TextStyle,
-    pub cost: TextStyle,
-    pub set_icon: SvgLayout,
-    pub type_line: TextStyle,
-    pub rules: TextStyle,
-    pub flavor: TextStyle,
-    pub type_line_end_y: i32,
-    pub set_code: TextStyle,
-    pub artist: TextStyle,
-    pub pow_tough_style: TextStyle,
-    pub planeswalker_loyalty_style: TextStyle,
-    pub planeswalker_loyalty_shield: SvgLayout,
-    pub border_path: BorderPathLayout,
-    pub adventure_oracle_text_alt_face: TextStyle,
     pub adventure_mana_cost: TextStyle,
     pub adventure_name: TextStyle,
+    pub adventure_oracle_text_alt_face: TextStyle,
+    pub adventure_oracle_text_main_face: TextStyle,
+    pub adventure_type_line: TextStyle,
+    pub art: ArtLayout,
+    pub artist: TextStyle,
+    pub border_path: BorderPathLayout,
+    pub cost: TextStyle,
+    pub flavor: TextStyle,
+    pub font_sizes: FontSizes,
+    pub height: u32,
+    pub meld_card_back_art: ArtLayout,
+    pub meld_name: TextStyle,
+    pub meld_type_line_end_x: i32,
+    pub meld_type_line: TextStyle,
+    pub meld_oracle: TextStyle,
+    pub meld_set_code: TextStyle,
+    pub meld_planeswalker_loyalty_shield: SvgLayout,
+    pub name_style: NameStyle,
+    pub name: TextStyle,
+    pub planeswalker_loyalty_shield: SvgLayout,
+    pub planeswalker_loyalty_style: TextStyle,
+    pub pow_tough_style: TextStyle,
+    pub rules: TextStyle,
+    pub sanserif_font: &'static [u8],
+    pub serif_font: &'static [u8],
+    pub set_code: TextStyle,
+    pub set_icon: SvgLayout,
+    pub type_line_end_y: i32,
+    pub type_line: TextStyle,
+    pub width: u32,
+    pub wrap_style: WrapStyle,
 }
 
 impl Default for Layout {
@@ -349,7 +358,6 @@ impl Default for Layout {
                 margin_left: 20,
                 ..Default::default()
             },
-
             type_line: TextStyle {
                 x: 20,
                 y: 310,
@@ -362,6 +370,18 @@ impl Default for Layout {
 
             type_line_end_y: 20,
 
+            meld_type_line: TextStyle {
+                x: 40,
+                y: 310,
+                font: Font::Sansserif,
+                font_size: fonts.meld_type_line,
+                wrap_width: 440,
+                letter_spacing: 1.0,
+                ..Default::default()
+            },
+
+            meld_type_line_end_x: 20,
+
             adventure_type_line: TextStyle {
                 x: 20,
                 y: 310,
@@ -369,6 +389,16 @@ impl Default for Layout {
                 font_size: fonts.adventure_type_line,
                 wrap_width: 372,
                 letter_spacing: 1.0,
+                ..Default::default()
+            },
+
+            meld_oracle: TextStyle {
+                x: 20,
+                y: 344,
+                font: Font::Sansserif,
+                font_size: fonts.meld_oracle,
+                letter_spacing: 1.0,
+                wrap_width: 500,
                 ..Default::default()
             },
 
@@ -415,19 +445,37 @@ impl Default for Layout {
             set_icon: SvgLayout {
                 x: 36,
                 y: 508,
-                width: 40,
-                height: 40,
+                max_width: 40,
+                max_height: 40,
             },
 
             planeswalker_loyalty_shield: SvgLayout {
-                x: 320,
+                x: 325,
                 y: 500,
-                width: 90,
-                height: 50,
+                max_width: 90,
+                max_height: 50,
+            },
+
+            meld_planeswalker_loyalty_shield: SvgLayout {
+                x: 340,
+                y: 20,
+                max_width: 100,
+                max_height: 150,
             },
 
             set_code: TextStyle {
                 x: 30,
+                y: 566,
+                font: Font::Sansserif,
+                font_size: fonts.set_code,
+                wrap_width: 372,
+                letter_spacing: 2.0,
+                ..Default::default()
+            },
+
+            meld_set_code: TextStyle {
+                // x: 380,
+                margin_right: 20,
                 y: 566,
                 font: Font::Sansserif,
                 font_size: fonts.set_code,
@@ -486,6 +534,15 @@ impl Layout {
             self.font_data(style.font),
             style.font_size,
             style.letter_spacing,
+        )
+    }
+    pub fn wrapped_text_width(&self, text: &str, style: &TextStyle) -> f32 {
+        wrapped_text_width(
+            text,
+            self.font_data(style.font),
+            style.font_size,
+            style.letter_spacing,
+            style.wrap_width,
         )
     }
 }

@@ -1,8 +1,10 @@
 use crate::{
     art::CardArtPipeline,
-    card::element_renderers::ElementRenderer,
+    card::{element_renderers::ElementRenderer, svg::LOYALTY_SHIELD_SVG},
     layout::{Layout, NameStyle, WrapStyle},
-    render::{draw_text, draw_text_around_border, draw_text_rotated_270, text_width},
+    render::{
+        draw_svg_rotated_270, draw_text, draw_text_around_border, draw_text_rotated_270, text_width,
+    },
 };
 use async_trait::async_trait;
 use image::{RgbImage, imageops};
@@ -102,11 +104,39 @@ impl ElementRenderer for MeldOracleTextRenderer {
             .or_else(|| card.core.oracle_text.as_ref())
             .cloned()
             .unwrap_or_default();
-        let rules_style = &layout.rules;
-        let rules_font_data = layout.font_data(rules_style.font);
-        let rules_y = rules_style.y.max(layout.type_line_end_y);
+        let oracle_style = &layout.meld_oracle;
+        let oracle_font_data = layout.font_data(oracle_style.font);
+        let rules_x = oracle_style.x.max(layout.meld_type_line_end_x);
 
-        todo!();
+        let oracle_width = layout.wrapped_text_width(&oracle_text, oracle_style);
+
+        // Center vertically
+        // Center vertically
+        let center_y = canvas.height() as f32 / 2.0;
+        let baseline_y = (center_y + (oracle_width / 2.0).round()) as i32;
+
+        // let font_size = match name_style.long_text_font_size {
+        //     Some(long_size) if name_width > name_style.wrap_width as f32 => long_size,
+        //     _ => name_style.font_size,
+        // };
+
+        debug!(
+            font_size = oracle_style.font_size,
+            oracle_text_length = oracle_text.len(),
+            "Rendering meld oracle text"
+        );
+
+        draw_text_rotated_270(
+            canvas,
+            &oracle_text,
+            rules_x,
+            // oracle_style.y,
+            baseline_y,
+            oracle_font_data,
+            oracle_style.font_size,
+            oracle_style.letter_spacing,
+            oracle_style.wrap_width,
+        );
 
         Ok(())
     }
@@ -155,11 +185,10 @@ impl ElementRenderer for MeldNameRenderer {
     }
 }
 
-/// Renders card name with border wrapping logic
-pub struct NameRenderer;
-
+/// Renders type line
+pub struct MeldTypeLineRenderer;
 #[async_trait]
-impl ElementRenderer for NameRenderer {
+impl ElementRenderer for MeldTypeLineRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
@@ -167,63 +196,97 @@ impl ElementRenderer for NameRenderer {
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let is_funny = card.core.set_type == "funny";
-        let name = face.map(|f| &f.name).unwrap_or_else(|| &card.core.name);
-        let (name_style, wrap_style) = {
-            let name_style = &layout.name;
-            let name_font_data = layout.font_data(name_style.font);
-            let name_width = layout.text_width(name, name_style);
+        let type_line = face
+            .and_then(|f| f.type_line.as_ref())
+            .or_else(|| card.core.type_line.as_ref())
+            .cloned()
+            .unwrap_or_default();
+        let type_style = &layout.meld_type_line;
+        let type_font_data = layout.font_data(type_style.font);
 
-            if let Some(long_text_font_size) = name_style.long_text_font_size {
-                if name_width > name_style.wrap_width as f32 {
-                    let total_text_len = text_width(name, name_font_data, long_text_font_size, 0.5);
-                    let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
+        debug!(font_size = type_style.font_size, "Rendering type line");
+        let type_width = layout.text_width(&type_line, type_style);
 
-                    if total_text_len > layout.border_path.bottom_threshold() && is_funny {
-                        (NameStyle::LongName, WrapStyle::FullWrap)
-                    } else if total_text_len > standard_wrap_limit && is_funny {
-                        (NameStyle::LongName, WrapStyle::SemiWrap)
-                    } else {
-                        (NameStyle::LongName, WrapStyle::Standard)
-                    }
-                } else {
-                    (NameStyle::Standard, WrapStyle::Standard)
-                }
-            } else {
-                (NameStyle::Standard, WrapStyle::Standard)
-            }
-        };
+        // wrapped_text_width
 
-        name_style.apply_layout_adjustments(layout);
-        wrap_style.apply_layout_adjustments(layout);
+        // Center vertically
+        let center_y = layout.height as i32 / 2;
+        let baseline_y = center_y + (type_width / 2.0).round() as i32;
 
-        let name_style = &layout.name;
-        let name_font_data = layout.font_data(name_style.font);
+        let type_line_end_x = draw_text_rotated_270(
+            canvas,
+            &type_line,
+            type_style.x,
+            // type_style.y,
+            baseline_y,
+            type_font_data,
+            type_style.font_size,
+            type_style.letter_spacing,
+            type_style.wrap_width,
+        );
 
-        match wrap_style {
-            WrapStyle::FullWrap | WrapStyle::SemiWrap => {
-                draw_text_around_border(
-                    canvas,
-                    name,
-                    name_font_data,
-                    name_style.font_size,
-                    name_style.letter_spacing,
-                    &layout.border_path,
-                );
-            }
-            WrapStyle::Standard => {
-                draw_text(
-                    canvas,
-                    name,
-                    name_style.x,
-                    name_style.y,
-                    name_font_data,
-                    name_style.font_size,
-                    name_style.letter_spacing,
-                    name_style.wrap_width,
-                );
-            }
-        }
+        // Store for oracle text renderer to use
+        layout.meld_type_line_end_x = type_line_end_x;
+
+        Ok(())
+    }
+}
+
+/// Renders set icon
+pub struct MeldPlaneswalkerShieldRenderer;
+#[async_trait]
+impl ElementRenderer for MeldPlaneswalkerShieldRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let meld_shield_style = &layout.meld_planeswalker_loyalty_shield;
+        debug!("Rendering Planwalker loyalty shield");
+        draw_svg_rotated_270(
+            canvas,
+            LOYALTY_SHIELD_SVG,
+            meld_shield_style.x,
+            meld_shield_style.y,
+            meld_shield_style.max_width,
+            meld_shield_style.max_height,
+        )?;
+
+        Ok(())
+    }
+}
+
+/// Renders set code
+pub struct MeldSetCodeRenderer;
+#[async_trait]
+impl ElementRenderer for MeldSetCodeRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let metadata_style = &layout.meld_set_code;
+        let metadata_font_data = layout.font_data(metadata_style.font);
+        let normal_x = (layout.width - metadata_style.margin_right) as i32;
+        draw_text_rotated_270(
+            canvas,
+            &format!(
+                "{} {}",
+                card.core.set.to_uppercase(),
+                card.print.collector_number
+            ),
+            // metadata_style.x,
+            normal_x,
+            metadata_style.y,
+            metadata_font_data,
+            metadata_style.font_size,
+            metadata_style.letter_spacing,
+            metadata_style.wrap_width,
+        );
 
         Ok(())
     }

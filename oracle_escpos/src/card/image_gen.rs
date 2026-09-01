@@ -3,12 +3,15 @@ use crate::{
         card_type::{CardRenderer, CardType},
         element_renderers::{
             ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
-            OracleAdventureTextRenderer, OracleTextRenderer, PlaneswalkerLoyaltyRenderer,
-            PlaneswalkerShieldRenderer, PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer,
-            TypeLineRenderer,
+            NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer,
+            PlaneswalkerLoyaltyRenderer, PlaneswalkerShieldRenderer, PowerToughnessRenderer,
+            SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
         },
         fonts::fonts,
-        meld_element_renderers::{MeldBackCardArtRenderer, MeldNameRenderer, NameRenderer},
+        meld_element_renderers::{
+            MeldBackCardArtRenderer, MeldNameRenderer, MeldOracleTextRenderer,
+            MeldPlaneswalkerShieldRenderer, MeldSetCodeRenderer, MeldTypeLineRenderer,
+        },
     },
     layout::Layout,
 };
@@ -54,6 +57,7 @@ async fn render_card_face(
         Box::new(BorderRenderer),
     ];
 
+    // Crude planeswalker detection, should just create a CardType enum variant for Planeswalker and handle it in the CardPrint render method.
     if let Some(loyalty) = card.core.loyalty.as_ref() {
         // TODO These should center with the loyalty number inside of the shield
         /* This is so these should probably get rendered in the same Renderer,
@@ -171,7 +175,14 @@ async fn render_meld_back_face(
         renderers.push(Box::new(MeldNameRenderer));
     }
 
-    if position == 1 {}
+    if position == 1 {
+        renderers.push(Box::new(MeldTypeLineRenderer));
+        renderers.push(Box::new(MeldOracleTextRenderer));
+        if card.core.loyalty.is_some() {
+            renderers.push(Box::new(MeldPlaneswalkerShieldRenderer));
+        }
+        renderers.push(Box::new(MeldSetCodeRenderer));
+    }
 
     renderers.push(Box::new(BorderRenderer));
     // Execute each renderer
