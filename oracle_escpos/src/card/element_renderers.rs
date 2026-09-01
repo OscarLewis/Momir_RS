@@ -2,8 +2,8 @@ use crate::{
     art::CardArtPipeline,
     layout::{Layout, NameStyle, WrapStyle},
     render::{
-        draw_border, draw_svg, draw_text, draw_text_around_border, draw_vertical_line, text_width,
-        wrapped_line_count,
+        draw_border, draw_svg, draw_text, draw_text_around_border, draw_text_rotated_270,
+        draw_vertical_line, text_width, wrapped_line_count,
     },
 };
 use async_trait::async_trait;
@@ -149,7 +149,7 @@ impl ElementRenderer for MeldBackCardArtRenderer {
         Ok(())
     }
 }
-/*
+
 pub struct MeldNameRenderer;
 
 #[async_trait]
@@ -161,9 +161,7 @@ impl ElementRenderer for MeldNameRenderer {
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let name = face
-            .map(|f| &f.name)
-            .unwrap_or_else(|| &card.core.name);
+        let name = face.map(|f| &f.name).unwrap_or_else(|| &card.core.name);
 
         let name_style = &layout.meld_name;
         let font_data = layout.font_data(name_style.font);
@@ -175,11 +173,16 @@ impl ElementRenderer for MeldNameRenderer {
             _ => name_style.font_size,
         };
 
+        // Center vertically
+        let center_y = layout.height as i32 / 2;
+        let baseline_y = center_y + (name_width / 2.0).round() as i32;
+
         draw_text_rotated_270(
             canvas,
             name,
             name_style.x,
-            name_style.y,
+            // name_style.y,
+            baseline_y,
             font_data,
             font_size,
             name_style.letter_spacing,
@@ -189,7 +192,6 @@ impl ElementRenderer for MeldNameRenderer {
         Ok(())
     }
 }
- */
 
 /// Renders card name with border wrapping logic
 pub struct NameRenderer;

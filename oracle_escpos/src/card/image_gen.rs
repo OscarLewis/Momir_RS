@@ -3,8 +3,9 @@ use crate::{
         card_type::{CardRenderer, CardType},
         element_renderers::{
             ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
-            MeldBackCardArtRenderer, NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer,
-            PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
+            MeldBackCardArtRenderer, MeldNameRenderer, NameRenderer, OracleAdventureTextRenderer,
+            OracleTextRenderer, PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer,
+            TypeLineRenderer,
         },
         fonts::fonts,
     },
@@ -154,7 +155,7 @@ async fn render_meld_back_face(
     // Compose renderers in order
     let renderers: Vec<Box<dyn ElementRenderer>> = vec![
         Box::new(MeldBackCardArtRenderer),
-        // Box::new(NameRenderer),
+        Box::new(MeldNameRenderer),
         Box::new(BorderRenderer),
     ];
     // Execute each renderer

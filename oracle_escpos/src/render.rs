@@ -616,7 +616,6 @@ pub fn wrapped_line_count(
 
     line_count
 }
-
 /// Renders multiline text onto an image with word wrapping based on width constraints,
 /// with glyphs rotated 270° counter-clockwise.
 pub(crate) fn draw_text_rotated_270(
@@ -639,7 +638,7 @@ pub(crate) fn draw_text_rotated_270(
     let renderer = Render::new(&[Source::Outline]);
 
     let line_height = font_size as i32 + 5;
-    let mut y = baseline_y;
+    let mut line_x = x;
     let mut line = String::new();
     let mut line_count = 0;
 
@@ -670,8 +669,8 @@ pub(crate) fn draw_text_rotated_270(
             draw_text_line_rotated_270(
                 image,
                 &line,
-                x,
-                y,
+                line_x,
+                baseline_y,
                 font,
                 font_size,
                 letter_spacing,
@@ -680,7 +679,7 @@ pub(crate) fn draw_text_rotated_270(
             );
 
             line_count += 1;
-            y += line_height;
+            line_x += line_height;
             line = word.to_string();
         } else {
             line = candidate;
@@ -691,8 +690,8 @@ pub(crate) fn draw_text_rotated_270(
         draw_text_line_rotated_270(
             image,
             &line,
-            x,
-            y,
+            line_x,
+            baseline_y,
             font,
             font_size,
             letter_spacing,
@@ -703,11 +702,12 @@ pub(crate) fn draw_text_rotated_270(
         line_count += 1;
     }
 
+    // Return the next horizontal position rather than the next vertical position.
     if line_count > 0 {
-        y += line_height;
+        line_x += line_height;
     }
 
-    y
+    line_x
 }
 
 fn draw_text_line_rotated_270(
@@ -739,11 +739,11 @@ fn draw_text_line_rotated_270(
         }
     });
 
-    let mut pen_x = x as f32;
+    let mut pen_x: f32 = 0.0;
 
     for (glyph_id, advance) in glyphs {
         if let Some(glyph_image) = renderer.render(scaler, glyph_id) {
-            render_glyph_rotated_270(image, &glyph_image, pen_x.round() as i32, baseline_y);
+            render_glyph_rotated_270(image, &glyph_image, x, baseline_y - pen_x.round() as i32);
         }
 
         pen_x += advance + letter_spacing;

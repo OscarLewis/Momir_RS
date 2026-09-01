@@ -245,6 +245,7 @@ pub struct Layout {
     pub serif_font: &'static [u8],
     pub art: ArtLayout,
     pub meld_card_back_art: ArtLayout,
+    pub meld_name: TextStyle,
     pub name: TextStyle,
     pub cost: TextStyle,
     pub set_icon: SvgLayout,
@@ -290,6 +291,17 @@ impl Default for Layout {
                 y: 0,
                 max_width: 396,
                 max_height: 556,
+            },
+
+            meld_name: TextStyle {
+                x: 50,
+                y: 372,
+                font: Font::Serif,
+                font_size: fonts.name,
+                long_text_font_size: Some(fonts.long_name),
+                letter_spacing: 0.0,
+                wrap_width: 372,
+                ..Default::default()
             },
 
             name: TextStyle {
