@@ -3,8 +3,8 @@ use crate::{
         card_type::{CardRenderer, CardType},
         element_renderers::{
             ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
-            NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer, PowerToughnessRenderer,
-            SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
+            MeldBackCardArtRenderer, NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer,
+            PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
         },
         fonts::fonts,
     },
@@ -131,6 +131,7 @@ async fn render_adventure_card_face(
 /// Handles rendering a single card face
 async fn render_meld_back_face(
     card: &OracleScryfallCard,
+    position: u8,
     layout: &Layout,
 ) -> Result<RgbImage, Box<dyn std::error::Error>> {
     // TODO Render back face of Meld card
@@ -139,8 +140,36 @@ async fn render_meld_back_face(
 
     let scryfall_id = &card.core.id;
     let card_name = &card.core.name;
+    info!(
+        scryfall_id = %scryfall_id,
+        card_name = %card_name,
+        width = layout.width,
+        height = layout.height,
+        layout = %card.core.layout,
+        "Generating meld card back image"
+    );
 
-    Ok(todo!())
+    // Position 1 is the main card art of the oversized Meld Result cards
+    // Position 2 is the main oracle text box of the oversized Meld Result cards
+    // Compose renderers in order
+    let renderers: Vec<Box<dyn ElementRenderer>> = vec![
+        Box::new(MeldBackCardArtRenderer),
+        // Box::new(NameRenderer),
+        Box::new(BorderRenderer),
+    ];
+    // Execute each renderer
+    for renderer in renderers {
+        renderer
+            .render(card, None, &mut card_img, &mut layout)
+            .await?;
+    }
+
+    debug!(
+        scryfall_id = %scryfall_id,
+        "Card image generated successfully"
+    );
+
+    Ok(card_img)
 }
 
 /// Regular card renderer
@@ -245,11 +274,12 @@ impl<'a> CardRenderer for MeldCardRenderer<'a> {
                 result_id = %meld.result_id,
                 position = child.position,
                 result_name = result.core.name,
+                card_name = self.card.core.name,
                 "Card is a meld child"
             );
 
             let front_img = render_card_face(self.card, None, layout).await?;
-            let back_img = render_meld_back_face(&result, layout).await?;
+            let back_img = render_meld_back_face(&result, child.position, layout).await?;
 
             // Composite side-by-side with 20 px white buffer
             let buffer = 20;

@@ -616,3 +616,136 @@ pub fn wrapped_line_count(
 
     line_count
 }
+
+/// Renders multiline text onto an image with word wrapping based on width constraints,
+/// with glyphs rotated 270° counter-clockwise.
+pub(crate) fn draw_text_rotated_270(
+    image: &mut RgbImage,
+    text: &str,
+    x: i32,
+    baseline_y: i32,
+    font_data: &[u8],
+    font_size: f32,
+    letter_spacing: f32,
+    max_width: i32,
+) -> i32 {
+    let font = FontRef::from_index(font_data, 0).expect("invalid font");
+
+    let mut shape_context = ShapeContext::new();
+    let mut scale_context = ScaleContext::new();
+
+    let mut scaler = scale_context.builder(font).size(font_size).build();
+
+    let renderer = Render::new(&[Source::Outline]);
+
+    let line_height = font_size as i32 + 5;
+    let mut y = baseline_y;
+    let mut line = String::new();
+    let mut line_count = 0;
+
+    for word in text.split_whitespace() {
+        let candidate = if line.is_empty() {
+            word.to_string()
+        } else {
+            format!("{line} {word}")
+        };
+
+        let mut shaper = shape_context
+            .builder(font)
+            .size(font_size)
+            .script(Script::Latin)
+            .build();
+
+        shaper.add_str(&candidate);
+
+        let mut width = 0.0;
+
+        shaper.shape_with(|cluster| {
+            for glyph in cluster.glyphs {
+                width += glyph.advance + letter_spacing;
+            }
+        });
+
+        if width > max_width as f32 && !line.is_empty() {
+            draw_text_line_rotated_270(
+                image,
+                &line,
+                x,
+                y,
+                font,
+                font_size,
+                letter_spacing,
+                &mut scaler,
+                &renderer,
+            );
+
+            line_count += 1;
+            y += line_height;
+            line = word.to_string();
+        } else {
+            line = candidate;
+        }
+    }
+
+    if !line.is_empty() {
+        draw_text_line_rotated_270(
+            image,
+            &line,
+            x,
+            y,
+            font,
+            font_size,
+            letter_spacing,
+            &mut scaler,
+            &renderer,
+        );
+
+        line_count += 1;
+    }
+
+    if line_count > 0 {
+        y += line_height;
+    }
+
+    y
+}
+
+fn draw_text_line_rotated_270(
+    image: &mut RgbImage,
+    text: &str,
+    x: i32,
+    baseline_y: i32,
+    font: FontRef<'_>,
+    font_size: f32,
+    letter_spacing: f32,
+    scaler: &mut swash::scale::Scaler<'_>,
+    renderer: &Render,
+) {
+    let mut shape_context = ShapeContext::new();
+
+    let mut shaper = shape_context
+        .builder(font)
+        .size(font_size)
+        .script(Script::Latin)
+        .build();
+
+    shaper.add_str(text);
+
+    let mut glyphs = Vec::new();
+
+    shaper.shape_with(|cluster| {
+        for glyph in cluster.glyphs {
+            glyphs.push((glyph.id, glyph.advance));
+        }
+    });
+
+    let mut pen_x = x as f32;
+
+    for (glyph_id, advance) in glyphs {
+        if let Some(glyph_image) = renderer.render(scaler, glyph_id) {
+            render_glyph_rotated_270(image, &glyph_image, pen_x.round() as i32, baseline_y);
+        }
+
+        pen_x += advance + letter_spacing;
+    }
+}

@@ -77,6 +77,7 @@ impl Default for FontSizes {
 pub struct ArtLayout {
     pub x: i64,
     pub y: i64,
+    pub margin_right: Option<i64>,
     pub max_width: u32,
     pub max_height: u32,
 }
@@ -243,6 +244,7 @@ pub struct Layout {
     pub sanserif_font: &'static [u8],
     pub serif_font: &'static [u8],
     pub art: ArtLayout,
+    pub meld_card_back_art: ArtLayout,
     pub name: TextStyle,
     pub cost: TextStyle,
     pub set_icon: SvgLayout,
@@ -277,8 +279,17 @@ impl Default for Layout {
             art: ArtLayout {
                 x: 60,
                 y: 76,
+                margin_right: None,
                 max_width: 300,
                 max_height: 200,
+            },
+
+            meld_card_back_art: ArtLayout {
+                margin_right: Some(0),
+                x: 0,
+                y: 0,
+                max_width: 396,
+                max_height: 556,
             },
 
             name: TextStyle {

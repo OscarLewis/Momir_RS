@@ -75,6 +75,122 @@ impl ElementRenderer for CardArtRenderer {
     }
 }
 
+/// Renders meld back card art
+pub struct MeldBackCardArtRenderer;
+#[async_trait]
+impl ElementRenderer for MeldBackCardArtRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let image_uris = face
+            .and_then(|f| f.image_uris.as_ref())
+            .or_else(|| card.print.image_uris.as_ref());
+
+        debug!(
+            has_face = face.is_some(),
+            has_image_uris = image_uris.is_some(),
+            "CardArtRenderer state"
+        );
+
+        let card_art = if let Some(image_uris) = image_uris {
+            let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
+            Some(image_uris.fetch_display(&client).await?.to_vec())
+        } else {
+            None
+        };
+
+        if let Some(card_art) = card_art {
+            let card_art_img = image::load_from_memory(&card_art)?;
+
+            let half_height = card_art_img.height() / 2;
+
+            let card_art_img = card_art_img
+                .crop_imm(0, 0, card_art_img.width(), half_height)
+                .crop_imm(20, 88, card_art_img.width() - 40, half_height - 88)
+                .rotate270();
+
+            let ca_width = card_art_img.width();
+            let ca_height = card_art_img.height();
+
+            card_art_img.save("/tmp/meld_card_back_art.png")?;
+
+            let art = CardArtPipeline::process(
+                card_art_img,
+                layout.meld_card_back_art.max_width,
+                layout.meld_card_back_art.max_height,
+            );
+            let scale = (layout.meld_card_back_art.max_width as f64 / art.width() as f64)
+                .min(layout.meld_card_back_art.max_height as f64 / art.height() as f64)
+                .min(1.0);
+
+            let render_width = (art.width() as f64 * scale) as u32;
+            let render_height = (art.height() as f64 * scale) as u32;
+
+            let art = imageops::resize(
+                &art,
+                render_width,
+                render_height,
+                imageops::FilterType::Lanczos3,
+            );
+            let margin_right = layout.meld_card_back_art.margin_right.unwrap_or(0);
+
+            let margin_right = layout.meld_card_back_art.margin_right.unwrap_or(0);
+
+            let x = canvas.width() as i64 - margin_right - art.width() as i64;
+            let y = (canvas.height() as i64 - art.height() as i64) / 2;
+
+            imageops::overlay(canvas, &art, x, y);
+        }
+
+        Ok(())
+    }
+}
+/*
+pub struct MeldNameRenderer;
+
+#[async_trait]
+impl ElementRenderer for MeldNameRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let name = face
+            .map(|f| &f.name)
+            .unwrap_or_else(|| &card.core.name);
+
+        let name_style = &layout.meld_name;
+        let font_data = layout.font_data(name_style.font);
+
+        let name_width = layout.text_width(name, name_style);
+
+        let font_size = match name_style.long_text_font_size {
+            Some(long_size) if name_width > name_style.wrap_width as f32 => long_size,
+            _ => name_style.font_size,
+        };
+
+        draw_text_rotated_270(
+            canvas,
+            name,
+            name_style.x,
+            name_style.y,
+            font_data,
+            font_size,
+            name_style.letter_spacing,
+            name_style.wrap_width,
+        );
+
+        Ok(())
+    }
+}
+ */
+
 /// Renders card name with border wrapping logic
 pub struct NameRenderer;
 
