@@ -11,9 +11,11 @@ use crate::{
     layout::Layout,
 };
 use image::{ImageBuffer, Rgb, RgbImage, imageops};
-use scryfall_oracle::{CardFace, OracleScryfallCard};
+use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, cards::melds::OracleMelds};
 use std::path::PathBuf;
 use tracing::{debug, info};
+
+const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
 
 /// Handles rendering a single card face
 async fn render_card_face(
@@ -126,6 +128,21 @@ async fn render_adventure_card_face(
     Ok(card_img)
 }
 
+/// Handles rendering a single card face
+async fn render_meld_back_face(
+    card: &OracleScryfallCard,
+    layout: &Layout,
+) -> Result<RgbImage, Box<dyn std::error::Error>> {
+    // TODO Render back face of Meld card
+    let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
+    let mut layout = layout.clone();
+
+    let scryfall_id = &card.core.id;
+    let card_name = &card.core.name;
+
+    Ok(todo!())
+}
+
 /// Regular card renderer
 pub struct RegularCardRenderer<'a> {
     pub card: &'a OracleScryfallCard,
@@ -204,42 +221,56 @@ pub struct MeldCardRenderer<'a> {
 
 impl<'a> CardRenderer for MeldCardRenderer<'a> {
     async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
-        let related_cards = self
-            .card
-            .core
-            .all_parts
-            .as_ref()
-            .ok_or("No related cards")?;
-        let faces = self.card.core.card_faces.as_ref().ok_or("No card faces")?;
-        // debug!(faces = ?faces, "MDFC Card Faces");
+        let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
+        let melds = OracleMelds::get_melds(&client).await?;
+        let id = self.card.core.id.clone();
 
-        if faces.len() < 2 {
-            return Err("Expected at least 2 faces".into());
+        let parent = melds.melds.iter().find(|meld| meld.result_id == id);
+
+        let child = melds.melds.iter().find_map(|meld| {
+            meld.children
+                .iter()
+                .find(|child| child.id == id)
+                .map(|child| (meld, child))
+        });
+
+        if let Some(meld) = parent {
+            // This card is the meld result / parent.
+            debug!(result_id = %meld.result_id, "Card is a meld parent");
+        } else if let Some((meld, child)) = child {
+            // This card is one of the meld pieces.
+
+            let result = OracleScryfallCard::by_id_live(&client, &meld.result_id).await?;
+            info!(
+                result_id = %meld.result_id,
+                position = child.position,
+                result_name = result.core.name,
+                "Card is a meld child"
+            );
+
+            let front_img = render_card_face(self.card, None, layout).await?;
+            let back_img = render_meld_back_face(&result, layout).await?;
+
+            // Composite side-by-side with 20 px white buffer
+            let buffer = 20;
+
+            let mut composed = RgbImage::from_pixel(
+                front_img.width() * 2 + buffer,
+                front_img.height(),
+                Rgb([255, 255, 255]),
+            );
+
+            imageops::overlay(&mut composed, &front_img, 0, 0);
+            imageops::overlay(
+                &mut composed,
+                &back_img,
+                (front_img.width() + buffer) as i64,
+                0,
+            );
+
+            return Ok(composed);
         }
-        if faces.len() > 2 {
-            return Err("Expected only 2 faces".into());
-        }
-        let front_img = render_card_face(self.card, Some(&faces[0]), layout).await?;
-        let back_img = render_card_face(self.card, Some(&faces[1]), layout).await?;
-
-        // Composite side-by-side with 20 px white buffer
-        let buffer = 20;
-
-        let mut composed = RgbImage::from_pixel(
-            front_img.width() * 2 + buffer,
-            front_img.height(),
-            Rgb([255, 255, 255]),
-        );
-
-        imageops::overlay(&mut composed, &front_img, 0, 0);
-        imageops::overlay(
-            &mut composed,
-            &back_img,
-            (front_img.width() + buffer) as i64,
-            0,
-        );
-
-        Ok(composed)
+        Err("Not a meld".into())
     }
 }
 
