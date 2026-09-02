@@ -7,6 +7,7 @@ pub enum OracleFilter {
     Premodern,
     UnknownEvent,
     EverythingElse,
+    // TODO Add a Planeswalker filter
 }
 
 #[derive(Debug, PartialEq, Eq)]
