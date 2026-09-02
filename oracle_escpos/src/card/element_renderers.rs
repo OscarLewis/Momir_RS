@@ -203,9 +203,45 @@ impl ElementRenderer for OracleTextRenderer {
         let rules_font_data = layout.font_data(rules_style.font);
         let rules_y = rules_style.y.max(layout.type_line_end_y);
 
+        // First attempt with default font size
+        let mut font_size = rules_style.font_size;
+        let mut total_height = layout.wrapped_text_height(&oracle_text, rules_style);
+
+        // Fall back to smaller font size if max_length is exceeded
+        if let Some(max_length) = rules_style.max_length {
+            if total_height > max_length {
+                if let Some(long_font_size) = rules_style.long_text_font_size {
+                    debug!(
+                        initial_height = total_height,
+                        max_length,
+                        long_font_size,
+                        "Oracle text exceeds max_length; falling back to long_text_font_size"
+                    );
+
+                    font_size = long_font_size;
+
+                    // Recalculate text height with reduced font size
+                    let mut scaled_style = rules_style.clone();
+                    scaled_style.font_size = long_font_size;
+                    total_height = layout.wrapped_text_height(&oracle_text, &scaled_style);
+                }
+
+                if total_height > max_length {
+                    debug!(
+                        total_height,
+                        max_length,
+                        overflow = total_height - max_length,
+                        font_size,
+                        "Oracle text height still exceeds max_length boundaries"
+                    );
+                }
+            }
+        }
+
         debug!(
-            font_size = rules_style.font_size,
+            font_size,
             oracle_text_length = oracle_text.len(),
+            total_height,
             "Rendering oracle text"
         );
 
@@ -215,7 +251,7 @@ impl ElementRenderer for OracleTextRenderer {
             rules_style.x,
             rules_y,
             rules_font_data,
-            rules_style.font_size,
+            font_size,
             rules_style.letter_spacing,
             rules_style.wrap_width,
         );

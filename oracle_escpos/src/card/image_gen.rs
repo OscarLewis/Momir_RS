@@ -62,7 +62,7 @@ async fn render_card_face(
         // TODO These should center with the loyalty number inside of the shield
         /* This is so these should probably get rendered in the same Renderer,
         but for now we can just render them in order and it will work for most cases. */
-
+        // TODO make a actual Planeswalker Card Print variant and handle it in the CardPrint render method.
         renderers.push(Box::new(PlaneswalkerLoyaltyRenderer));
         renderers.push(Box::new(PlaneswalkerShieldRenderer));
     }

@@ -1,6 +1,6 @@
 use crate::{
     card::fonts::{Font, fonts},
-    render::{text_width, wrapped_text_width},
+    render::{text_width, wrapped_text_height, wrapped_text_width},
 };
 
 #[derive(Debug, Clone)]
@@ -10,6 +10,7 @@ pub struct TextStyle {
     pub font: Font,
     pub margin_left: u32,
     pub margin_right: u32,
+    pub max_length: Option<i32>,
     pub font_size: f32,
     pub long_text_font_size: Option<f32>,
     pub letter_spacing: f32,
@@ -21,6 +22,7 @@ impl Default for TextStyle {
         Self {
             x: 0,
             y: 0,
+            max_length: None,
             font_size: 0.0,
             margin_left: 0,
             margin_right: 0,
@@ -58,7 +60,7 @@ impl Default for FontSizes {
     fn default() -> Self {
         Self {
             name: 34.0,
-            long_name: 22.0,
+            long_name: 23.0,
             type_line: 18.0,
             adventure_type_line: 16.0,
             small_rules: 15.0,
@@ -312,7 +314,7 @@ impl Default for Layout {
                 font: Font::Serif,
                 font_size: fonts.name,
                 long_text_font_size: Some(fonts.long_name),
-                letter_spacing: 0.0,
+                // letter_spacing: 0.0,
                 wrap_width: 372,
                 ..Default::default()
             },
@@ -323,7 +325,7 @@ impl Default for Layout {
                 font: Font::Serif,
                 font_size: fonts.name,
                 long_text_font_size: Some(fonts.long_name),
-                letter_spacing: 0.0,
+                // letter_spacing: 0.0,
                 wrap_width: 372,
                 ..Default::default()
             },
@@ -334,7 +336,7 @@ impl Default for Layout {
                 font: Font::Serif,
                 font_size: fonts.adventure_name,
                 long_text_font_size: Some(fonts.long_adventure_name),
-                letter_spacing: 1.5,
+                // letter_spacing: 1.5,
                 wrap_width: 372,
                 ..Default::default()
             },
@@ -343,7 +345,7 @@ impl Default for Layout {
                 y: 55,
                 font: Font::Serif,
                 font_size: fonts.cost,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 wrap_width: 120,
                 margin_right: 26,
                 ..Default::default()
@@ -353,7 +355,7 @@ impl Default for Layout {
                 y: 384,
                 font: Font::Serif,
                 font_size: fonts.long_cost,
-                letter_spacing: 1.5,
+                // letter_spacing: 1.5,
                 wrap_width: 120,
                 margin_left: 20,
                 ..Default::default()
@@ -364,7 +366,7 @@ impl Default for Layout {
                 font: Font::Sansserif,
                 font_size: fonts.type_line,
                 wrap_width: 372,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 ..Default::default()
             },
 
@@ -376,7 +378,7 @@ impl Default for Layout {
                 font: Font::Sansserif,
                 font_size: fonts.meld_type_line,
                 wrap_width: 440,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 ..Default::default()
             },
 
@@ -388,7 +390,7 @@ impl Default for Layout {
                 font: Font::Sansserif,
                 font_size: fonts.adventure_type_line,
                 wrap_width: 372,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 ..Default::default()
             },
 
@@ -397,7 +399,7 @@ impl Default for Layout {
                 y: 344,
                 font: Font::Sansserif,
                 font_size: fonts.meld_oracle,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 wrap_width: 500,
                 ..Default::default()
             },
@@ -407,8 +409,10 @@ impl Default for Layout {
                 y: 344,
                 font: Font::Sansserif,
                 font_size: fonts.rules,
-                letter_spacing: 1.0,
+                long_text_font_size: Some(fonts.small_rules),
+                // letter_spacing: 1.0,
                 wrap_width: 372,
+                max_length: Some(180),
                 ..Default::default()
             },
 
@@ -418,7 +422,7 @@ impl Default for Layout {
                 font: Font::Sansserif,
                 font_size: fonts.rules,
                 long_text_font_size: Some(fonts.small_rules),
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 wrap_width: 180,
                 ..Default::default()
             },
@@ -428,7 +432,7 @@ impl Default for Layout {
                 y: 404,
                 font: Font::Sansserif,
                 font_size: fonts.rules,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 wrap_width: 186,
                 ..Default::default()
             },
@@ -469,7 +473,7 @@ impl Default for Layout {
                 font: Font::Sansserif,
                 font_size: fonts.set_code,
                 wrap_width: 372,
-                letter_spacing: 2.0,
+                // letter_spacing: 2.0,
                 ..Default::default()
             },
 
@@ -480,7 +484,7 @@ impl Default for Layout {
                 font: Font::Sansserif,
                 font_size: fonts.set_code,
                 wrap_width: 372,
-                letter_spacing: 2.0,
+                // letter_spacing: 2.0,
                 ..Default::default()
             },
 
@@ -491,7 +495,7 @@ impl Default for Layout {
                 font_size: fonts.artist,
                 long_text_font_size: Some(fonts.artist_small),
                 wrap_width: 200,
-                letter_spacing: 1.5,
+                // letter_spacing: 1.5,
                 ..Default::default()
             },
 
@@ -500,7 +504,7 @@ impl Default for Layout {
                 y: 566,
                 font: Font::Serif,
                 font_size: fonts.pow_tough,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 wrap_width: 62,
                 ..Default::default()
             },
@@ -510,7 +514,7 @@ impl Default for Layout {
                 y: 540,
                 font: Font::Serif,
                 font_size: fonts.loyalty,
-                letter_spacing: 1.0,
+                // letter_spacing: 1.0,
                 wrap_width: 62,
                 ..Default::default()
             },
@@ -538,6 +542,16 @@ impl Layout {
     }
     pub fn wrapped_text_width(&self, text: &str, style: &TextStyle) -> f32 {
         wrapped_text_width(
+            text,
+            self.font_data(style.font),
+            style.font_size,
+            style.letter_spacing,
+            style.wrap_width,
+        )
+    }
+
+    pub fn wrapped_text_height(&self, text: &str, style: &TextStyle) -> i32 {
+        wrapped_text_height(
             text,
             self.font_data(style.font),
             style.font_size,
