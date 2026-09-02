@@ -421,8 +421,6 @@ pub(crate) fn draw_svg_rotated_270(
     Ok(())
 }
 
-/// Renders multiline text onto an image with word wrapping based on width constraints.
-
 /// Renders multiline text onto an image with word wrapping based on width constraints,
 /// respecting explicit newline ('\n') characters.
 pub(crate) fn draw_text(
@@ -700,8 +698,6 @@ pub fn wrapped_line_count(
 
 /// Renders multiline text onto an image with word wrapping based on width constraints,
 /// with glyphs rotated 270° counter-clockwise.
-///
-///
 pub(crate) fn draw_text_rotated_270(
     image: &mut RgbImage,
     text: &str,
@@ -836,6 +832,7 @@ fn draw_text_line_rotated_270(
         pen_x += advance + letter_spacing;
     }
 }
+
 /// Returns the width of the widest line after wrapping text to `max_width`.
 pub fn wrapped_text_width(
     text: &str,
@@ -890,4 +887,12 @@ pub fn wrapped_text_height(
     let line_height = (font_size * 1.25).round() as i32;
 
     total_lines * line_height
+}
+
+pub(crate) fn text_vertical_metrics(font_data: &[u8], font_size: f32) -> (f32, f32) {
+    let font = FontRef::from_index(font_data, 0).expect("invalid font");
+
+    let metrics = font.metrics(&[]).scale(font_size);
+
+    (metrics.ascent, metrics.descent)
 }

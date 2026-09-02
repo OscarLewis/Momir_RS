@@ -3,14 +3,13 @@ use crate::{
         card_type::{CardRenderer, CardType},
         element_renderers::{
             ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
-            NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer,
-            PlaneswalkerLoyaltyRenderer, PlaneswalkerShieldRenderer, PowerToughnessRenderer,
-            SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
+            NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer, PlaneswalkerRenderer,
+            PowerToughnessRenderer, SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
         },
         fonts::fonts,
         meld_element_renderers::{
-            MeldBackCardArtRenderer, MeldNameRenderer, MeldOracleTextRenderer,
-            MeldPlaneswalkerShieldRenderer, MeldSetCodeRenderer, MeldTypeLineRenderer,
+            MeldArtistRenderer, MeldBackCardArtRenderer, MeldNameRenderer, MeldOracleTextRenderer,
+            MeldPlaneswalkerRenderer, MeldSetCodeRenderer, MeldTypeLineRenderer,
         },
     },
     layout::Layout,
@@ -63,8 +62,7 @@ async fn render_card_face(
         /* This is so these should probably get rendered in the same Renderer,
         but for now we can just render them in order and it will work for most cases. */
         // TODO make a actual Planeswalker Card Print variant and handle it in the CardPrint render method.
-        renderers.push(Box::new(PlaneswalkerLoyaltyRenderer));
-        renderers.push(Box::new(PlaneswalkerShieldRenderer));
+        renderers.push(Box::new(PlaneswalkerRenderer));
     }
 
     // Execute each renderer
@@ -179,9 +177,10 @@ async fn render_meld_back_face(
         renderers.push(Box::new(MeldTypeLineRenderer));
         renderers.push(Box::new(MeldOracleTextRenderer));
         if card.core.loyalty.is_some() {
-            renderers.push(Box::new(MeldPlaneswalkerShieldRenderer));
+            renderers.push(Box::new(MeldPlaneswalkerRenderer));
         }
         renderers.push(Box::new(MeldSetCodeRenderer));
+        renderers.push(Box::new(MeldArtistRenderer));
     }
 
     renderers.push(Box::new(BorderRenderer));

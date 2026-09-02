@@ -4,11 +4,13 @@ use crate::{
     layout::{Layout, NameStyle, WrapStyle},
     render::{
         draw_border, draw_svg, draw_text, draw_text_around_border, draw_text_rotated_270,
-        draw_vertical_line, text_width, wrapped_line_count, wrapped_text_height,
+        draw_vertical_line, text_vertical_metrics, text_width, wrapped_line_count,
+        wrapped_text_height,
     },
 };
 use async_trait::async_trait;
 use image::{Rgb, RgbImage, imageops};
+use resvg::usvg;
 use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
 use swash::FontRef;
 use tracing::{debug, info};
@@ -594,45 +596,16 @@ impl ElementRenderer for PowerToughnessRenderer {
     }
 }
 
-/// Renders power/toughness
-pub struct PlaneswalkerLoyaltyRenderer;
+/// Renders the loyalty shield and loyalty value for planeswalker cards.
+///
+/// This renderer draws the SVG loyalty shield at the configured position and
+/// scales it to fit within the provided maximum dimensions. If the card has a
+/// loyalty value, it will be centered on the shield using the configured font
+/// metrics and style from the layout.
+pub struct PlaneswalkerRenderer;
+
 #[async_trait]
-impl ElementRenderer for PlaneswalkerLoyaltyRenderer {
-    async fn render(
-        &self,
-        card: &OracleScryfallCard,
-        face: Option<&CardFace>,
-        canvas: &mut RgbImage,
-        layout: &mut Layout,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let loyalty_style = &layout.planeswalker_loyalty_style;
-        let loyalty_font_data = layout.font_data(loyalty_style.font);
-
-        if let Some(loyalty) = card.core.loyalty.as_ref() {
-            debug!(loyalty = loyalty, "Rendering Planeswalker loyalty");
-
-            draw_text(
-                canvas,
-                loyalty,
-                loyalty_style.x,
-                loyalty_style.y,
-                loyalty_font_data,
-                loyalty_style.font_size,
-                loyalty_style.letter_spacing,
-                loyalty_style.wrap_width,
-            );
-        } else {
-            debug!("Card has no loyalty");
-        }
-
-        Ok(())
-    }
-}
-
-/// Renders set icon
-pub struct PlaneswalkerShieldRenderer;
-#[async_trait]
-impl ElementRenderer for PlaneswalkerShieldRenderer {
+impl ElementRenderer for PlaneswalkerRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
@@ -641,7 +614,22 @@ impl ElementRenderer for PlaneswalkerShieldRenderer {
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let shield_style = &layout.planeswalker_loyalty_shield;
-        debug!("Rendering Planwalker loyalty shield");
+
+        debug!("Rendering Planeswalker loyalty shield");
+
+        // Determine the actual rendered SVG dimensions.
+        let options = usvg::Options::default();
+        let tree = usvg::Tree::from_data(LOYALTY_SHIELD_SVG, &options)?;
+
+        let svg_width = tree.size().width();
+        let svg_height = tree.size().height();
+
+        let scale = (shield_style.max_width as f32 / svg_width)
+            .min(shield_style.max_height as f32 / svg_height);
+
+        let shield_width = (svg_width * scale).round() as u32;
+        let shield_height = (svg_height * scale).round() as u32;
+
         draw_svg(
             canvas,
             LOYALTY_SHIELD_SVG,
@@ -650,6 +638,42 @@ impl ElementRenderer for PlaneswalkerShieldRenderer {
             shield_style.max_width,
             shield_style.max_height,
         )?;
+
+        if let Some(loyalty) = card.core.loyalty.as_ref() {
+            debug!(loyalty = loyalty, "Rendering Planeswalker loyalty");
+
+            let loyalty_style = &layout.planeswalker_loyalty_style;
+            let loyalty_font_data = layout.font_data(loyalty_style.font);
+
+            let text_width = layout.text_width(loyalty, loyalty_style);
+
+            let shield_center_x = shield_style.x as f32 + shield_width as f32 / 2.0;
+
+            let shield_center_y = shield_style.y as f32 + shield_height as f32 / 2.0;
+
+            // Font metrics are relative to the baseline.
+            let (ascent, descent) =
+                text_vertical_metrics(loyalty_font_data, loyalty_style.font_size);
+
+            // Position the baseline so the font's actual ascent/descent
+            // bounds are centered on the shield.
+            let text_x = (shield_center_x - text_width / 2.0).round() as i32;
+
+            let text_y = (shield_center_y - (ascent - descent) / 2.0 + ascent).round() as i32;
+
+            draw_text(
+                canvas,
+                loyalty,
+                text_x,
+                text_y,
+                loyalty_font_data,
+                loyalty_style.font_size,
+                loyalty_style.letter_spacing,
+                loyalty_style.wrap_width,
+            );
+        } else {
+            debug!("Card has no loyalty");
+        }
 
         Ok(())
     }

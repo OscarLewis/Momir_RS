@@ -14,6 +14,9 @@ const BIG_CARD_IMAGE: &str =
 
 const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png";
 
+const USB_TEST_IMG: &str =
+    "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/yoshimaru_card.png";
+
 const PRE_CUT_FEED_LINES: u8 = 4;
 
 pub fn print_img_usb(
@@ -311,7 +314,7 @@ mod tests {
     #[test]
     #[ignore = "requires USB printer"]
     fn test_img_usb() -> Result<(), Box<dyn std::error::Error>> {
-        let image = load_image(MDFC_IMAGE)?;
+        let image = load_image(USB_TEST_IMG)?;
         let raw_bytes = encode_gs_v0_image(&image);
 
         send_raw_bytes_usb(&raw_bytes, "/dev/usb/lp0")?;

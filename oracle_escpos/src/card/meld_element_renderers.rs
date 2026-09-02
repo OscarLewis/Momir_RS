@@ -4,11 +4,12 @@ use crate::{
     layout::{Layout, NameStyle, WrapStyle},
     render::{
         draw_svg_rotated_270, draw_text, draw_text_around_border, draw_text_rotated_270,
-        text_width, wrapped_line_count, wrapped_text_height,
+        text_vertical_metrics, text_width, wrapped_line_count, wrapped_text_height,
     },
 };
 use async_trait::async_trait;
 use image::{RgbImage, imageops};
+use resvg::usvg;
 use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient};
 use swash::FontRef;
 use tracing::{debug, info};
@@ -234,10 +235,10 @@ impl ElementRenderer for MeldTypeLineRenderer {
     }
 }
 
-/// Renders set icon
-pub struct MeldPlaneswalkerShieldRenderer;
+pub struct MeldPlaneswalkerRenderer;
+
 #[async_trait]
-impl ElementRenderer for MeldPlaneswalkerShieldRenderer {
+impl ElementRenderer for MeldPlaneswalkerRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
@@ -245,16 +246,74 @@ impl ElementRenderer for MeldPlaneswalkerShieldRenderer {
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let meld_shield_style = &layout.meld_planeswalker_loyalty_shield;
-        debug!("Rendering Planwalker loyalty shield");
+        let shield_style = &layout.meld_planeswalker_loyalty_shield;
+
+        debug!("Rendering Planeswalker loyalty shield");
+
+        // Get the actual rendered SVG dimensions.
+        let options = usvg::Options::default();
+        let tree = usvg::Tree::from_data(LOYALTY_SHIELD_SVG, &options)?;
+
+        let svg_width = tree.size().width();
+        let svg_height = tree.size().height();
+
+        let scale = (shield_style.max_width as f32 / svg_width)
+            .min(shield_style.max_height as f32 / svg_height);
+
+        let shield_width = (svg_width * scale).round() as u32;
+        let shield_height = (svg_height * scale).round() as u32;
+
         draw_svg_rotated_270(
             canvas,
             LOYALTY_SHIELD_SVG,
-            meld_shield_style.x,
-            meld_shield_style.y,
-            meld_shield_style.max_width,
-            meld_shield_style.max_height,
+            shield_style.x,
+            shield_style.y,
+            shield_style.max_width,
+            shield_style.max_height,
         )?;
+
+        if let Some(loyalty) = card.core.loyalty.as_ref() {
+            debug!(loyalty = loyalty, "Rendering Planeswalker loyalty");
+
+            let loyalty_style = &layout.meld_planeswalker_loyalty_style;
+            let loyalty_font_data = layout.font_data(loyalty_style.font);
+
+            let text_width = layout.text_width(loyalty, loyalty_style);
+
+            let (ascent, descent) =
+                text_vertical_metrics(loyalty_font_data, loyalty_style.font_size);
+
+            // Actual rendered shield bounds after aspect-ratio scaling.
+            //
+            // draw_svg_rotated_270 rotates the SVG, so the dimensions
+            // are transposed in the final image.
+            let shield_center_x = shield_style.x as f32 + shield_height as f32 / 2.0;
+
+            let shield_center_y = shield_style.y as f32 + shield_width as f32 / 2.0;
+
+            // After 270° rotation:
+            //
+            //   font ascent/descent -> horizontal extent
+            //   text width          -> vertical extent
+            //
+            // Center the glyph bounds around the shield center.
+            let text_x = (shield_center_x + (ascent + descent) / 2.0).round() as i32;
+
+            let text_y = (shield_center_y + text_width / 2.0).round() as i32;
+
+            draw_text_rotated_270(
+                canvas,
+                loyalty,
+                text_x,
+                text_y,
+                loyalty_font_data,
+                loyalty_style.font_size,
+                loyalty_style.letter_spacing,
+                loyalty_style.wrap_width,
+            );
+        } else {
+            debug!("Card has no loyalty");
+        }
 
         Ok(())
     }
@@ -293,8 +352,10 @@ impl ElementRenderer for MeldSetCodeRenderer {
         Ok(())
     }
 }
-/// Renders artist credit
+
+/// Renders artist credit rotated 270°
 pub struct MeldArtistRenderer;
+
 #[async_trait]
 impl ElementRenderer for MeldArtistRenderer {
     async fn render(
@@ -305,11 +366,12 @@ impl ElementRenderer for MeldArtistRenderer {
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if let Some(artist_name) = &card.print.artist {
-            let artist_style = &layout.artist;
+            let artist_style = &layout.meld_artist;
             let text = format!("Art by {}", artist_name);
             let artist_font_data = layout.font_data(artist_style.font);
 
             let name_width = layout.text_width(&text, artist_style);
+
             let font_size = if name_width > artist_style.wrap_width as f32 {
                 artist_style
                     .long_text_font_size
@@ -318,7 +380,6 @@ impl ElementRenderer for MeldArtistRenderer {
                 artist_style.font_size
             };
 
-            // Calculate total text height using the helper
             let total_height = wrapped_text_height(
                 &text,
                 artist_font_data,
@@ -327,16 +388,16 @@ impl ElementRenderer for MeldArtistRenderer {
                 artist_style.wrap_width,
             );
 
-            // Derive line height to compute extra baseline offset for wrapped text
             let line_height = (font_size * 1.25).round() as i32;
             let extra_height = total_height.saturating_sub(line_height);
 
+            let normal_x = (layout.width - artist_style.margin_right) as i32;
             let y = artist_style.y - extra_height;
 
-            draw_text(
+            draw_text_rotated_270(
                 canvas,
                 &text,
-                artist_style.x,
+                normal_x,
                 y,
                 artist_font_data,
                 font_size,

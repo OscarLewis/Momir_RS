@@ -131,6 +131,54 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_tatyova() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/tatyova_orion_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/tatyova_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_tidus() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/tidus_quinn_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/tidus_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_yoshimaru() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/yoshimaru_parker_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/yoshimaru_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_hakbal() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/hakbal_baibhav_test_card.json")?;
+        let card_type = CardType::Regular(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/hakbal_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_elspeth_plansewalker() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/eslpeth_planeswalker_test_card.json")?;
         let card_type = CardType::Regular(card);

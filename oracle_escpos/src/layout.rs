@@ -266,6 +266,8 @@ pub struct Layout {
     pub meld_oracle: TextStyle,
     pub meld_set_code: TextStyle,
     pub meld_planeswalker_loyalty_shield: SvgLayout,
+    pub meld_planeswalker_loyalty_style: TextStyle,
+    pub meld_artist: TextStyle,
     pub name_style: NameStyle,
     pub name: TextStyle,
     pub planeswalker_loyalty_shield: SvgLayout,
@@ -482,6 +484,16 @@ impl Default for Layout {
                 ..Default::default()
             },
 
+            meld_artist: TextStyle {
+                margin_right: 20,
+                y: 480,
+                font: Font::Sansserif,
+                font_size: fonts.artist,
+                long_text_font_size: Some(fonts.artist_small),
+                wrap_width: 200,
+                ..Default::default()
+            },
+
             artist: TextStyle {
                 x: 120,
                 y: 566,
@@ -489,7 +501,6 @@ impl Default for Layout {
                 font_size: fonts.artist,
                 long_text_font_size: Some(fonts.artist_small),
                 wrap_width: 200,
-
                 ..Default::default()
             },
 
@@ -498,14 +509,18 @@ impl Default for Layout {
                 y: 566,
                 font: Font::Serif,
                 font_size: fonts.pow_tough,
-
                 wrap_width: 62,
                 ..Default::default()
             },
 
             planeswalker_loyalty_style: TextStyle {
-                x: 355,
-                y: 540,
+                font: Font::Serif,
+                font_size: fonts.loyalty,
+                wrap_width: 62,
+                ..Default::default()
+            },
+
+            meld_planeswalker_loyalty_style: TextStyle {
                 font: Font::Serif,
                 font_size: fonts.loyalty,
                 wrap_width: 62,
