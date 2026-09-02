@@ -3,17 +3,16 @@ use crate::{
     card::svg::LOYALTY_SHIELD_SVG,
     layout::{Layout, NameStyle, WrapStyle},
     render::{
-        draw_border, draw_svg, draw_text, draw_text_around_border, draw_text_rotated_270,
-        draw_vertical_line, text_vertical_metrics, text_width, wrapped_line_count,
-        wrapped_text_height,
+        draw_border, draw_svg, draw_text, draw_text_around_border, draw_vertical_line,
+        text_vertical_metrics, text_width, wrapped_line_count, wrapped_text_height,
     },
 };
 use async_trait::async_trait;
-use image::{Rgb, RgbImage, imageops};
+use image::{RgbImage, imageops};
 use resvg::usvg;
 use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
 use swash::FontRef;
-use tracing::{debug, info};
+use tracing::debug;
 
 const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
 
@@ -499,7 +498,7 @@ impl ElementRenderer for SetIconRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
-        face: Option<&CardFace>,
+        _face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -533,7 +532,7 @@ impl ElementRenderer for SetCodeRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
-        face: Option<&CardFace>,
+        _face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -619,7 +618,7 @@ impl ElementRenderer for PlaneswalkerRenderer {
     async fn render(
         &self,
         card: &OracleScryfallCard,
-        face: Option<&CardFace>,
+        _face: Option<&CardFace>,
         canvas: &mut RgbImage,
         layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -696,7 +695,7 @@ impl ElementRenderer for BorderRenderer {
     async fn render(
         &self,
         _card: &OracleScryfallCard,
-        face: Option<&CardFace>,
+        _face: Option<&CardFace>,
         canvas: &mut RgbImage,
         _layout: &mut Layout,
     ) -> Result<(), Box<dyn std::error::Error>> {
