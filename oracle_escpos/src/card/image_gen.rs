@@ -9,7 +9,8 @@ use crate::{
         fonts::fonts,
         meld_element_renderers::{
             MeldArtistRenderer, MeldBackCardArtRenderer, MeldNameRenderer, MeldOracleTextRenderer,
-            MeldPlaneswalkerRenderer, MeldSetCodeRenderer, MeldTypeLineRenderer,
+            MeldPlaneswalkerRenderer, MeldPowerToughnessRenderer, MeldSetCodeRenderer,
+            MeldTypeLineRenderer,
         },
     },
     layout::Layout,
@@ -58,7 +59,7 @@ async fn render_card_face(
     ];
 
     // Crude planeswalker detection, should just create a CardType enum variant for Planeswalker and handle it in the CardPrint render method.
-    if let Some(loyalty) = card.core.loyalty.as_ref() {
+    if card.core.loyalty.is_some() {
         // TODO make a actual Planeswalker Card Print variant and handle it in the CardPrint render method.
         renderers.push(Box::new(PlaneswalkerRenderer));
     }
@@ -179,6 +180,7 @@ async fn render_meld_back_face(
         }
         renderers.push(Box::new(MeldSetCodeRenderer));
         renderers.push(Box::new(MeldArtistRenderer));
+        renderers.push(Box::new(MeldPowerToughnessRenderer));
     }
 
     renderers.push(Box::new(BorderRenderer));

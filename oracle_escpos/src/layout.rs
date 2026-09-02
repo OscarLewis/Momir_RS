@@ -272,6 +272,7 @@ pub struct Layout {
     pub meld_planeswalker_loyalty_shield: SvgLayout,
     pub meld_planeswalker_loyalty_style: TextStyle,
     pub meld_artist: TextStyle,
+    pub meld_pow_tough_style: TextStyle,
     pub name_style: NameStyle,
     pub name: TextStyle,
     pub planeswalker_loyalty_shield: SvgLayout,
@@ -506,6 +507,15 @@ impl Default for Layout {
                 font_size: fonts.artist,
                 small_text_font_size: Some(fonts.artist_small),
                 wrap_width: 200,
+                ..Default::default()
+            },
+
+            meld_pow_tough_style: TextStyle {
+                margin_right: 20,
+                y: 100,
+                font: Font::Serif,
+                font_size: fonts.pow_tough,
+                wrap_width: 62,
                 ..Default::default()
             },
 

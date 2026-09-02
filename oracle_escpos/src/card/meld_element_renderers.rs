@@ -409,3 +409,52 @@ impl ElementRenderer for MeldArtistRenderer {
         Ok(())
     }
 }
+
+/// Renders power/toughness
+pub struct MeldPowerToughnessRenderer;
+#[async_trait]
+impl ElementRenderer for MeldPowerToughnessRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let pow_tough_style = &layout.meld_pow_tough_style;
+        let pow_tough_font_data = layout.font_data(pow_tough_style.font);
+
+        let power = face
+            .and_then(|f| f.power.as_ref())
+            .or_else(|| card.core.power.as_ref());
+
+        let toughness = face
+            .and_then(|f| f.toughness.as_ref())
+            .or_else(|| card.core.toughness.as_ref());
+
+        let normal_x = (layout.width - pow_tough_style.margin_right) as i32;
+
+        if let (Some(power), Some(toughness)) = (power, toughness) {
+            debug!(
+                power = %power,
+                toughness = %toughness,
+                "Rendering power and toughness"
+            );
+
+            draw_text_rotated_270(
+                canvas,
+                &format!("{power}/{toughness}"),
+                normal_x,
+                pow_tough_style.y,
+                pow_tough_font_data,
+                pow_tough_style.font_size,
+                pow_tough_style.letter_spacing,
+                pow_tough_style.wrap_width,
+            );
+        } else {
+            debug!("Card has no power and toughness");
+        }
+
+        Ok(())
+    }
+}
