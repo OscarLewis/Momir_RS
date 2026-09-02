@@ -240,7 +240,6 @@ impl NameStyle {
     }
 }
 
-
 /// Defines the complete layout and styling configuration for a card.
 ///
 /// This struct contains all positioning, sizing, and font properties for various
@@ -352,7 +351,7 @@ impl Default for Layout {
                 font: Font::Serif,
                 font_size: fonts.cost,
                 // letter_spacing: 1.0,
-                wrap_width: 120,
+                wrap_width: 160,
                 margin_right: 26,
                 ..Default::default()
             },
