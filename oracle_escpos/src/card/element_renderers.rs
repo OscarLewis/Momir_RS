@@ -212,7 +212,7 @@ impl ElementRenderer for OracleTextRenderer {
         // Fall back to smaller font size if max_length is exceeded
         if let Some(max_length) = rules_style.max_length {
             if total_height > max_length {
-                if let Some(long_font_size) = rules_style.long_text_font_size {
+                if let Some(long_font_size) = rules_style.small_text_font_size {
                     debug!(
                         initial_height = total_height,
                         max_length,
@@ -237,6 +237,16 @@ impl ElementRenderer for OracleTextRenderer {
                         "Oracle text height still exceeds max_length boundaries"
                     );
                 }
+            } else if total_height <= (max_length / 2) {
+                //   font_size = long_font_size;
+                if let Some(large_font_size) = rules_style.large_text_font_size {
+                    font_size = large_font_size;
+                }
+                debug!(
+                    total_height,
+                    max_length,
+                    "Oracle text height is less than half of max_length; consider increasing font size"
+                );
             }
         }
 
@@ -319,7 +329,7 @@ impl ElementRenderer for OracleAdventureTextRenderer {
 
         let alt_face_font_size = if main_face_line_count > 5 {
             main_face_oracle_style
-                .long_text_font_size
+                .small_text_font_size
                 .unwrap_or(main_face_oracle_style.font_size)
         } else {
             main_face_oracle_style.font_size
@@ -445,7 +455,7 @@ impl ElementRenderer for ArtistRenderer {
             let name_width = layout.text_width(&text, artist_style);
             let font_size = if name_width > artist_style.wrap_width as f32 {
                 artist_style
-                    .long_text_font_size
+                    .small_text_font_size
                     .unwrap_or(artist_style.font_size)
             } else {
                 artist_style.font_size
@@ -715,7 +725,7 @@ impl ElementRenderer for NameRenderer {
             let name_font_data = layout.font_data(name_style.font);
             let name_width = layout.text_width(name, name_style);
 
-            if let Some(long_text_font_size) = name_style.long_text_font_size {
+            if let Some(long_text_font_size) = name_style.small_text_font_size {
                 if name_width > name_style.wrap_width as f32 {
                     let total_text_len = text_width(name, name_font_data, long_text_font_size, 0.5);
                     let standard_wrap_limit = (name_style.wrap_width + 10) as f32;

@@ -12,7 +12,8 @@ pub struct TextStyle {
     pub margin_right: u32,
     pub max_length: Option<i32>,
     pub font_size: f32,
-    pub long_text_font_size: Option<f32>,
+    pub small_text_font_size: Option<f32>,
+    pub large_text_font_size: Option<f32>,
     pub letter_spacing: f32,
     pub wrap_width: i32,
 }
@@ -27,7 +28,8 @@ impl Default for TextStyle {
             margin_left: 0,
             margin_right: 0,
             font: Font::Sansserif,
-            long_text_font_size: None,
+            small_text_font_size: None,
+            large_text_font_size: None,
             letter_spacing: 0.0,
             wrap_width: 372,
         }
@@ -44,6 +46,7 @@ pub struct FontSizes {
     pub long_adventure_name: f32,
     pub rules: f32,
     pub small_rules: f32,
+    pub large_rules: f32,
     pub flavor: f32,
     pub pow_tough: f32,
     pub set_code: f32,
@@ -74,9 +77,10 @@ impl Default for FontSizes {
             name: 34.0,
             pow_tough: 30.0,
             rules: 16.0,
+            large_rules: 18.0,
             set_code: 16.0,
             small_rules: 15.0,
-            type_line: 18.0,
+            type_line: 20.0,
         }
     }
 }
@@ -320,7 +324,7 @@ impl Default for Layout {
                 y: 372,
                 font: Font::Serif,
                 font_size: fonts.name,
-                long_text_font_size: Some(fonts.long_name),
+                small_text_font_size: Some(fonts.long_name),
                 wrap_width: 372,
                 ..Default::default()
             },
@@ -330,7 +334,7 @@ impl Default for Layout {
                 y: 35,
                 font: Font::Serif,
                 font_size: fonts.name,
-                long_text_font_size: Some(fonts.long_name),
+                small_text_font_size: Some(fonts.long_name),
                 wrap_width: 372,
                 ..Default::default()
             },
@@ -340,7 +344,7 @@ impl Default for Layout {
                 y: 364,
                 font: Font::Serif,
                 font_size: fonts.adventure_name,
-                long_text_font_size: Some(fonts.long_adventure_name),
+                small_text_font_size: Some(fonts.long_adventure_name),
                 wrap_width: 372,
                 ..Default::default()
             },
@@ -408,7 +412,8 @@ impl Default for Layout {
                 y: 344,
                 font: Font::Sansserif,
                 font_size: fonts.rules,
-                long_text_font_size: Some(fonts.small_rules),
+                small_text_font_size: Some(fonts.small_rules),
+                large_text_font_size: Some(fonts.large_rules),
                 wrap_width: 372,
                 max_length: Some(180),
                 ..Default::default()
@@ -419,7 +424,7 @@ impl Default for Layout {
                 y: 344,
                 font: Font::Sansserif,
                 font_size: fonts.rules,
-                long_text_font_size: Some(fonts.small_rules),
+                small_text_font_size: Some(fonts.small_rules),
                 wrap_width: 180,
                 ..Default::default()
             },
@@ -486,10 +491,10 @@ impl Default for Layout {
 
             meld_artist: TextStyle {
                 margin_right: 20,
-                y: 480,
+                y: 460,
                 font: Font::Sansserif,
                 font_size: fonts.artist,
-                long_text_font_size: Some(fonts.artist_small),
+                small_text_font_size: Some(fonts.artist_small),
                 wrap_width: 200,
                 ..Default::default()
             },
@@ -499,7 +504,7 @@ impl Default for Layout {
                 y: 566,
                 font: Font::Sansserif,
                 font_size: fonts.artist,
-                long_text_font_size: Some(fonts.artist_small),
+                small_text_font_size: Some(fonts.artist_small),
                 wrap_width: 200,
                 ..Default::default()
             },

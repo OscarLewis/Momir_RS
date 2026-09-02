@@ -20,6 +20,7 @@ use std::path::PathBuf;
 use tracing::{debug, info};
 
 const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
+const DUAL_FACED_BUFFER: u32 = 40;
 
 /// Handles rendering a single card face
 async fn render_card_face(
@@ -230,9 +231,9 @@ impl<'a> CardRenderer for MDFCCardRenderer<'a> {
         let back_img = render_card_face(self.card, Some(&faces[1]), layout).await?;
 
         // Composite side-by-side with 20 px white buffer
-        let buffer = 20;
+        let buffer = DUAL_FACED_BUFFER;
 
-        let mut composed = RgbImage::from_pixel(
+        let mut composed: ImageBuffer<Rgb<u8>, Vec<u8>> = RgbImage::from_pixel(
             front_img.width() * 2 + buffer,
             front_img.height(),
             Rgb([255, 255, 255]),
@@ -309,7 +310,7 @@ impl<'a> CardRenderer for MeldCardRenderer<'a> {
             let back_img = render_meld_back_face(&result, child.position, layout).await?;
 
             // Composite side-by-side with 20 px white buffer
-            let buffer = 20;
+            let buffer = DUAL_FACED_BUFFER;
 
             let mut composed = RgbImage::from_pixel(
                 front_img.width() * 2 + buffer,

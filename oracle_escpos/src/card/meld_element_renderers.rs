@@ -163,7 +163,7 @@ impl ElementRenderer for MeldNameRenderer {
 
         let name_width = layout.text_width(name, name_style);
 
-        let font_size = match name_style.long_text_font_size {
+        let font_size = match name_style.small_text_font_size {
             Some(long_size) if name_width > name_style.wrap_width as f32 => long_size,
             _ => name_style.font_size,
         };
@@ -374,7 +374,7 @@ impl ElementRenderer for MeldArtistRenderer {
 
             let font_size = if name_width > artist_style.wrap_width as f32 {
                 artist_style
-                    .long_text_font_size
+                    .small_text_font_size
                     .unwrap_or(artist_style.font_size)
             } else {
                 artist_style.font_size
