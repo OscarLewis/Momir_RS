@@ -1,4 +1,5 @@
 use crate::cards::models::ScryfallApiError;
+use crate::sets::sets::ScryfallSets;
 use crate::{OracleScryfallCard, ScryfallClient};
 use tracing::debug;
 
@@ -16,8 +17,20 @@ impl OracleScryfallCard {
             .get(format!("{SCRYFALL_CARDS_BY_ID_URL}/{id}"), None)
             .await?
             .error_for_status()?;
+        let sets = ScryfallSets::new(&client).await?;
 
-        let card = response.json::<OracleScryfallCard>().await?;
+        let mut card = response.json::<OracleScryfallCard>().await?;
+
+        let set = sets.get_set_from_id(&card.core.set_id);
+        if let Some(set) = set {
+            debug!(
+                card_id = id,
+                card_name = card.core.name,
+                set_code = set.code,
+                "Scryfall card by ID fetched with set info"
+            );
+            card.core.set_icon_svg_uri = Some(set.icon_svg_uri.clone());
+        }
 
         debug!(
             card_id = id,

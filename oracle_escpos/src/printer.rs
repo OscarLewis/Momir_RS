@@ -12,8 +12,9 @@ const CARD_IMAGE: &str =
 const BIG_CARD_IMAGE: &str =
     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/beluna_card.png";
 
-// const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png";
-const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/mightstone_meld_card.png";
+const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png";
+
+const PRE_CUT_FEED_LINES: u8 = 4;
 
 pub fn print_img_usb(
     image: ImageBuffer<image::Rgb<u8>, Vec<u8>>,
@@ -119,9 +120,6 @@ fn send_raw_bytes_throttled(
     printer_host: &str,
     printer_port: u16,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    // Configurable lines to feed paper forward before issuing cut command
-    const PRE_CUT_FEED_LINES: u8 = 3;
-
     // Attempt network connection up to 3 times to allow hardware buffer/socket resets
     let mut stream = None;
     for attempt in 1..=3 {
@@ -215,8 +213,6 @@ fn send_raw_bytes_usb(
     raw_bytes: &[u8],
     printer_path: impl AsRef<Path>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    const PRE_CUT_FEED_LINES: u8 = 3;
-
     let mut printer = OpenOptions::new().write(true).open(printer_path)?;
 
     // ESC @

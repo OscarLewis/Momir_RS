@@ -3,12 +3,14 @@ use crate::{
     card::{element_renderers::ElementRenderer, svg::LOYALTY_SHIELD_SVG},
     layout::{Layout, NameStyle, WrapStyle},
     render::{
-        draw_svg_rotated_270, draw_text, draw_text_around_border, draw_text_rotated_270, text_width,
+        draw_svg_rotated_270, draw_text, draw_text_around_border, draw_text_rotated_270,
+        text_width, wrapped_line_count, wrapped_text_height,
     },
 };
 use async_trait::async_trait;
 use image::{RgbImage, imageops};
 use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient};
+use swash::FontRef;
 use tracing::{debug, info};
 
 const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
@@ -287,6 +289,61 @@ impl ElementRenderer for MeldSetCodeRenderer {
             metadata_style.letter_spacing,
             metadata_style.wrap_width,
         );
+
+        Ok(())
+    }
+}
+/// Renders artist credit
+pub struct MeldArtistRenderer;
+#[async_trait]
+impl ElementRenderer for MeldArtistRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        _face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Some(artist_name) = &card.print.artist {
+            let artist_style = &layout.artist;
+            let text = format!("Art by {}", artist_name);
+            let artist_font_data = layout.font_data(artist_style.font);
+
+            let name_width = layout.text_width(&text, artist_style);
+            let font_size = if name_width > artist_style.wrap_width as f32 {
+                artist_style
+                    .long_text_font_size
+                    .unwrap_or(artist_style.font_size)
+            } else {
+                artist_style.font_size
+            };
+
+            // Calculate total text height using the helper
+            let total_height = wrapped_text_height(
+                &text,
+                artist_font_data,
+                font_size,
+                artist_style.letter_spacing,
+                artist_style.wrap_width,
+            );
+
+            // Derive line height to compute extra baseline offset for wrapped text
+            let line_height = (font_size * 1.25).round() as i32;
+            let extra_height = total_height.saturating_sub(line_height);
+
+            let y = artist_style.y - extra_height;
+
+            draw_text(
+                canvas,
+                &text,
+                artist_style.x,
+                y,
+                artist_font_data,
+                font_size,
+                artist_style.letter_spacing,
+                artist_style.wrap_width,
+            );
+        }
 
         Ok(())
     }

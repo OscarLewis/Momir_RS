@@ -166,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(PrintMethod::Usb) => {
             if let Some(printer) = OracleUsbPrinter::from_config(&config) {
                 if printer.check_connection() {
-                    debug!("Printer connected");
+                    debug!("Printer connected via usb");
                 } else {
                     warn!("Printer is not connected");
                 }
