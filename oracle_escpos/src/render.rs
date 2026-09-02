@@ -28,6 +28,15 @@ impl BorderWrapConfig {
     }
 }
 
+/// Smoothly blends black text (0,0,0) over the background pixel using coverage alpha.
+#[inline]
+fn blend_pixel(dst: &mut Rgb<u8>, coverage: u8) {
+    let alpha = coverage as f32 / 255.0;
+    dst[0] = ((1.0 - alpha) * dst[0] as f32) as u8;
+    dst[1] = ((1.0 - alpha) * dst[1] as f32) as u8;
+    dst[2] = ((1.0 - alpha) * dst[2] as f32) as u8;
+}
+
 /// Renders a string wrapped counter-clockwise along perimeter paths (Left Top -> Top -> Right -> Bottom -> Left Bottom).
 pub fn draw_text_around_border(
     image: &mut RgbImage,
@@ -172,29 +181,6 @@ pub fn draw_text_around_border(
     }
 }
 
-/// Draws a glyph bitmap transformed 180 degrees (upside down, right-to-left orientation).
-fn render_glyph_rotated_180(
-    image: &mut RgbImage,
-    glyph: &swash::scale::image::Image,
-    base_x: i32,
-    base_y: i32,
-) {
-    let placement = glyph.placement;
-    for y in 0..placement.height {
-        for x in 0..placement.width {
-            let coverage = glyph.data[(y * placement.width + x) as usize];
-            if coverage > 128 {
-                let px = base_x - placement.left - x as i32;
-                let py = base_y + placement.top - y as i32;
-                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
-                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
-                }
-            }
-        }
-    }
-}
-
-/// Draws an unrotated glyph bitmap directly onto the target RGB image canvas.
 fn render_glyph_normal(
     image: &mut RgbImage,
     glyph: &swash::scale::image::Image,
@@ -208,40 +194,17 @@ fn render_glyph_normal(
     for y in 0..placement.height {
         for x in 0..placement.width {
             let coverage = glyph.data[(y * placement.width + x) as usize];
-            if coverage > 128 {
+            if coverage > 0 {
                 let px = glyph_x + x as i32;
                 let py = glyph_y + y as i32;
                 if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
-                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
+                    blend_pixel(image.get_pixel_mut(px as u32, py as u32), coverage);
                 }
             }
         }
     }
 }
 
-/// Draws a glyph bitmap transformed 270 degrees counter-clockwise (bottom-to-top orientation).
-fn render_glyph_rotated_270(
-    image: &mut RgbImage,
-    glyph: &swash::scale::image::Image,
-    base_x: i32,
-    base_y: i32,
-) {
-    let placement = glyph.placement;
-    for y in 0..placement.height {
-        for x in 0..placement.width {
-            let coverage = glyph.data[(y * placement.width + x) as usize];
-            if coverage > 128 {
-                let px = base_x - (placement.top - y as i32);
-                let py = base_y - placement.left - x as i32;
-                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
-                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
-                }
-            }
-        }
-    }
-}
-
-/// Draws a glyph bitmap transformed 90 degrees clockwise (top-to-bottom orientation).
 fn render_glyph_rotated_90(
     image: &mut RgbImage,
     glyph: &swash::scale::image::Image,
@@ -252,11 +215,53 @@ fn render_glyph_rotated_90(
     for y in 0..placement.height {
         for x in 0..placement.width {
             let coverage = glyph.data[(y * placement.width + x) as usize];
-            if coverage > 128 {
+            if coverage > 0 {
                 let px = base_x + (placement.top - y as i32);
                 let py = base_y + placement.left + x as i32;
                 if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
-                    image.put_pixel(px as u32, py as u32, Rgb([0, 0, 0]));
+                    blend_pixel(image.get_pixel_mut(px as u32, py as u32), coverage);
+                }
+            }
+        }
+    }
+}
+
+fn render_glyph_rotated_180(
+    image: &mut RgbImage,
+    glyph: &swash::scale::image::Image,
+    base_x: i32,
+    base_y: i32,
+) {
+    let placement = glyph.placement;
+    for y in 0..placement.height {
+        for x in 0..placement.width {
+            let coverage = glyph.data[(y * placement.width + x) as usize];
+            if coverage > 0 {
+                let px = base_x - placement.left - x as i32;
+                let py = base_y + placement.top - y as i32;
+                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                    blend_pixel(image.get_pixel_mut(px as u32, py as u32), coverage);
+                }
+            }
+        }
+    }
+}
+
+fn render_glyph_rotated_270(
+    image: &mut RgbImage,
+    glyph: &swash::scale::image::Image,
+    base_x: i32,
+    base_y: i32,
+) {
+    let placement = glyph.placement;
+    for y in 0..placement.height {
+        for x in 0..placement.width {
+            let coverage = glyph.data[(y * placement.width + x) as usize];
+            if coverage > 0 {
+                let px = base_x - (placement.top - y as i32);
+                let py = base_y - placement.left - x as i32;
+                if px >= 0 && py >= 0 && px < image.width() as i32 && py < image.height() as i32 {
+                    blend_pixel(image.get_pixel_mut(px as u32, py as u32), coverage);
                 }
             }
         }
@@ -291,58 +296,125 @@ pub(crate) fn draw_border(image: &mut RgbImage) {
     }
 }
 
-/// Renders raw SVG byte data to an offscreen pixmap and alpha-blends it onto the RGB image.
+/// Renders raw SVG byte data to an offscreen pixmap and alpha-blends it
+/// onto the RGB image while preserving its aspect ratio.
 pub(crate) fn draw_svg(
     image: &mut RgbImage,
     svg_data: &[u8],
     x: u32,
     y: u32,
-    width: u32,
-    height: u32,
+    max_width: u32,
+    max_height: u32,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let options = usvg::Options::default();
     let tree = usvg::Tree::from_data(svg_data, &options)?;
 
+    let svg_width = tree.size().width();
+    let svg_height = tree.size().height();
+
+    // Fit the SVG within the maximum dimensions while preserving
+    // its aspect ratio.
+    let scale = (max_width as f32 / svg_width).min(max_height as f32 / svg_height);
+
+    let width = (svg_width * scale).round() as u32;
+    let height = (svg_height * scale).round() as u32;
+
     let mut pixmap = Pixmap::new(width, height).ok_or("Failed to create SVG pixmap")?;
 
-    // Calculate scale factor from vector bounds to requested render size
-    let scale_x = width as f32 / tree.size().width();
-    let scale_y = height as f32 / tree.size().height();
-
-    let transform = Transform::from_scale(scale_x, scale_y);
+    let transform = Transform::from_scale(scale, scale);
 
     resvg::render(&tree, transform, &mut pixmap.as_mut());
 
-    // Alpha blend tiny-skia pixmap pixels over the target RgbImage canvas
+    // Alpha blend tiny-skia pixmap pixels over the target RgbImage canvas.
     for py in 0..height {
         for px in 0..width {
-            let pixel = pixmap.pixel(px, py);
+            let Some(pixel) = pixmap.pixel(px, py) else {
+                continue;
+            };
 
-            if let Some(pixel) = pixel {
-                let alpha = pixel.alpha() as f32 / 255.0;
+            let alpha = pixel.alpha() as f32 / 255.0;
 
-                if alpha == 0.0 {
-                    continue;
-                }
-
-                let dst_x = x + px;
-                let dst_y = y + py;
-
-                if dst_x >= image.width() || dst_y >= image.height() {
-                    continue;
-                }
-
-                let dst = image.get_pixel_mut(dst_x, dst_y);
-
-                let src_r = pixel.red() as f32;
-                let src_g = pixel.green() as f32;
-                let src_b = pixel.blue() as f32;
-
-                // Standard linear interpolation for RGBA over RGB compositing
-                dst[0] = (src_r * alpha + dst[0] as f32 * (1.0 - alpha)) as u8;
-                dst[1] = (src_g * alpha + dst[1] as f32 * (1.0 - alpha)) as u8;
-                dst[2] = (src_b * alpha + dst[2] as f32 * (1.0 - alpha)) as u8;
+            if alpha == 0.0 {
+                continue;
             }
+
+            let dst_x = x + px;
+            let dst_y = y + py;
+
+            if dst_x >= image.width() || dst_y >= image.height() {
+                continue;
+            }
+
+            let dst = image.get_pixel_mut(dst_x, dst_y);
+
+            let src_r = pixel.red() as f32;
+            let src_g = pixel.green() as f32;
+            let src_b = pixel.blue() as f32;
+
+            dst[0] = (src_r * alpha + dst[0] as f32 * (1.0 - alpha)) as u8;
+            dst[1] = (src_g * alpha + dst[1] as f32 * (1.0 - alpha)) as u8;
+            dst[2] = (src_b * alpha + dst[2] as f32 * (1.0 - alpha)) as u8;
+        }
+    }
+
+    Ok(())
+}
+
+pub(crate) fn draw_svg_rotated_270(
+    image: &mut RgbImage,
+    svg_data: &[u8],
+    x: u32,
+    y: u32,
+    max_width: u32,
+    max_height: u32,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let options = usvg::Options::default();
+    let tree = usvg::Tree::from_data(svg_data, &options)?;
+
+    let svg_width = tree.size().width();
+    let svg_height = tree.size().height();
+
+    let scale = (max_width as f32 / svg_width).min(max_height as f32 / svg_height);
+
+    let width = (svg_width * scale).round() as u32;
+    let height = (svg_height * scale).round() as u32;
+
+    // Rotation swaps width and height.
+    let mut pixmap = Pixmap::new(height, width).ok_or("Failed to create SVG pixmap")?;
+
+    // Rotate 270° counter-clockwise while rendering.
+    let transform = Transform::from_row(0.0, -scale, scale, 0.0, 0.0, width as f32);
+
+    resvg::render(&tree, transform, &mut pixmap.as_mut());
+
+    for py in 0..pixmap.height() {
+        for px in 0..pixmap.width() {
+            let Some(pixel) = pixmap.pixel(px, py) else {
+                continue;
+            };
+
+            let alpha = pixel.alpha() as f32 / 255.0;
+
+            if alpha == 0.0 {
+                continue;
+            }
+
+            let dst_x = x + px;
+            let dst_y = y + py;
+
+            if dst_x >= image.width() || dst_y >= image.height() {
+                continue;
+            }
+
+            let dst = image.get_pixel_mut(dst_x, dst_y);
+
+            let src_r = pixel.red() as f32;
+            let src_g = pixel.green() as f32;
+            let src_b = pixel.blue() as f32;
+
+            dst[0] = (src_r * alpha + dst[0] as f32 * (1.0 - alpha)) as u8;
+            dst[1] = (src_g * alpha + dst[1] as f32 * (1.0 - alpha)) as u8;
+            dst[2] = (src_b * alpha + dst[2] as f32 * (1.0 - alpha)) as u8;
         }
     }
 
@@ -350,6 +422,9 @@ pub(crate) fn draw_svg(
 }
 
 /// Renders multiline text onto an image with word wrapping based on width constraints.
+
+/// Renders multiline text onto an image with word wrapping based on width constraints,
+/// respecting explicit newline ('\n') characters.
 pub(crate) fn draw_text(
     image: &mut RgbImage,
     text: &str,
@@ -374,37 +449,60 @@ pub(crate) fn draw_text(
 
     let renderer = Render::new(&[Source::Outline]);
 
-    let line_height = font_size as i32 + 5;
+    let line_height = (font_size * 1.25).round() as i32;
     let mut y = baseline_y;
     let mut line = String::new();
     let mut line_count = 0;
 
-    // Split input into words to measure and wrap lines dynamically
-    for word in text.split_whitespace() {
-        let candidate = if line.is_empty() {
-            word.to_string()
-        } else {
-            format!("{line} {word}")
-        };
+    // Preserve explicit newlines by splitting on '\n' first
+    for text_line in text.split('\n') {
+        for word in text_line.split_whitespace() {
+            let candidate = if line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{line} {word}")
+            };
 
-        let mut shaper = shape_context
-            .builder(font)
-            .size(font_size)
-            .script(Script::Latin)
-            .build();
+            let mut shaper = shape_context
+                .builder(font)
+                .size(font_size)
+                .script(Script::Latin)
+                .build();
 
-        shaper.add_str(&candidate);
+            shaper.add_str(&candidate);
 
-        let mut width = 0.0;
+            let mut width = 0.0;
 
-        shaper.shape_with(|cluster| {
-            for glyph in cluster.glyphs {
-                width += glyph.advance + letter_spacing;
+            shaper.shape_with(|cluster| {
+                for glyph in cluster.glyphs {
+                    width += glyph.advance + letter_spacing;
+                }
+            });
+
+            // Wrap line if max_width is exceeded
+            if width > max_width as f32 && !line.is_empty() {
+                draw_text_line(
+                    image,
+                    &line,
+                    x,
+                    y,
+                    font,
+                    font_size,
+                    letter_spacing,
+                    &mut scaler,
+                    &renderer,
+                );
+
+                line_count += 1;
+                y += line_height;
+                line = word.to_string();
+            } else {
+                line = candidate;
             }
-        });
+        }
 
-        // Push current line to render if expanding it exceeds max_width boundary
-        if width > max_width as f32 && !line.is_empty() {
+        // Flush line at the end of explicit text line
+        if !line.is_empty() {
             draw_text_line(
                 image,
                 &line,
@@ -419,40 +517,19 @@ pub(crate) fn draw_text(
 
             line_count += 1;
             y += line_height;
-            line = word.to_string();
+            line.clear();
         } else {
-            line = candidate;
+            // Preserve empty lines (e.g., '\n\n')
+            line_count += 1;
+            y += line_height;
         }
-    }
-
-    // Flush any remaining text left in the buffer after tokenization loop
-    if !line.is_empty() {
-        draw_text_line(
-            image,
-            &line,
-            x,
-            y,
-            font,
-            font_size,
-            letter_spacing,
-            &mut scaler,
-            &renderer,
-        );
-
-        line_count += 1;
     }
 
     debug!(line_count, final_y = y, "Finished drawing text");
 
-    // Advance y past the last drawn line so it points to the next available vertical slot
-    if line_count > 0 {
-        y += line_height;
-    }
-
-    y
+    if line_count > 0 { y } else { baseline_y }
 }
 
-/// Helper function to shape and rasterize a single horizontal line of text.
 fn draw_text_line(
     image: &mut RgbImage,
     text: &str,
@@ -487,7 +564,6 @@ fn draw_text_line(
             let glyph_x = pen_x.round() as i32 + placement.left;
             let glyph_y = baseline_y - placement.top;
 
-            // Render non-transparent coverage pixels from rasterized glyph map
             for y in 0..placement.height {
                 for x in 0..placement.width {
                     let coverage = glyph_image.data[(y * placement.width + x) as usize];
@@ -503,7 +579,7 @@ fn draw_text_line(
                         && dst_x < image.width() as i32
                         && dst_y < image.height() as i32
                     {
-                        image.put_pixel(dst_x as u32, dst_y as u32, Rgb([0, 0, 0]));
+                        blend_pixel(image.get_pixel_mut(dst_x as u32, dst_y as u32), coverage);
                     }
                 }
             }
@@ -579,40 +655,239 @@ pub fn wrapped_line_count(
     let mut line = String::new();
     let mut line_count = 0;
 
-    for word in text.split_whitespace() {
-        let candidate = if line.is_empty() {
-            word.to_string()
-        } else {
-            format!("{line} {word}")
-        };
+    for text_line in text.split('\n') {
+        for word in text_line.split_whitespace() {
+            let candidate = if line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{line} {word}")
+            };
 
-        let mut shaper = shape_context
-            .builder(font)
-            .size(font_size)
-            .script(Script::Latin)
-            .build();
+            let mut shaper = shape_context
+                .builder(font)
+                .size(font_size)
+                .script(Script::Latin)
+                .build();
 
-        shaper.add_str(&candidate);
+            shaper.add_str(&candidate);
 
-        let mut width = 0.0;
+            let mut width = 0.0;
 
-        shaper.shape_with(|cluster| {
-            for glyph in cluster.glyphs {
-                width += glyph.advance + letter_spacing;
+            shaper.shape_with(|cluster| {
+                for glyph in cluster.glyphs {
+                    width += glyph.advance + letter_spacing;
+                }
+            });
+
+            if width > max_width as f32 && !line.is_empty() {
+                line_count += 1;
+                line = word.to_string();
+            } else {
+                line = candidate;
             }
-        });
+        }
 
-        if width > max_width as f32 && !line.is_empty() {
+        if !line.is_empty() {
             line_count += 1;
-            line = word.to_string();
+            line.clear();
         } else {
-            line = candidate;
+            line_count += 1;
         }
     }
 
-    if !line.is_empty() {
-        line_count += 1;
+    line_count
+}
+
+/// Renders multiline text onto an image with word wrapping based on width constraints,
+/// with glyphs rotated 270° counter-clockwise.
+///
+///
+pub(crate) fn draw_text_rotated_270(
+    image: &mut RgbImage,
+    text: &str,
+    x: i32,
+    baseline_y: i32,
+    font_data: &[u8],
+    font_size: f32,
+    letter_spacing: f32,
+    max_width: i32,
+) -> i32 {
+    let font = FontRef::from_index(font_data, 0).expect("invalid font");
+
+    let mut shape_context = ShapeContext::new();
+    let mut scale_context = ScaleContext::new();
+
+    let mut scaler = scale_context.builder(font).size(font_size).build();
+
+    let renderer = Render::new(&[Source::Outline]);
+
+    // Scaling line height dynamically based on font size (1.25 ratio)
+    let line_height = (font_size * 1.25).round() as i32;
+    let mut line_x = x;
+    let mut line = String::new();
+    let mut line_count = 0;
+
+    for text_line in text.split('\n') {
+        for word in text_line.split_whitespace() {
+            let candidate = if line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{line} {word}")
+            };
+
+            let mut shaper = shape_context
+                .builder(font)
+                .size(font_size)
+                .script(Script::Latin)
+                .build();
+
+            shaper.add_str(&candidate);
+
+            let mut width = 0.0;
+
+            shaper.shape_with(|cluster| {
+                for glyph in cluster.glyphs {
+                    width += glyph.advance + letter_spacing;
+                }
+            });
+
+            if width > max_width as f32 && !line.is_empty() {
+                draw_text_line_rotated_270(
+                    image,
+                    &line,
+                    line_x,
+                    baseline_y,
+                    font,
+                    font_size,
+                    letter_spacing,
+                    &mut scaler,
+                    &renderer,
+                );
+
+                line_count += 1;
+                line_x += line_height;
+                line = word.to_string();
+            } else {
+                line = candidate;
+            }
+        }
+
+        if !line.is_empty() {
+            draw_text_line_rotated_270(
+                image,
+                &line,
+                line_x,
+                baseline_y,
+                font,
+                font_size,
+                letter_spacing,
+                &mut scaler,
+                &renderer,
+            );
+
+            line_count += 1;
+            line_x += line_height;
+            line.clear();
+        } else {
+            line_count += 1;
+            line_x += line_height;
+        }
     }
 
-    line_count
+    if line_count > 0 { line_x } else { x }
+}
+
+fn draw_text_line_rotated_270(
+    image: &mut RgbImage,
+    text: &str,
+    x: i32,
+    baseline_y: i32,
+    font: FontRef<'_>,
+    font_size: f32,
+    letter_spacing: f32,
+    scaler: &mut swash::scale::Scaler<'_>,
+    renderer: &Render,
+) {
+    let mut shape_context = ShapeContext::new();
+
+    let mut shaper = shape_context
+        .builder(font)
+        .size(font_size)
+        .script(Script::Latin)
+        .build();
+
+    shaper.add_str(text);
+
+    let mut glyphs = Vec::new();
+
+    shaper.shape_with(|cluster| {
+        for glyph in cluster.glyphs {
+            glyphs.push((glyph.id, glyph.advance));
+        }
+    });
+
+    let mut pen_x: f32 = 0.0;
+
+    for (glyph_id, advance) in glyphs {
+        if let Some(glyph_image) = renderer.render(scaler, glyph_id) {
+            render_glyph_rotated_270(image, &glyph_image, x, baseline_y - pen_x.round() as i32);
+        }
+
+        pen_x += advance + letter_spacing;
+    }
+}
+/// Returns the width of the widest line after wrapping text to `max_width`.
+pub fn wrapped_text_width(
+    text: &str,
+    font_data: &[u8],
+    font_size: f32,
+    letter_spacing: f32,
+    max_width: i32,
+) -> f32 {
+    let mut line = String::new();
+    let mut max_line_width = 0.0_f32;
+
+    for text_line in text.split('\n') {
+        for word in text_line.split_whitespace() {
+            let candidate = if line.is_empty() {
+                word.to_string()
+            } else {
+                format!("{line} {word}")
+            };
+
+            let width = text_width(&candidate, font_data, font_size, letter_spacing);
+
+            if width > max_width as f32 && !line.is_empty() {
+                max_line_width =
+                    max_line_width.max(text_width(&line, font_data, font_size, letter_spacing));
+
+                line = word.to_string();
+            } else {
+                line = candidate;
+            }
+        }
+
+        if !line.is_empty() {
+            max_line_width =
+                max_line_width.max(text_width(&line, font_data, font_size, letter_spacing));
+            line.clear();
+        }
+    }
+
+    max_line_width
+}
+
+/// Calculates the total pixel height required to render text given line wrapping and newlines.
+pub fn wrapped_text_height(
+    text: &str,
+    font_data: &[u8],
+    font_size: f32,
+    letter_spacing: f32,
+    max_width: i32,
+) -> i32 {
+    let font = FontRef::from_index(font_data, 0).expect("invalid font");
+    let total_lines = wrapped_line_count(text, font, font_size, letter_spacing, max_width);
+    let line_height = (font_size * 1.25).round() as i32;
+
+    total_lines * line_height
 }

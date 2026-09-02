@@ -215,6 +215,30 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_meld_one() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/mightstone_test_card.json")?;
+        let card_type = CardType::Meld(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/mightstone_meld_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
+    async fn test_meld_two() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/urza_meld_test_card.json")?;
+        let card_type = CardType::Meld(card);
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/urza_meld_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_long_name() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/asmoranomardicadaistinaculdacar_test_card.json")?;
         let card_type = CardType::Regular(card);

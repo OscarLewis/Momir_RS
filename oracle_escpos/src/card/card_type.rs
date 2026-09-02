@@ -5,6 +5,7 @@ use scryfall_oracle::OracleScryfallCard;
 pub enum CardType {
     Regular(OracleScryfallCard),
     MDFC(OracleScryfallCard),
+    Meld(OracleScryfallCard),
     Adventure(OracleScryfallCard),
     Omen(OracleScryfallCard),
     Prepare(OracleScryfallCard),

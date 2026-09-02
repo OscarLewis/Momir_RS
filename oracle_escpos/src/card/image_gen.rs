@@ -3,16 +3,24 @@ use crate::{
         card_type::{CardRenderer, CardType},
         element_renderers::{
             ArtistRenderer, BorderRenderer, CardArtRenderer, ElementRenderer, ManaCostRenderer,
-            NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer, PowerToughnessRenderer,
+            NameRenderer, OracleAdventureTextRenderer, OracleTextRenderer,
+            PlaneswalkerLoyaltyRenderer, PlaneswalkerShieldRenderer, PowerToughnessRenderer,
             SetCodeRenderer, SetIconRenderer, TypeLineRenderer,
+        },
+        fonts::fonts,
+        meld_element_renderers::{
+            MeldBackCardArtRenderer, MeldNameRenderer, MeldOracleTextRenderer,
+            MeldPlaneswalkerShieldRenderer, MeldSetCodeRenderer, MeldTypeLineRenderer,
         },
     },
     layout::Layout,
 };
 use image::{ImageBuffer, Rgb, RgbImage, imageops};
-use scryfall_oracle::{CardFace, OracleScryfallCard};
+use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, cards::melds::OracleMelds};
 use std::path::PathBuf;
 use tracing::{debug, info};
+
+const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
 
 /// Handles rendering a single card face
 async fn render_card_face(
@@ -36,7 +44,7 @@ async fn render_card_face(
     );
 
     // Compose renderers in order
-    let renderers: Vec<Box<dyn ElementRenderer>> = vec![
+    let mut renderers: Vec<Box<dyn ElementRenderer>> = vec![
         Box::new(CardArtRenderer),
         Box::new(NameRenderer),
         Box::new(ManaCostRenderer),
@@ -48,6 +56,16 @@ async fn render_card_face(
         Box::new(PowerToughnessRenderer),
         Box::new(BorderRenderer),
     ];
+
+    // Crude planeswalker detection, should just create a CardType enum variant for Planeswalker and handle it in the CardPrint render method.
+    if let Some(loyalty) = card.core.loyalty.as_ref() {
+        // TODO These should center with the loyalty number inside of the shield
+        /* This is so these should probably get rendered in the same Renderer,
+        but for now we can just render them in order and it will work for most cases. */
+        // TODO make a actual Planeswalker Card Print variant and handle it in the CardPrint render method.
+        renderers.push(Box::new(PlaneswalkerLoyaltyRenderer));
+        renderers.push(Box::new(PlaneswalkerShieldRenderer));
+    }
 
     // Execute each renderer
     for renderer in renderers {
@@ -118,6 +136,63 @@ async fn render_adventure_card_face(
     }
 
     info!(
+        scryfall_id = %scryfall_id,
+        "Card image generated successfully"
+    );
+
+    Ok(card_img)
+}
+
+/// Handles rendering a single card face
+async fn render_meld_back_face(
+    card: &OracleScryfallCard,
+    position: u8,
+    layout: &Layout,
+) -> Result<RgbImage, Box<dyn std::error::Error>> {
+    // TODO Render back face of Meld card
+    let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
+    let mut layout = layout.clone();
+
+    let scryfall_id = &card.core.id;
+    let card_name = &card.core.name;
+    info!(
+        scryfall_id = %scryfall_id,
+        card_name = %card_name,
+        width = layout.width,
+        height = layout.height,
+        layout = %card.core.layout,
+        "Generating meld card back image"
+    );
+
+    // Position 1 is the main card art of the oversized Meld Result cards
+    // Position 2 is the main oracle text box of the oversized Meld Result cards
+
+    // Compose renderers in order
+    let mut renderers: Vec<Box<dyn ElementRenderer>> = Vec::new();
+
+    if position == 2 {
+        renderers.push(Box::new(MeldBackCardArtRenderer));
+        renderers.push(Box::new(MeldNameRenderer));
+    }
+
+    if position == 1 {
+        renderers.push(Box::new(MeldTypeLineRenderer));
+        renderers.push(Box::new(MeldOracleTextRenderer));
+        if card.core.loyalty.is_some() {
+            renderers.push(Box::new(MeldPlaneswalkerShieldRenderer));
+        }
+        renderers.push(Box::new(MeldSetCodeRenderer));
+    }
+
+    renderers.push(Box::new(BorderRenderer));
+    // Execute each renderer
+    for renderer in renderers {
+        renderer
+            .render(card, None, &mut card_img, &mut layout)
+            .await?;
+    }
+
+    debug!(
         scryfall_id = %scryfall_id,
         "Card image generated successfully"
     );
@@ -196,6 +271,67 @@ impl<'a> CardRenderer for AdventureCardRenderer<'a> {
     }
 }
 
+/// MDFC card renderer (renders side-by-side)
+pub struct MeldCardRenderer<'a> {
+    pub card: &'a OracleScryfallCard,
+}
+
+impl<'a> CardRenderer for MeldCardRenderer<'a> {
+    async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
+        let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
+        let melds = OracleMelds::get_melds(&client).await?;
+        let id = self.card.core.id.clone();
+
+        let parent = melds.melds.iter().find(|meld| meld.result_id == id);
+
+        let child = melds.melds.iter().find_map(|meld| {
+            meld.children
+                .iter()
+                .find(|child| child.id == id)
+                .map(|child| (meld, child))
+        });
+
+        if let Some(meld) = parent {
+            // This card is the meld result / parent.
+            debug!(result_id = %meld.result_id, "Card is a meld parent");
+        } else if let Some((meld, child)) = child {
+            // This card is one of the meld pieces.
+
+            let result = OracleScryfallCard::by_id_live(&client, &meld.result_id).await?;
+            info!(
+                result_id = %meld.result_id,
+                position = child.position,
+                result_name = result.core.name,
+                card_name = self.card.core.name,
+                "Card is a meld child"
+            );
+
+            let front_img = render_card_face(self.card, None, layout).await?;
+            let back_img = render_meld_back_face(&result, child.position, layout).await?;
+
+            // Composite side-by-side with 20 px white buffer
+            let buffer = 20;
+
+            let mut composed = RgbImage::from_pixel(
+                front_img.width() * 2 + buffer,
+                front_img.height(),
+                Rgb([255, 255, 255]),
+            );
+
+            imageops::overlay(&mut composed, &front_img, 0, 0);
+            imageops::overlay(
+                &mut composed,
+                &back_img,
+                (front_img.width() + buffer) as i64,
+                0,
+            );
+
+            return Ok(composed);
+        }
+        Err("Not a meld".into())
+    }
+}
+
 /// Main card print handler
 pub struct CardPrint<'a> {
     card_type: &'a CardType,
@@ -211,18 +347,9 @@ impl<'a> CardPrint<'a> {
         out_path: Option<&PathBuf>,
     ) -> Result<ImageBuffer<Rgb<u8>, Vec<u8>>, Box<dyn std::error::Error>> {
         // Load fonts once
-        let serif_font_path =
-            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/Mplantin.ttf";
-        let sanserif_font_path =
-            "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/tahoma.ttf";
-        // let sanserif_font_path =
-        //     "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/fonts/DejaVuSans.ttf";
-
-        let (serif_font, sanserif_font) = Layout::load_fonts(serif_font_path, sanserif_font_path)?;
-
         let layout = Layout {
-            serif_font,
-            sanserif_font,
+            serif_font: fonts::MPLANTIN,
+            sanserif_font: fonts::TAHOMA,
             ..Layout::default()
         };
 
@@ -232,6 +359,7 @@ impl<'a> CardPrint<'a> {
             CardType::Adventure(card) => AdventureCardRenderer { card }.render(&layout).await?,
             CardType::Omen(card) => AdventureCardRenderer { card }.render(&layout).await?,
             CardType::Prepare(card) => AdventureCardRenderer { card }.render(&layout).await?,
+            CardType::Meld(card) => MeldCardRenderer { card }.render(&layout).await?,
         };
 
         if let Some(out_path) = out_path {

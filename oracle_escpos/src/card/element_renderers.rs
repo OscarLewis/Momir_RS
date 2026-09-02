@@ -1,9 +1,10 @@
 use crate::{
     art::CardArtPipeline,
+    card::svg::LOYALTY_SHIELD_SVG,
     layout::{Layout, NameStyle, WrapStyle},
     render::{
-        draw_border, draw_svg, draw_text, draw_text_around_border, draw_vertical_line, text_width,
-        wrapped_line_count,
+        draw_border, draw_svg, draw_text, draw_text_around_border, draw_text_rotated_270,
+        draw_vertical_line, text_width, wrapped_line_count,
     },
 };
 use async_trait::async_trait;
@@ -69,80 +70,6 @@ impl ElementRenderer for CardArtRenderer {
             let draw_x = (layout.art.x as i64) + ((layout.art.max_width as i64) - render_width) / 2;
 
             imageops::overlay(canvas, &art, draw_x, layout.art.y);
-        }
-
-        Ok(())
-    }
-}
-
-/// Renders card name with border wrapping logic
-pub struct NameRenderer;
-
-#[async_trait]
-impl ElementRenderer for NameRenderer {
-    async fn render(
-        &self,
-        card: &OracleScryfallCard,
-        face: Option<&CardFace>,
-        canvas: &mut RgbImage,
-        layout: &mut Layout,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let is_funny = card.core.set_type == "funny";
-        let name = face.map(|f| &f.name).unwrap_or_else(|| &card.core.name);
-        let (name_style, wrap_style) = {
-            let name_style = &layout.name;
-            let name_font_data = layout.font_data(name_style.font);
-            let name_width = layout.text_width(name, name_style);
-
-            if let Some(long_text_font_size) = name_style.long_text_font_size {
-                if name_width > name_style.wrap_width as f32 {
-                    let total_text_len = text_width(name, name_font_data, long_text_font_size, 0.5);
-                    let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
-
-                    if total_text_len > layout.border_path.bottom_threshold() && is_funny {
-                        (NameStyle::LongName, WrapStyle::FullWrap)
-                    } else if total_text_len > standard_wrap_limit && is_funny {
-                        (NameStyle::LongName, WrapStyle::SemiWrap)
-                    } else {
-                        (NameStyle::LongName, WrapStyle::Standard)
-                    }
-                } else {
-                    (NameStyle::Standard, WrapStyle::Standard)
-                }
-            } else {
-                (NameStyle::Standard, WrapStyle::Standard)
-            }
-        };
-
-        name_style.apply_layout_adjustments(layout);
-        wrap_style.apply_layout_adjustments(layout);
-
-        let name_style = &layout.name;
-        let name_font_data = layout.font_data(name_style.font);
-
-        match wrap_style {
-            WrapStyle::FullWrap | WrapStyle::SemiWrap => {
-                draw_text_around_border(
-                    canvas,
-                    name,
-                    name_font_data,
-                    name_style.font_size,
-                    name_style.letter_spacing,
-                    &layout.border_path,
-                );
-            }
-            WrapStyle::Standard => {
-                draw_text(
-                    canvas,
-                    name,
-                    name_style.x,
-                    name_style.y,
-                    name_font_data,
-                    name_style.font_size,
-                    name_style.letter_spacing,
-                    name_style.wrap_width,
-                );
-            }
         }
 
         Ok(())
@@ -276,9 +203,45 @@ impl ElementRenderer for OracleTextRenderer {
         let rules_font_data = layout.font_data(rules_style.font);
         let rules_y = rules_style.y.max(layout.type_line_end_y);
 
+        // First attempt with default font size
+        let mut font_size = rules_style.font_size;
+        let mut total_height = layout.wrapped_text_height(&oracle_text, rules_style);
+
+        // Fall back to smaller font size if max_length is exceeded
+        if let Some(max_length) = rules_style.max_length {
+            if total_height > max_length {
+                if let Some(long_font_size) = rules_style.long_text_font_size {
+                    debug!(
+                        initial_height = total_height,
+                        max_length,
+                        long_font_size,
+                        "Oracle text exceeds max_length; falling back to long_text_font_size"
+                    );
+
+                    font_size = long_font_size;
+
+                    // Recalculate text height with reduced font size
+                    let mut scaled_style = rules_style.clone();
+                    scaled_style.font_size = long_font_size;
+                    total_height = layout.wrapped_text_height(&oracle_text, &scaled_style);
+                }
+
+                if total_height > max_length {
+                    debug!(
+                        total_height,
+                        max_length,
+                        overflow = total_height - max_length,
+                        font_size,
+                        "Oracle text height still exceeds max_length boundaries"
+                    );
+                }
+            }
+        }
+
         debug!(
-            font_size = rules_style.font_size,
+            font_size,
             oracle_text_length = oracle_text.len(),
+            total_height,
             "Rendering oracle text"
         );
 
@@ -288,7 +251,7 @@ impl ElementRenderer for OracleTextRenderer {
             rules_style.x,
             rules_y,
             rules_font_data,
-            rules_style.font_size,
+            font_size,
             rules_style.letter_spacing,
             rules_style.wrap_width,
         );
@@ -554,8 +517,8 @@ impl ElementRenderer for SetIconRenderer {
                 &svg_data,
                 set_icon.x,
                 set_icon.y,
-                set_icon.width,
-                set_icon.height,
+                set_icon.max_width,
+                set_icon.max_height,
             )?;
         }
 
@@ -643,6 +606,67 @@ impl ElementRenderer for PowerToughnessRenderer {
     }
 }
 
+/// Renders power/toughness
+pub struct PlaneswalkerLoyaltyRenderer;
+#[async_trait]
+impl ElementRenderer for PlaneswalkerLoyaltyRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let loyalty_style = &layout.planeswalker_loyalty_style;
+        let loyalty_font_data = layout.font_data(loyalty_style.font);
+
+        if let Some(loyalty) = card.core.loyalty.as_ref() {
+            debug!(loyalty = loyalty, "Rendering Planeswalker loyalty");
+
+            draw_text(
+                canvas,
+                loyalty,
+                loyalty_style.x,
+                loyalty_style.y,
+                loyalty_font_data,
+                loyalty_style.font_size,
+                loyalty_style.letter_spacing,
+                loyalty_style.wrap_width,
+            );
+        } else {
+            debug!("Card has no loyalty");
+        }
+
+        Ok(())
+    }
+}
+
+/// Renders set icon
+pub struct PlaneswalkerShieldRenderer;
+#[async_trait]
+impl ElementRenderer for PlaneswalkerShieldRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let shield_style = &layout.planeswalker_loyalty_shield;
+        debug!("Rendering Planwalker loyalty shield");
+        draw_svg(
+            canvas,
+            LOYALTY_SHIELD_SVG,
+            shield_style.x,
+            shield_style.y,
+            shield_style.max_width,
+            shield_style.max_height,
+        )?;
+
+        Ok(())
+    }
+}
+
 /// Renders border
 pub struct BorderRenderer;
 #[async_trait]
@@ -656,6 +680,80 @@ impl ElementRenderer for BorderRenderer {
     ) -> Result<(), Box<dyn std::error::Error>> {
         debug!("Rendering card border");
         draw_border(canvas);
+        Ok(())
+    }
+}
+
+/// Renders card name with border wrapping logic
+pub struct NameRenderer;
+
+#[async_trait]
+impl ElementRenderer for NameRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let is_funny = card.core.set_type == "funny";
+        let name = face.map(|f| &f.name).unwrap_or_else(|| &card.core.name);
+        let (name_style, wrap_style) = {
+            let name_style = &layout.name;
+            let name_font_data = layout.font_data(name_style.font);
+            let name_width = layout.text_width(name, name_style);
+
+            if let Some(long_text_font_size) = name_style.long_text_font_size {
+                if name_width > name_style.wrap_width as f32 {
+                    let total_text_len = text_width(name, name_font_data, long_text_font_size, 0.5);
+                    let standard_wrap_limit = (name_style.wrap_width + 10) as f32;
+
+                    if total_text_len > layout.border_path.bottom_threshold() && is_funny {
+                        (NameStyle::LongName, WrapStyle::FullWrap)
+                    } else if total_text_len > standard_wrap_limit && is_funny {
+                        (NameStyle::LongName, WrapStyle::SemiWrap)
+                    } else {
+                        (NameStyle::LongName, WrapStyle::Standard)
+                    }
+                } else {
+                    (NameStyle::Standard, WrapStyle::Standard)
+                }
+            } else {
+                (NameStyle::Standard, WrapStyle::Standard)
+            }
+        };
+
+        name_style.apply_layout_adjustments(layout);
+        wrap_style.apply_layout_adjustments(layout);
+
+        let name_style = &layout.name;
+        let name_font_data = layout.font_data(name_style.font);
+
+        match wrap_style {
+            WrapStyle::FullWrap | WrapStyle::SemiWrap => {
+                draw_text_around_border(
+                    canvas,
+                    name,
+                    name_font_data,
+                    name_style.font_size,
+                    name_style.letter_spacing,
+                    &layout.border_path,
+                );
+            }
+            WrapStyle::Standard => {
+                draw_text(
+                    canvas,
+                    name,
+                    name_style.x,
+                    name_style.y,
+                    name_font_data,
+                    name_style.font_size,
+                    name_style.letter_spacing,
+                    name_style.wrap_width,
+                );
+            }
+        }
+
         Ok(())
     }
 }
