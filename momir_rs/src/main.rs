@@ -515,6 +515,49 @@ async fn handle_socket(
         },
     );
 
+    match config.printer.print_method {
+        Some(PrintMethod::Network) => {
+            if let Some(printer) = OracleNetworkPrinter::from_config(&config) {
+                if printer.check_connection().await {
+                    console.send(
+                        &game_id,
+                        ConsoleMessage::Text {
+                            sender: "System".to_string(),
+                            body: format!("Printer connected at {}:{}", printer.host, printer.port),
+                        },
+                    );
+                }
+            }
+        }
+
+        Some(PrintMethod::Usb) => {
+            if let Some(printer) = OracleUsbPrinter::from_config(&config) {
+                if printer.check_connection() {
+                    console.send(
+                        &game_id,
+                        ConsoleMessage::Text {
+                            sender: "System".to_string(),
+                            body: format!(
+                                "Printer connected via usb at path {}",
+                                printer.path.display()
+                            ),
+                        },
+                    );
+                }
+            }
+        }
+
+        None => {
+            console.send(
+                &game_id,
+                ConsoleMessage::Text {
+                    sender: "System".to_string(),
+                    body: "No printer configured".to_string(),
+                },
+            );
+        }
+    }
+
     // let printer = OraclePrinter::from(&config);
 
     // if printer.check_connection().await {

@@ -29,12 +29,12 @@ impl std::error::Error for PrinterError {}
 
 #[derive(Clone)]
 pub struct OracleNetworkPrinter {
-    host: String,
-    port: u16,
+    pub host: String,
+    pub port: u16,
 }
 
 pub struct OracleUsbPrinter {
-    path: PathBuf,
+    pub path: PathBuf,
 }
 
 impl OracleNetworkPrinter {
