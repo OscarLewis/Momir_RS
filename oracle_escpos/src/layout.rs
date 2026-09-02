@@ -70,7 +70,7 @@ impl Default for FontSizes {
             set_code: 16.0,
             artist: 16.0,
             artist_small: 14.0,
-            cost: 18.0,
+            cost: 20.0,
             long_cost: 14.0,
             adventure_name: 16.0,
             long_adventure_name: 14.0,
