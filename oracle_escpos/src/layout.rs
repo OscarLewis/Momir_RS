@@ -240,6 +240,12 @@ impl NameStyle {
     }
 }
 
+
+/// Defines the complete layout and styling configuration for a card.
+///
+/// This struct contains all positioning, sizing, and font properties for various
+/// card elements including name, mana cost, type line, oracle text, and more.
+/// It supports different card styles through wrap and name style variants.
 #[derive(Debug, Clone)]
 pub struct Layout {
     pub adventure_mana_cost: TextStyle,
