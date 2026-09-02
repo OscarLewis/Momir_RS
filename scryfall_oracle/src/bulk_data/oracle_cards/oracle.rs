@@ -45,6 +45,10 @@ pub struct OracleCards {
     // Scryfall Sets
     #[serde(skip)]
     scryfall_sets: Option<ScryfallSets>,
+
+    // Scryfall IDs that are Planeswalkers
+    #[serde(skip)]
+    planeswalkers: HashSet<String>,
 }
 
 impl OracleCards {
@@ -120,6 +124,18 @@ impl OracleCards {
             }
         }
 
+        let planeswalkers: HashSet<String> = local_card_set
+            .values()
+            .filter(|card| {
+                card.core.type_line.as_deref().is_some_and(|type_line| {
+                    type_line
+                        .split_whitespace()
+                        .any(|word| word == "Planeswalker")
+                })
+            })
+            .map(|card| card.core.id.clone())
+            .collect();
+
         Ok(Self {
             cards: Some(local_card_set),
             creatures_by_cmc,
@@ -127,6 +143,7 @@ impl OracleCards {
             creatures_by_format,
             unset_creature_ids,
             unknown_events_creature_ids,
+            planeswalkers,
         })
     }
 
@@ -165,12 +182,15 @@ impl OracleCards {
 
             let is_everything_else = !is_unsets && !is_modern && !is_premodern && !is_unknown_event;
 
+            // TODO Add a Planeswalker filter here
+
             filters.filters.iter().all(|filter| match filter {
                 OracleFilter::Unsets => !is_unsets,
                 OracleFilter::Modern => !is_modern,
                 OracleFilter::Premodern => !is_premodern,
                 OracleFilter::UnknownEvent => !is_unknown_event,
                 OracleFilter::EverythingElse => !is_everything_else,
+                OracleFilter::Planeswalkers => todo!(),
             })
         };
 

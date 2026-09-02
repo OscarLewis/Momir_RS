@@ -7,6 +7,7 @@ pub enum OracleFilter {
     Premodern,
     UnknownEvent,
     EverythingElse,
+    Planeswalkers,
     // TODO Add a Planeswalker filter
 }
 
@@ -35,6 +36,7 @@ impl fmt::Display for OracleFilter {
             OracleFilter::Premodern => "Premodern",
             OracleFilter::UnknownEvent => "Unknown Event",
             OracleFilter::EverythingElse => "Everything Else",
+            OracleFilter::Planeswalkers => "Planeswalkers",
         };
 
         write!(f, "{value}")
