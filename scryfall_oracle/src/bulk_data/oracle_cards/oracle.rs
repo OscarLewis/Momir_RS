@@ -182,6 +182,8 @@ impl OracleCards {
 
             let is_everything_else = !is_unsets && !is_modern && !is_premodern && !is_unknown_event;
 
+            let is_planeswalker = self.planeswalkers.contains(*id);
+
             // TODO Add a Planeswalker filter here
 
             filters.filters.iter().all(|filter| match filter {
@@ -190,7 +192,8 @@ impl OracleCards {
                 OracleFilter::Premodern => !is_premodern,
                 OracleFilter::UnknownEvent => !is_unknown_event,
                 OracleFilter::EverythingElse => !is_everything_else,
-                OracleFilter::Planeswalkers => todo!(),
+                OracleFilter::Planeswalkers => !is_planeswalker, // TODO This needs improvement
+                                                                 // Instead of removing planeswalkers from pool, we need to add them in
             })
         };
 

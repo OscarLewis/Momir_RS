@@ -315,6 +315,9 @@ struct CardByCMCParams {
 
     #[serde(default)]
     everything_else_filter: bool,
+
+    #[serde(default)]
+    planeswalker_filter: bool,
 }
 
 #[axum::debug_handler]
@@ -328,6 +331,7 @@ async fn card_by_cmc(
         (OracleFilter::Premodern, params.premodern_filter),
         (OracleFilter::Unsets, params.unset_filter),
         (OracleFilter::EverythingElse, params.everything_else_filter),
+        (OracleFilter::Planeswalkers, params.planeswalker_filter),
     ];
 
     let filters = {

@@ -87,6 +87,16 @@
 
                         <div class="filter-item">
                             <div class="filter-toggle">
+                                <span>Planeswalkers</span>
+                                <label class="switch">
+                                    <input type="checkbox" name="planeswalker_filter" value="true">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="filter-item">
+                            <div class="filter-toggle">
                                 <span>Everything Else</span>
                                 <label class="switch">
                                     <input type="checkbox" name="everything_else_filter" value="true" checked>
@@ -105,7 +115,8 @@
                         <input id="cmc" type="number" name="cmc" value="1" min="0">
 
                         <button hx-get="/card-by-cmc"
-                                hx-include="[name='cmc'], [name='game_id'], [name='unknown_event_filter'], [name='modern_filter'], [name='premodern_filter'], [name='unset_filter'], [name='everything_else_filter']"
+                                hx-include=
+                                "[name='cmc'], [name='game_id'], [name='unknown_event_filter'], [name='modern_filter'], [name='premodern_filter'], [name='unset_filter'], [name='planeswalker_filter'], [name='everything_else_filter']"
                                 hx-swap="none">
                             Randomize
                         </button>
