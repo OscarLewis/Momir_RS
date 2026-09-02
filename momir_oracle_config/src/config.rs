@@ -1,14 +1,12 @@
 use config::Config;
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum PrintMethod {
     Network,
     Usb,
 }
-
 
 #[derive(Debug, Serialize, Clone, Deserialize, PartialEq)]
 pub struct AppConfig {
@@ -29,6 +27,7 @@ pub struct ServerConfig {
     pub host: String,
     pub port: i32,
     pub scryfall_user_agent: String,
+    pub cahce_dir: Option<String>,
 }
 
 pub fn load_config() -> Result<AppConfig, config::ConfigError> {

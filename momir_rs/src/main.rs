@@ -28,7 +28,7 @@ use scryfall_oracle::{
 };
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection};
 use serde::{Deserialize, Serialize};
-use std::{net::SocketAddr, time::Duration};
+use std::{env, net::SocketAddr, time::Duration};
 use tokio::{fs, net::TcpListener};
 use tower_http::services::ServeDir;
 use tracing::{debug, info, warn};
@@ -142,8 +142,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sets = ScryfallSets::new(&scryfall).await?;
     debug!(num_sets = sets.len(), "Fetched Sets from Scryfall");
 
-    let cache_path =
-        std::path::PathBuf::from("/home/oscar/Documents/Projects/momir_rs_workspace/cache");
+    let cache_path = config
+        .server
+        .cahce_dir
+        .as_ref()
+        .map(|s| std::path::PathBuf::from(s))
+        .unwrap_or_else(|| env::temp_dir().join("momir_rs_cache"));
+
+    fs::create_dir_all(&cache_path).await?;
+
     let oracle = OracleCards::new(&scryfall, Some(&cache_path), Some(sets)).await?;
 
     match config.printer.print_method {
