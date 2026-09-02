@@ -48,7 +48,7 @@ pub struct OracleCards {
 
     // Scryfall IDs that are Planeswalkers
     #[serde(skip)]
-    planeswalkers: HashSet<String>,
+    planeswalkers_by_cmc: HashMap<u64, HashSet<String>>,
 }
 
 impl OracleCards {
@@ -89,52 +89,51 @@ impl OracleCards {
         let mut creatures_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
         let mut creatures_by_format: HashMap<FormatLegality, HashSet<String>> = HashMap::new();
         let mut unknown_events_creature_ids: HashSet<String> = HashSet::new();
+        let mut planeswalkers_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
 
         for (id, card) in &local_card_set {
             debug_assert!(*id == card.core.id, "Scryfall ID mismatch");
-            if !card
-                .core
-                .type_line
-                .as_deref()
-                .is_some_and(|type_line| type_line.contains("Creature"))
-            {
+
+            let Some(type_line) = card.core.type_line.as_deref() else {
                 continue;
-            }
+            };
 
             let Some(cmc) = card.core.cmc else {
                 continue;
             };
 
-            if card.core.set.eq_ignore_ascii_case("unk") {
-                unknown_events_creature_ids.insert(card.core.id.clone());
-            }
+            // Populate creatures
+            if type_line.contains("Creature") {
+                if card.core.set.eq_ignore_ascii_case("unk") {
+                    unknown_events_creature_ids.insert(card.core.id.clone());
+                }
 
-            creatures_by_cmc
-                .entry(cmc.to_bits())
-                .or_default()
-                .insert(card.core.id.clone());
+                creatures_by_cmc
+                    .entry(cmc.to_bits())
+                    .or_default()
+                    .insert(card.core.id.clone());
 
-            for (&format, &legal) in &card.core.legalities {
-                if legal {
-                    creatures_by_format
-                        .entry(format)
-                        .or_default()
-                        .insert(card.core.id.clone());
+                for (&format, &legal) in &card.core.legalities {
+                    if legal {
+                        creatures_by_format
+                            .entry(format)
+                            .or_default()
+                            .insert(card.core.id.clone());
+                    }
                 }
             }
-        }
 
-        let planeswalkers: HashSet<String> = local_card_set
-            .values()
-            .filter(|card| {
-                card.core.type_line.as_deref().is_some_and(|type_line| {
-                    type_line
-                        .split_whitespace()
-                        .any(|word| word == "Planeswalker")
-                })
-            })
-            .map(|card| card.core.id.clone())
-            .collect();
+            // Populate planeswalkers by CMC
+            if type_line
+                .split_whitespace()
+                .any(|word| word == "Planeswalker")
+            {
+                planeswalkers_by_cmc
+                    .entry(cmc.to_bits())
+                    .or_default()
+                    .insert(card.core.id.clone());
+            }
+        }
 
         Ok(Self {
             cards: Some(local_card_set),
@@ -143,7 +142,7 @@ impl OracleCards {
             creatures_by_format,
             unset_creature_ids,
             unknown_events_creature_ids,
-            planeswalkers,
+            planeswalkers_by_cmc,
         })
     }
 
@@ -160,6 +159,7 @@ impl OracleCards {
         filters: Option<&OracleFilters>,
     ) -> Option<OracleScryfallCard> {
         let ids = self.creatures_by_cmc.get(&cmc.to_bits())?;
+        let planeswalker_ids = self.planeswalkers_by_cmc.get(&cmc.to_bits());
 
         let eligible = |id: &&String| {
             let Some(filters) = filters else {
@@ -182,7 +182,7 @@ impl OracleCards {
 
             let is_everything_else = !is_unsets && !is_modern && !is_premodern && !is_unknown_event;
 
-            let is_planeswalker = self.planeswalkers.contains(*id);
+            // let is_planeswalker = self.planeswalkers_by_cmc.contains(*id);
 
             // TODO Add a Planeswalker filter here
 
@@ -192,8 +192,8 @@ impl OracleCards {
                 OracleFilter::Premodern => !is_premodern,
                 OracleFilter::UnknownEvent => !is_unknown_event,
                 OracleFilter::EverythingElse => !is_everything_else,
-                OracleFilter::Planeswalkers => !is_planeswalker, // TODO This needs improvement
-                                                                 // Instead of removing planeswalkers from pool, we need to add them in
+                OracleFilter::Planeswalkers => !todo!(), // TODO This needs improvement
+                                                         // Instead of removing planeswalkers from pool, we need to add them in
             })
         };
 
