@@ -57,6 +57,10 @@ pub struct OracleCards {
     // Scryfall IDs from Gavin's 'Unknown Events'
     #[serde(skip)]
     unknown_events_planeswalker_ids: HashSet<String>,
+
+    // Scryfall IDs for Planeswalkers in any 'unset'
+    #[serde(skip)]
+    unset_planeswalker_ids: HashSet<String>,
 }
 
 impl OracleCards {
@@ -83,6 +87,9 @@ impl OracleCards {
         let data_path = write_data(target_dir, oracle_cards_bulk, client).await?;
         let local_card_set = parse_card_set(data_path).await?;
 
+        // Initialize as empty; will be populated later
+        let mut unset_planeswalker_ids = HashSet::new();
+
         let unset_creature_ids = OracleScryfallCard::search(client, "is:unset t:creature")
             .await?
             .into_card_ids()
@@ -92,6 +99,11 @@ impl OracleCards {
         debug!(
             num_unset_creatures = unset_creature_ids.len(),
             "Unset creatures fetched from Scryfall"
+        );
+
+        debug!(
+            num_unset_planeswalkers = unset_planeswalker_ids.len(),
+            "Unset planeswalkers fetched from Scryfall"
         );
 
         let mut creatures_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
@@ -141,6 +153,13 @@ impl OracleCards {
                 .split_whitespace()
                 .any(|word| word == "Planeswalker")
             {
+                unset_planeswalker_ids =
+                    OracleScryfallCard::search(client, "is:unset t:planeswalker")
+                        .await?
+                        .into_card_ids()
+                        .into_iter()
+                        .collect::<HashSet<_>>();
+
                 if card.core.set.eq_ignore_ascii_case("unk") {
                     // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
                     unknown_events_planeswalker_ids.insert(card.core.id.clone());
@@ -162,6 +181,16 @@ impl OracleCards {
             }
         }
 
+        let total_planeswalker_entries: usize =
+            planeswalkers_by_cmc.values().map(|set| set.len()).sum();
+
+        debug!(
+            total_planeswalker_entries,
+            unk_planeswalkers = unknown_events_planeswalker_ids.len(),
+            unset_planeswalkers = unset_planeswalker_ids.len(),
+            "Planeswalker stats debug summary"
+        );
+
         Ok(Self {
             cards: Some(local_card_set),
             creatures_by_cmc,
@@ -172,6 +201,7 @@ impl OracleCards {
             planeswalkers_by_cmc,
             planeswalkers_by_format,
             unknown_events_planeswalker_ids,
+            unset_planeswalker_ids,
         })
     }
 
