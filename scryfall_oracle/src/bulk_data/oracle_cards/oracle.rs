@@ -112,7 +112,8 @@ impl OracleCards {
                 continue;
             };
 
-            // Populate creatures
+            // Track creature cards by mana value and format legality, excluding
+            // unknown-event entries from the main pool while retaining their IDs.
             if type_line.contains("Creature") {
                 if card.core.set.eq_ignore_ascii_case("unk") {
                     // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
@@ -134,7 +135,8 @@ impl OracleCards {
                 }
             }
 
-            // Populate planeswalkers
+            // Track planeswalkers by mana value and format legality, while still
+            // separating out the IDs that come from the Unknown Events set.
             if type_line
                 .split_whitespace()
                 .any(|word| word == "Planeswalker")
@@ -143,6 +145,7 @@ impl OracleCards {
                     // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
                     unknown_events_planeswalker_ids.insert(card.core.id.clone());
                 }
+
                 planeswalkers_by_cmc
                     .entry(cmc.to_bits())
                     .or_default()
