@@ -357,7 +357,6 @@ async fn card_by_cmc(
                 "Momir generated a card"
             );
 
-            // TODO Enable printing
             match state.config.printer.print_method {
                 Some(PrintMethod::Network) => {
                     if let Some(printer) = OracleNetworkPrinter::from_config(&state.config) {

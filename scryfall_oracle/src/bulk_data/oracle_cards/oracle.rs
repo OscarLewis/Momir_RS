@@ -203,8 +203,7 @@ impl OracleCards {
                 OracleFilter::Premodern => !is_premodern,
                 OracleFilter::UnknownEvent => !is_unknown_event,
                 OracleFilter::EverythingElse => !is_everything_else,
-                OracleFilter::Planeswalkers => true, // TODO This needs improvement
-                                                     // Instead of removing planeswalkers from pool, we need to add them in
+                OracleFilter::Planeswalkers => true,
             })
         };
 

@@ -146,7 +146,6 @@ async fn render_meld_back_face(
     position: u8,
     layout: &Layout,
 ) -> Result<RgbImage, Box<dyn std::error::Error>> {
-    // TODO Render back face of Meld card
     let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
     let mut layout = layout.clone();
 
