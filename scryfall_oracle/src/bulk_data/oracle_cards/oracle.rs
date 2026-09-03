@@ -195,9 +195,7 @@ impl OracleCards {
 
             let is_everything_else = !is_unsets && !is_modern && !is_premodern && !is_unknown_event;
 
-            // let is_planeswalker = self.planeswalkers_by_cmc.contains(*id);
-
-            // TODO Add a Planeswalker filter here
+            // TODO fix edge case where only searching for planeswalkers and no other filters, we should return all planeswalkers in that case
 
             filters.filters.iter().all(|filter| match filter {
                 OracleFilter::Unsets => !is_unsets,
