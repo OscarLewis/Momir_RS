@@ -49,6 +49,14 @@ pub struct OracleCards {
     // Scryfall IDs that are Planeswalkers
     #[serde(skip)]
     planeswalkers_by_cmc: HashMap<u64, HashSet<String>>,
+
+    // Scryfall IDs that are Planeswalkers by formats their legal in
+    #[serde(skip)]
+    planeswalkers_by_format: HashMap<FormatLegality, HashSet<String>>,
+
+    // Scryfall IDs from Gavin's 'Unknown Events'
+    #[serde(skip)]
+    unknown_events_planeswalker_ids: HashSet<String>,
 }
 
 impl OracleCards {
@@ -89,7 +97,9 @@ impl OracleCards {
         let mut creatures_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
         let mut creatures_by_format: HashMap<FormatLegality, HashSet<String>> = HashMap::new();
         let mut unknown_events_creature_ids: HashSet<String> = HashSet::new();
+        let mut unknown_events_planeswalker_ids: HashSet<String> = HashSet::new();
         let mut planeswalkers_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
+        let mut planeswalkers_by_format: HashMap<FormatLegality, HashSet<String>> = HashMap::new();
 
         for (id, card) in &local_card_set {
             debug_assert!(*id == card.core.id, "Scryfall ID mismatch");
@@ -105,6 +115,7 @@ impl OracleCards {
             // Populate creatures
             if type_line.contains("Creature") {
                 if card.core.set.eq_ignore_ascii_case("unk") {
+                    // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
                     unknown_events_creature_ids.insert(card.core.id.clone());
                 }
 
@@ -123,15 +134,28 @@ impl OracleCards {
                 }
             }
 
-            // Populate planeswalkers by CMC
+            // Populate planeswalkers
             if type_line
                 .split_whitespace()
                 .any(|word| word == "Planeswalker")
             {
+                if card.core.set.eq_ignore_ascii_case("unk") {
+                    // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
+                    unknown_events_planeswalker_ids.insert(card.core.id.clone());
+                }
                 planeswalkers_by_cmc
                     .entry(cmc.to_bits())
                     .or_default()
                     .insert(card.core.id.clone());
+
+                for (&format, &legal) in &card.core.legalities {
+                    if legal {
+                        planeswalkers_by_format
+                            .entry(format)
+                            .or_default()
+                            .insert(card.core.id.clone());
+                    }
+                }
             }
         }
 
@@ -143,6 +167,8 @@ impl OracleCards {
             unset_creature_ids,
             unknown_events_creature_ids,
             planeswalkers_by_cmc,
+            planeswalkers_by_format,
+            unknown_events_planeswalker_ids,
         })
     }
 
@@ -196,6 +222,8 @@ impl OracleCards {
             let is_everything_else = !is_unsets && !is_modern && !is_premodern && !is_unknown_event;
 
             // TODO fix edge case where only searching for planeswalkers and no other filters, we should return all planeswalkers in that case
+            // Planeswalkers selected for inclusion include_planeswalkers=true
+            // 2026-09-03T01:22:32.041855Z DEBUG scryfall_oracle::bulk_data::oracle_cards::oracle: Filtered creature pool cmc=1.0 filters=Some(OracleFilters { filters: [UnknownEvent, Modern, Premodern, Unsets, EverythingElse]
 
             filters.filters.iter().all(|filter| match filter {
                 OracleFilter::Unsets => !is_unsets,
