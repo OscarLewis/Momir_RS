@@ -149,47 +149,47 @@ impl OracleCards {
 
             // Track planeswalkers by mana value and format legality, while still
             // separating out the IDs that come from the Unknown Events set.
-            if type_line
-                .split_whitespace()
-                .any(|word| word == "Planeswalker")
-            {
-                unset_planeswalker_ids =
-                    OracleScryfallCard::search(client, "is:unset t:planeswalker")
-                        .await?
-                        .into_card_ids()
-                        .into_iter()
-                        .collect::<HashSet<_>>();
+            // if type_line
+            //     .split_whitespace()
+            //     .any(|word| word == "Planeswalker")
+            // {
+            //     unset_planeswalker_ids =
+            //         OracleScryfallCard::search(client, "is:unset t:planeswalker")
+            //             .await?
+            //             .into_card_ids()
+            //             .into_iter()
+            //             .collect::<HashSet<_>>();
 
-                if card.core.set.eq_ignore_ascii_case("unk") {
-                    // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
-                    unknown_events_planeswalker_ids.insert(card.core.id.clone());
-                }
+            //     if card.core.set.eq_ignore_ascii_case("unk") {
+            //         // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
+            //         unknown_events_planeswalker_ids.insert(card.core.id.clone());
+            //     }
 
-                planeswalkers_by_cmc
-                    .entry(cmc.to_bits())
-                    .or_default()
-                    .insert(card.core.id.clone());
+            //     planeswalkers_by_cmc
+            //         .entry(cmc.to_bits())
+            //         .or_default()
+            //         .insert(card.core.id.clone());
 
-                for (&format, &legal) in &card.core.legalities {
-                    if legal {
-                        planeswalkers_by_format
-                            .entry(format)
-                            .or_default()
-                            .insert(card.core.id.clone());
-                    }
-                }
-            }
+            //     for (&format, &legal) in &card.core.legalities {
+            //         if legal {
+            //             planeswalkers_by_format
+            //                 .entry(format)
+            //                 .or_default()
+            //                 .insert(card.core.id.clone());
+            //         }
+            //     }
+            // }
         }
 
-        let total_planeswalker_entries: usize =
-            planeswalkers_by_cmc.values().map(|set| set.len()).sum();
+        // let total_planeswalker_entries: usize =
+        //     planeswalkers_by_cmc.values().map(|set| set.len()).sum();
 
-        debug!(
-            total_planeswalker_entries,
-            unk_planeswalkers = unknown_events_planeswalker_ids.len(),
-            unset_planeswalkers = unset_planeswalker_ids.len(),
-            "Planeswalker stats debug summary"
-        );
+        // debug!(
+        //     total_planeswalker_entries,
+        //     unk_planeswalkers = unknown_events_planeswalker_ids.len(),
+        //     unset_planeswalkers = unset_planeswalker_ids.len(),
+        //     "Planeswalker stats debug summary"
+        // );
 
         Ok(Self {
             cards: Some(local_card_set),
