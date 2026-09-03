@@ -158,8 +158,21 @@ impl OracleCards {
         cmc: f64,
         filters: Option<&OracleFilters>,
     ) -> Option<OracleScryfallCard> {
-        let ids = self.creatures_by_cmc.get(&cmc.to_bits())?;
-        let planeswalker_ids = self.planeswalkers_by_cmc.get(&cmc.to_bits());
+        let mut ids = self.creatures_by_cmc.get(&cmc.to_bits())?.clone();
+
+        let include_planeswalkers =
+            filters.map_or(true, |f| !f.filters.contains(&OracleFilter::Planeswalkers));
+
+        if include_planeswalkers {
+            debug!(
+                include_planeswalkers,
+                "Planeswalkers selected for inclusion"
+            );
+
+            if let Some(pw_ids) = self.planeswalkers_by_cmc.get(&cmc.to_bits()) {
+                ids.extend(pw_ids.iter().cloned());
+            }
+        }
 
         let eligible = |id: &&String| {
             let Some(filters) = filters else {
@@ -192,8 +205,8 @@ impl OracleCards {
                 OracleFilter::Premodern => !is_premodern,
                 OracleFilter::UnknownEvent => !is_unknown_event,
                 OracleFilter::EverythingElse => !is_everything_else,
-                OracleFilter::Planeswalkers => !todo!(), // TODO This needs improvement
-                                                         // Instead of removing planeswalkers from pool, we need to add them in
+                OracleFilter::Planeswalkers => true, // TODO This needs improvement
+                                                     // Instead of removing planeswalkers from pool, we need to add them in
             })
         };
 

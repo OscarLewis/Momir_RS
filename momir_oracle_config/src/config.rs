@@ -27,7 +27,7 @@ pub struct ServerConfig {
     pub host: String,
     pub port: i32,
     pub scryfall_user_agent: String,
-    pub cahce_dir: Option<String>,
+    pub cache_dir: Option<String>,
 }
 
 pub fn load_config() -> Result<AppConfig, config::ConfigError> {

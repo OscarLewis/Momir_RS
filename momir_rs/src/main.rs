@@ -144,7 +144,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cache_path = config
         .server
-        .cahce_dir
+        .cache_dir
         .as_ref()
         .map(|s| std::path::PathBuf::from(s))
         .unwrap_or_else(|| env::temp_dir().join("momir_rs_cache"));

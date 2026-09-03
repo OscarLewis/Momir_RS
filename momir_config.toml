@@ -2,12 +2,12 @@
 # Actual Printer IP addr
 # host = "192.168.2.47"
 # This is the 'escpresso' emulator IP (localhost)
-# host = "127.0.0.1"
-# port = 9100
+host = "127.0.0.1"
+port = 9100
 # host = "192.168.88.253"
-# print_method = "network"
-print_method = "usb"
-usb_path = "/dev/usb/lp0"
+print_method = "network"
+# print_method = "usb"
+# usb_path = "/dev/usb/lp0"
 
 [server]
 cache_dir = "/home/oscar/Documents/Projects/momir_rs_workspace/cache"
