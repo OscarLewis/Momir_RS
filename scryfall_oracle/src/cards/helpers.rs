@@ -1,5 +1,6 @@
 use crate::OracleScryfallCard;
 
+/// Helper methods for checking card information
 impl OracleScryfallCard {
     /// Checks if the card's `type_line` contains a specific word
     pub fn has_type_word(&self, word: &str) -> bool {

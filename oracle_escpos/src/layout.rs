@@ -10,6 +10,8 @@ pub struct TextStyle {
     pub font: Font,
     pub margin_left: u32,
     pub margin_right: u32,
+    pub margin_top: u32,
+    pub margin_bottom: u32,
     pub max_length: Option<i32>,
     pub font_size: f32,
     pub small_text_font_size: Option<f32>,
@@ -27,6 +29,8 @@ impl Default for TextStyle {
             font_size: 0.0,
             margin_left: 0,
             margin_right: 0,
+            margin_top: 0,
+            margin_bottom: 0,
             font: Font::Sansserif,
             small_text_font_size: None,
             large_text_font_size: None,
@@ -287,6 +291,8 @@ pub struct Layout {
     pub type_line: TextStyle,
     pub width: u32,
     pub wrap_style: WrapStyle,
+    pub split_first_name: TextStyle,
+    pub split_second_name: TextStyle,
 }
 
 impl Default for Layout {
@@ -539,6 +545,28 @@ impl Default for Layout {
                 font: Font::Serif,
                 font_size: fonts.loyalty,
                 wrap_width: 62,
+                ..Default::default()
+            },
+
+            split_first_name: TextStyle {
+                margin_top: 0,
+                margin_bottom: 20,
+                x: 50,
+                font: Font::Serif,
+                font_size: fonts.name,
+                small_text_font_size: Some(fonts.long_name),
+                wrap_width: 150,
+                ..Default::default()
+            },
+
+            split_second_name: TextStyle {
+                margin_top: 180,
+                margin_bottom: 0,
+                x: 50,
+                font: Font::Serif,
+                font_size: fonts.name,
+                small_text_font_size: Some(fonts.long_name),
+                wrap_width: 150,
                 ..Default::default()
             },
 

@@ -12,6 +12,7 @@ use crate::{
             MeldPlaneswalkerRenderer, MeldPowerToughnessRenderer, MeldSetCodeRenderer,
             MeldTypeLineRenderer,
         },
+        split_element_renderers::SplitNameRenderer,
     },
     layout::Layout,
 };
@@ -198,6 +199,46 @@ async fn render_meld_back_face(
     Ok(card_img)
 }
 
+/// Handles rendering a single card face
+async fn render_split_card_face(
+    card: &OracleScryfallCard,
+    face: Option<&CardFace>,
+    layout: &Layout,
+) -> Result<RgbImage, Box<dyn std::error::Error>> {
+    let mut card_img = RgbImage::from_pixel(layout.width, layout.height, Rgb([255, 255, 255]));
+    let mut layout = layout.clone();
+
+    let scryfall_id = &card.core.id;
+    let card_name = &card.core.name;
+
+    debug!(
+        scryfall_id = %scryfall_id,
+        card_name = %card_name,
+        width = layout.width,
+        height = layout.height,
+        layout = %card.core.layout,
+        "Generating card image"
+    );
+
+    // Compose renderers in order
+    let mut renderers: Vec<Box<dyn ElementRenderer>> = vec![Box::new(SplitNameRenderer)];
+
+    // TODO Finish implementing Split card horizontal layout rendering
+    // Execute each renderer
+    for renderer in renderers {
+        renderer
+            .render(card, face, &mut card_img, &mut layout)
+            .await?;
+    }
+
+    debug!(
+        scryfall_id = %scryfall_id,
+        "Card image generated successfully"
+    );
+
+    Ok(card_img)
+}
+
 /// Regular card renderer
 pub struct RegularCardRenderer<'a> {
     pub card: &'a OracleScryfallCard,
@@ -338,7 +379,7 @@ pub struct SplitCardRenderer<'a> {
 
 impl<'a> CardRenderer for SplitCardRenderer<'a> {
     async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
-        render_card_face(self.card, None, layout).await
+        render_split_card_face(self.card, None, layout).await
     }
 }
 

@@ -1,5 +1,3 @@
-use dithr::diffusion::atkinson_in_place;
-use dithr::diffusion::floyd_steinberg_in_place;
 use dithr::diffusion::sierra_lite_in_place;
 use dithr::{QuantizeMode, gray_u8};
 use image::{DynamicImage, ImageBuffer, imageops};

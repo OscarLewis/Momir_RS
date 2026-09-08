@@ -82,7 +82,7 @@ mod tests {
         let card = load_card("./tests/boom_bust_card.json")?;
 
         let card_type = match card.core.layout {
-            CardLayout::Split => CardType::MDFC(card),
+            CardLayout::Split => CardType::Split(card),
             _ => CardType::Regular(card),
         };
 
