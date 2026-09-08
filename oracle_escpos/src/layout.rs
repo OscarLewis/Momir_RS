@@ -293,6 +293,8 @@ pub struct Layout {
     pub wrap_style: WrapStyle,
     pub split_first_name: TextStyle,
     pub split_second_name: TextStyle,
+    pub split_first_cost: TextStyle,
+    pub split_second_cost: TextStyle,
 }
 
 impl Default for Layout {
@@ -560,12 +562,31 @@ impl Default for Layout {
             },
 
             split_second_name: TextStyle {
-                margin_top: 180,
-                margin_bottom: 0,
+                margin_bottom: 20,
                 x: 50,
                 font: Font::Serif,
                 font_size: fonts.name,
                 small_text_font_size: Some(fonts.long_name),
+                wrap_width: 150,
+                ..Default::default()
+            },
+
+            split_first_cost: TextStyle {
+                margin_top: 20,
+                x: 50,
+                font: Font::Sansserif,
+                font_size: fonts.cost,
+                small_text_font_size: Some(fonts.long_cost),
+                wrap_width: 150,
+                ..Default::default()
+            },
+
+            split_second_cost: TextStyle {
+                margin_top: 20,
+                x: 50,
+                font: Font::Sansserif,
+                font_size: fonts.cost,
+                small_text_font_size: Some(fonts.long_cost),
                 wrap_width: 150,
                 ..Default::default()
             },
