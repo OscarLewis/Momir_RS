@@ -330,7 +330,8 @@ impl<'a> CardRenderer for MeldCardRenderer<'a> {
     }
 }
 
-/// Regular card renderer
+// TODO Implement Split CardRenderer and layout
+/// Split card renderer
 pub struct SplitCardRenderer<'a> {
     pub card: &'a OracleScryfallCard,
 }

@@ -33,22 +33,6 @@ pub async fn parse_card_set(
             .map_err(BulkDataError::Deserialize)?;
 
         count += 1;
-        // TODO Refactor how creatures / planeswalkers get included in set
-        // if card.core.type_line.as_deref().map_or(false, |type_line| {
-        //     type_line
-        //         .split_whitespace()
-        //         .any(|token| token == "Creature" || token == "Planeswalker")
-        // }) {
-        //     scryfall_cards.insert(card.core.id.clone(), card);
-        // }
-        // if card
-        //     .core
-        //     .type_line
-        //     .as_deref()
-        //     .is_some_and(|type_line| type_line.contains("Creature"))
-        // {
-        //     scryfall_cards.insert(card.core.id.clone(), card);
-        // }
 
         scryfall_cards.insert(card.core.id.clone(), card);
     }
