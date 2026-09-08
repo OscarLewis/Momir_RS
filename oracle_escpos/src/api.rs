@@ -98,12 +98,7 @@ impl OracleUsbPrinter {
 async fn render_card(
     card: &OracleScryfallCard,
 ) -> Result<ImageBuffer<image::Rgb<u8>, Vec<u8>>, PrinterError> {
-    let card_type = if card
-        .core
-        .type_line
-        .as_deref()
-        .is_some_and(|type_line| type_line.split_whitespace().any(|word| word == "Omen"))
-    {
+    let card_type = if card.is_omen() {
         CardType::Omen(card.clone())
     } else {
         match card.core.layout {
@@ -111,7 +106,7 @@ async fn render_card(
             CardLayout::Adventure => CardType::Adventure(card.clone()),
             CardLayout::Prepare => CardType::Prepare(card.clone()),
             CardLayout::Transform => CardType::MDFC(card.clone()),
-            CardLayout::Split => CardType::MDFC(card.clone()),
+            CardLayout::Split => CardType::Split(card.clone()),
             _ => CardType::Regular(card.clone()),
         }
     };

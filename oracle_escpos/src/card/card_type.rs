@@ -9,6 +9,7 @@ pub enum CardType {
     Adventure(OracleScryfallCard),
     Omen(OracleScryfallCard),
     Prepare(OracleScryfallCard),
+    Split(OracleScryfallCard),
 }
 
 pub trait CardRenderer {

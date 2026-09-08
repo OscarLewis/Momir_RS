@@ -330,6 +330,17 @@ impl<'a> CardRenderer for MeldCardRenderer<'a> {
     }
 }
 
+/// Regular card renderer
+pub struct SplitCardRenderer<'a> {
+    pub card: &'a OracleScryfallCard,
+}
+
+impl<'a> CardRenderer for SplitCardRenderer<'a> {
+    async fn render(&self, layout: &Layout) -> Result<RgbImage, Box<dyn std::error::Error>> {
+        render_card_face(self.card, None, layout).await
+    }
+}
+
 /// Main card print handler
 pub struct CardPrint<'a> {
     card_type: &'a CardType,
@@ -358,6 +369,7 @@ impl<'a> CardPrint<'a> {
             CardType::Omen(card) => AdventureCardRenderer { card }.render(&layout).await?,
             CardType::Prepare(card) => AdventureCardRenderer { card }.render(&layout).await?,
             CardType::Meld(card) => MeldCardRenderer { card }.render(&layout).await?,
+            CardType::Split(card) => SplitCardRenderer { card }.render(&layout).await?,
         };
 
         if let Some(out_path) = out_path {
