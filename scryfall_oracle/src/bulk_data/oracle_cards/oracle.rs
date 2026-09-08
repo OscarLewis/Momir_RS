@@ -87,10 +87,13 @@ impl OracleCards {
         let data_path = write_data(target_dir, oracle_cards_bulk, client).await?;
         let local_card_set = parse_card_set(data_path).await?;
 
-        // Initialize as empty; will be populated later
-        let mut unset_planeswalker_ids = HashSet::new();
-
         let unset_creature_ids = OracleScryfallCard::search(client, "is:unset t:creature")
+            .await?
+            .into_card_ids()
+            .into_iter()
+            .collect::<HashSet<_>>();
+
+        let unset_planeswalker_ids = OracleScryfallCard::search(client, "is:unset t:planeswalker")
             .await?
             .into_card_ids()
             .into_iter()
@@ -105,6 +108,18 @@ impl OracleCards {
             num_unset_planeswalkers = unset_planeswalker_ids.len(),
             "Unset planeswalkers fetched from Scryfall"
         );
+
+        let planeswalker_count = local_card_set
+            .values()
+            .filter(|card| {
+                card.core
+                    .type_line
+                    .as_deref()
+                    .map_or(false, |line| line.contains("Planeswalker"))
+            })
+            .count();
+
+        debug!(planeswalkers.count = planeswalker_count, "parsed card set");
 
         let mut creatures_by_cmc: HashMap<u64, HashSet<String>> = HashMap::new();
         let mut creatures_by_format: HashMap<FormatLegality, HashSet<String>> = HashMap::new();
@@ -149,36 +164,29 @@ impl OracleCards {
 
             // Track planeswalkers by mana value and format legality, while still
             // separating out the IDs that come from the Unknown Events set.
-            // if type_line
-            //     .split_whitespace()
-            //     .any(|word| word == "Planeswalker")
-            // {
-            //     unset_planeswalker_ids =
-            //         OracleScryfallCard::search(client, "is:unset t:planeswalker")
-            //             .await?
-            //             .into_card_ids()
-            //             .into_iter()
-            //             .collect::<HashSet<_>>();
+            if type_line
+                .split_whitespace()
+                .any(|word| word == "Planeswalker")
+            {
+                if card.core.set.eq_ignore_ascii_case("unk") {
+                    // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
+                    unknown_events_planeswalker_ids.insert(card.core.id.clone());
+                }
 
-            //     if card.core.set.eq_ignore_ascii_case("unk") {
-            //         // TODO Could also just check by downloading the Data for the Unknown Events set, but this is easier for now
-            //         unknown_events_planeswalker_ids.insert(card.core.id.clone());
-            //     }
+                planeswalkers_by_cmc
+                    .entry(cmc.to_bits())
+                    .or_default()
+                    .insert(card.core.id.clone());
 
-            //     planeswalkers_by_cmc
-            //         .entry(cmc.to_bits())
-            //         .or_default()
-            //         .insert(card.core.id.clone());
-
-            //     for (&format, &legal) in &card.core.legalities {
-            //         if legal {
-            //             planeswalkers_by_format
-            //                 .entry(format)
-            //                 .or_default()
-            //                 .insert(card.core.id.clone());
-            //         }
-            //     }
-            // }
+                for (&format, &legal) in &card.core.legalities {
+                    if legal {
+                        planeswalkers_by_format
+                            .entry(format)
+                            .or_default()
+                            .insert(card.core.id.clone());
+                    }
+                }
+            }
         }
 
         // let total_planeswalker_entries: usize =
