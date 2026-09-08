@@ -12,7 +12,7 @@ use crate::{
             MeldPlaneswalkerRenderer, MeldPowerToughnessRenderer, MeldSetCodeRenderer,
             MeldTypeLineRenderer,
         },
-        split_element_renderers::{SplitCostRenderer, SplitNameRenderer},
+        split_element_renderers::{SplitCardArtRenderer, SplitCostRenderer, SplitNameRenderer},
     },
     layout::Layout,
 };
@@ -221,8 +221,11 @@ async fn render_split_card_face(
     );
 
     // Compose renderers in order
-    let mut renderers: Vec<Box<dyn ElementRenderer>> =
-        vec![Box::new(SplitNameRenderer), Box::new(SplitCostRenderer)];
+    let mut renderers: Vec<Box<dyn ElementRenderer>> = vec![
+        Box::new(SplitNameRenderer),
+        Box::new(SplitCostRenderer),
+        Box::new(SplitCardArtRenderer),
+    ];
 
     // TODO Finish implementing Split card horizontal layout rendering
     // Execute each renderer

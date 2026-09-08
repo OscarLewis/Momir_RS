@@ -1,12 +1,15 @@
 use crate::{
+    art::CardArtPipeline,
     card::element_renderers::ElementRenderer,
     layout::Layout,
     render::{draw_horizontal_line, draw_text_rotated_270},
 };
 use async_trait::async_trait;
-use image::RgbImage;
-use scryfall_oracle::{CardFace, OracleScryfallCard};
+use image::{RgbImage, imageops};
+use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient};
+use tracing::debug;
 
+const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
 pub struct SplitNameRenderer;
 #[async_trait]
 impl ElementRenderer for SplitNameRenderer {
@@ -48,7 +51,6 @@ impl ElementRenderer for SplitNameRenderer {
         // Second Name Setup
         let second_name_style = &layout.split_second_name;
         let second_font_data = layout.font_data(second_name_style.font);
-        // Fixed: calculate width using second_name instead of first_name
         let second_name_width = layout.text_width(&second_name, second_name_style);
 
         let second_font_size = match second_name_style.small_text_font_size {
@@ -59,13 +61,15 @@ impl ElementRenderer for SplitNameRenderer {
         let second_y: i32 = ((layout.height / 2) - second_name_style.margin_bottom) as i32;
 
         // Render Calls
-        draw_horizontal_line(
-            canvas,
-            20,
-            (layout.height / 2) as i32,
-            (layout.width - 40) as i32,
-            2,
-        );
+        if !card.has_type_word("Room") {
+            draw_horizontal_line(
+                canvas,
+                20,
+                (layout.height / 2) as i32,
+                (layout.width - 40) as i32,
+                2,
+            );
+        }
 
         draw_text_rotated_270(
             canvas,
@@ -182,9 +186,8 @@ impl ElementRenderer for SplitCostRenderer {
     }
 }
 
-/*
 /// Renders split card art
-pub struct SplitBackCardArtRenderer;
+pub struct SplitCardArtRenderer;
 #[async_trait]
 impl ElementRenderer for SplitCardArtRenderer {
     async fn render(
@@ -206,55 +209,92 @@ impl ElementRenderer for SplitCardArtRenderer {
 
         let card_art = if let Some(image_uris) = image_uris {
             let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
-            Some(image_uris.fetch_display(&client).await?.to_vec())
+            Some(image_uris.fetch_art(&client).await?.to_vec())
         } else {
             None
         };
 
         if let Some(card_art) = card_art {
             let card_art_img = image::load_from_memory(&card_art)?;
-
-            let half_height = card_art_img.height() / 2;
-
-            let card_art_img = card_art_img
-                .crop_imm(0, 0, card_art_img.width(), half_height)
-                .crop_imm(20, 88, card_art_img.width() - 40, half_height - 88)
+            let half_width = card_art_img.width() / 2;
+            let card_art_first_img = card_art_img
+                .crop_imm(0, 0, half_width, card_art_img.height())
                 .rotate270();
 
-            let ca_width = card_art_img.width();
-            let ca_height = card_art_img.height();
+            let card_art_second_img = card_art_img
+                .crop_imm(half_width, 0, card_art_img.width(), card_art_img.height())
+                .rotate270();
 
-            card_art_img.save("/tmp/meld_card_back_art.png")?;
+            card_art_first_img.save("/tmp/split_1_card_back_art.png")?;
 
-            let art = CardArtPipeline::process(
-                card_art_img,
-                layout.meld_card_back_art.max_width,
-                layout.meld_card_back_art.max_height,
+            card_art_second_img.save("/tmp/split_2_card_back_art.png")?;
+
+            let first_art = CardArtPipeline::process(
+                card_art_first_img,
+                layout.split_first_art.max_width,
+                layout.split_first_art.max_height,
             );
-            let scale = (layout.meld_card_back_art.max_width as f64 / art.width() as f64)
-                .min(layout.meld_card_back_art.max_height as f64 / art.height() as f64)
+            let first_img_scale = (layout.split_first_art.max_width as f64
+                / first_art.width() as f64)
+                .min(layout.split_first_art.max_height as f64 / first_art.height() as f64)
                 .min(1.0);
+            let first_img_render_width = (first_art.width() as f64 * first_img_scale) as u32;
+            let first_img_render_height = (first_art.height() as f64 * first_img_scale) as u32;
 
-            let render_width = (art.width() as f64 * scale) as u32;
-            let render_height = (art.height() as f64 * scale) as u32;
-
-            let art = imageops::resize(
-                &art,
-                render_width,
-                render_height,
+            let resized_first_art = imageops::resize(
+                &first_art,
+                first_img_render_width,
+                first_img_render_height,
                 imageops::FilterType::Lanczos3,
             );
-            let margin_right = layout.meld_card_back_art.margin_right.unwrap_or(0);
 
-            let margin_right = layout.meld_card_back_art.margin_right.unwrap_or(0);
+            let first_img_bottom_half_height = layout.height / 2;
+            let first_imgbottom_half_center_y =
+                (layout.height / 2) + (first_img_bottom_half_height / 2);
 
-            let x = canvas.width() as i64 - margin_right - art.width() as i64;
-            let y = (canvas.height() as i64 - art.height() as i64) / 2;
+            let first_img_draw_y =
+                (first_imgbottom_half_center_y - (first_img_render_height / 2)) as i64;
 
-            imageops::overlay(canvas, &art, x, y);
+            imageops::overlay(
+                canvas,
+                &resized_first_art,
+                layout.split_first_art.x,
+                first_img_draw_y,
+            );
+
+            let second_art = CardArtPipeline::process(
+                card_art_second_img,
+                layout.split_second_art.max_width,
+                layout.split_second_art.max_height,
+            );
+
+            let second_img_scale = (layout.split_second_art.max_width as f64
+                / second_art.width() as f64)
+                .min(layout.split_second_art.max_height as f64 / second_art.height() as f64)
+                .min(1.0);
+
+            let second_img_render_width = (second_art.width() as f64 * second_img_scale) as u32;
+            let second_img_render_height = (second_art.height() as f64 * second_img_scale) as u32;
+
+            let resized_second_art = imageops::resize(
+                &second_art,
+                second_img_render_width,
+                second_img_render_height,
+                imageops::FilterType::Lanczos3,
+            );
+
+            let top_half_center_y = layout.height / 4;
+
+            let second_img_draw_y = (top_half_center_y - (second_img_render_height / 2)) as i64;
+
+            imageops::overlay(
+                canvas,
+                &resized_second_art,
+                layout.split_second_art.x,
+                second_img_draw_y,
+            );
         }
 
         Ok(())
     }
 }
-*/

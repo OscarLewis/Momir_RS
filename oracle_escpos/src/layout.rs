@@ -295,6 +295,8 @@ pub struct Layout {
     pub split_second_name: TextStyle,
     pub split_first_cost: TextStyle,
     pub split_second_cost: TextStyle,
+    pub split_first_art: ArtLayout,
+    pub split_second_art: ArtLayout,
 }
 
 impl Default for Layout {
@@ -552,7 +554,7 @@ impl Default for Layout {
 
             split_first_name: TextStyle {
                 margin_top: 0,
-                margin_bottom: 20,
+                margin_bottom: 40,
                 x: 50,
                 font: Font::Serif,
                 font_size: fonts.name,
@@ -589,6 +591,22 @@ impl Default for Layout {
                 small_text_font_size: Some(fonts.long_cost),
                 wrap_width: 150,
                 ..Default::default()
+            },
+
+            split_first_art: ArtLayout {
+                x: 70,
+                y: 76,
+                margin_right: Some(40),
+                max_width: 320,
+                max_height: 220,
+            },
+
+            split_second_art: ArtLayout {
+                x: 70,
+                y: 76,
+                margin_right: None,
+                max_width: 320,
+                max_height: 220,
             },
 
             serif_font: fonts::MPLANTIN,
