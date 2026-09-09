@@ -24,4 +24,12 @@ impl OracleScryfallCard {
     pub fn is_planeswalker(&self) -> bool {
         self.has_type_word("Planeswalker")
     }
+
+    /// Checks if the card's `keywords` list contains a specific keyword (case-insensitive)
+    pub fn has_keyword(&self, keyword: &str) -> bool {
+        self.core
+            .keywords
+            .iter()
+            .any(|k| k.eq_ignore_ascii_case(keyword))
+    }
 }

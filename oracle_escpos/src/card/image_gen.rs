@@ -13,8 +13,8 @@ use crate::{
             MeldTypeLineRenderer,
         },
         split_element_renderers::{
-            SplitCardArtRenderer, SplitCostRenderer, SplitNameRenderer, SplitSetIconRenderer,
-            SplitTypeLineRenderer,
+            SplitCardArtRenderer, SplitCostRenderer, SplitNameRenderer, SplitOracleTextRenderer,
+            SplitSetIconRenderer, SplitTypeLineRenderer,
         },
     },
     layout::Layout,
@@ -232,6 +232,8 @@ async fn render_split_card_face(
         Box::new(ArtistRenderer),
         Box::new(SplitTypeLineRenderer),
         Box::new(SplitSetIconRenderer),
+        Box::new(SplitOracleTextRenderer),
+        Box::new(BorderRenderer),
     ];
 
     // TODO Finish implementing Split card horizontal layout rendering

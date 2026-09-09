@@ -2,7 +2,7 @@ use crate::{
     art::CardArtPipeline,
     card::element_renderers::ElementRenderer,
     layout::Layout,
-    render::{draw_horizontal_line, draw_svg, draw_text_rotated_270},
+    render::{draw_horizontal_line, draw_svg, draw_svg_rotated_270, draw_text_rotated_270},
 };
 use async_trait::async_trait;
 use image::{RgbImage, imageops};
@@ -62,13 +62,23 @@ impl ElementRenderer for SplitNameRenderer {
 
         // Render Calls
         if !card.has_type_word("Room") {
-            draw_horizontal_line(
-                canvas,
-                20,
-                (layout.height / 2) as i32,
-                (layout.width - 40) as i32,
-                2,
-            );
+            if card.has_keyword("Fuse") {
+                draw_horizontal_line(
+                    canvas,
+                    20,
+                    (layout.height / 2) as i32,
+                    (layout.width - 110) as i32,
+                    2,
+                );
+            } else {
+                draw_horizontal_line(
+                    canvas,
+                    20,
+                    (layout.height / 2) as i32,
+                    (layout.width - 40) as i32,
+                    2,
+                );
+            }
         }
 
         draw_text_rotated_270(
@@ -401,7 +411,7 @@ impl ElementRenderer for SplitSetIconRenderer {
 
             let first_set_icon = &layout.split_first_set_icon;
 
-            draw_svg(
+            draw_svg_rotated_270(
                 canvas,
                 &svg_data,
                 layout.split_first_line_mid_point as u32,
@@ -412,7 +422,7 @@ impl ElementRenderer for SplitSetIconRenderer {
 
             let second_set_icon = &layout.split_second_set_icon;
 
-            draw_svg(
+            draw_svg_rotated_270(
                 canvas,
                 &svg_data,
                 layout.split_second_line_mid_point as u32,
@@ -422,6 +432,161 @@ impl ElementRenderer for SplitSetIconRenderer {
             )?;
         }
 
+        Ok(())
+    }
+}
+
+/// Renders oracle text
+pub struct SplitOracleTextRenderer;
+#[async_trait]
+impl ElementRenderer for SplitOracleTextRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // TODO Finish basic renderer for Split card oracle text
+
+        let mut first_oracle_opt = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(0))
+            .map(|face| face.oracle_text.clone())
+            .unwrap_or_else(|| card.core.oracle_text.clone());
+
+        let mut second_oracle_opt = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(1))
+            .map(|face| face.oracle_text.clone())
+            .unwrap_or_else(|| card.core.oracle_text.clone());
+
+        if card.has_keyword("Fuse") {
+            let fuse_text = "\nFuse (You may cast one or both halves of this card from your hand.)";
+
+            if let Some(ref mut text) = first_oracle_opt {
+                *text = text.replace(fuse_text, "");
+            }
+            if let Some(ref mut text) = second_oracle_opt {
+                *text = text.replace(fuse_text, "");
+            }
+
+            let fuse_reminder_style = &layout.split_fuse_reminder_text;
+            let fuse_reminder_font_data = layout.font_data(fuse_reminder_style.font);
+
+            // Total rendered length along the card's Y axis
+            let total_text_width = layout.wrapped_text_width(fuse_text, fuse_reminder_style);
+
+            let center_y = layout.height as i32 / 2;
+
+            let centered_baseline_y = (center_y as f32 + (total_text_width / 2.0)) as i32;
+
+            draw_text_rotated_270(
+                canvas,
+                fuse_text,
+                (layout.width - fuse_reminder_style.margin_right) as i32,
+                centered_baseline_y,
+                fuse_reminder_font_data,
+                fuse_reminder_style.font_size,
+                fuse_reminder_style.letter_spacing,
+                fuse_reminder_style.wrap_width,
+            );
+        }
+
+        if let Some(first_oracle_text) = first_oracle_opt {
+            let oracle_style = &layout.split_first_oracle_text;
+            let oracle_font_data = layout.font_data(oracle_style.font);
+            let rules_x = oracle_style.x.max(layout.split_first_line_end_x);
+            let oracle_width = layout.wrapped_text_width(&first_oracle_text, oracle_style);
+            let font_size = match oracle_style.large_text_font_size {
+                Some(long_size) if oracle_width > oracle_style.wrap_width as f32 => long_size,
+                _ => oracle_style.font_size,
+            };
+
+            let center_y = (canvas.height() as f32 * 3.0) / 4.0;
+            let baseline_y = (center_y + (oracle_width / 2.0).round()) as i32;
+            draw_text_rotated_270(
+                canvas,
+                &first_oracle_text,
+                rules_x,
+                // oracle_style.y,
+                baseline_y,
+                oracle_font_data,
+                font_size,
+                oracle_style.letter_spacing,
+                oracle_style.wrap_width,
+            );
+        }
+
+        if let Some(second_oracle_string) = second_oracle_opt {
+            let oracle_style = &layout.split_second_oracle_text;
+            let oracle_font_data = layout.font_data(oracle_style.font);
+            let rules_x = oracle_style.x.max(layout.split_first_line_end_x);
+            let oracle_width = layout.wrapped_text_width(&second_oracle_string, oracle_style);
+            let font_size = match oracle_style.large_text_font_size {
+                Some(long_size) if oracle_width > oracle_style.wrap_width as f32 => long_size,
+                _ => oracle_style.font_size,
+            };
+
+            let center_y = (canvas.height() as f32) / 4.0;
+            let baseline_y = (center_y + (oracle_width / 2.0).round()) as i32;
+            draw_text_rotated_270(
+                canvas,
+                &second_oracle_string,
+                rules_x,
+                // oracle_style.y,
+                baseline_y,
+                oracle_font_data,
+                font_size,
+                oracle_style.letter_spacing,
+                oracle_style.wrap_width,
+            );
+        }
+
+        /*
+        let oracle_text = face
+                   .and_then(|f| f.oracle_text.as_ref())
+                   .or_else(|| card.core.oracle_text.as_ref())
+                   .cloned()
+                .unwrap_or_default();
+        let oracle_style = &layout.meld_oracle;
+        let oracle_font_data = layout.font_data(oracle_style.font);
+        let rules_x = oracle_style.x.max(layout.meld_type_line_end_x);
+
+        let oracle_width = layout.wrapped_text_width(&oracle_text, oracle_style);
+
+        // Center vertically
+        // Center vertically
+        let center_y = canvas.height() as f32 / 2.0;
+        let baseline_y = (center_y + (oracle_width / 2.0).round()) as i32;
+
+        // let font_size = match name_style.long_text_font_size {
+        //     Some(long_size) if name_width > name_style.wrap_width as f32 => long_size,
+        //     _ => name_style.font_size,
+        // };
+
+        debug!(
+            font_size = oracle_style.font_size,
+            oracle_text_length = oracle_text.len(),
+            "Rendering meld oracle text"
+        );
+
+        draw_text_rotated_270(
+            canvas,
+            &oracle_text,
+            rules_x,
+            // oracle_style.y,
+            baseline_y,
+            oracle_font_data,
+            oracle_style.font_size,
+            oracle_style.letter_spacing,
+            oracle_style.wrap_width,
+        );
+        */
         Ok(())
     }
 }

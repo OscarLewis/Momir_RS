@@ -1,3 +1,5 @@
+use resvg::usvg::Text;
+
 use crate::{
     card::fonts::{Font, fonts},
     render::{text_width, wrapped_text_height, wrapped_text_width},
@@ -320,6 +322,9 @@ pub struct Layout {
     pub split_second_set_icon: SvgLayout,
     pub split_first_line_mid_point: i32,
     pub split_second_line_mid_point: i32,
+    pub split_first_oracle_text: TextStyle,
+    pub split_second_oracle_text: TextStyle,
+    pub split_fuse_reminder_text: TextStyle,
 }
 
 impl Default for Layout {
@@ -669,6 +674,30 @@ impl Default for Layout {
                 margin_bottom: 20,
                 max_width: 20,
                 max_height: 20,
+                ..Default::default()
+            },
+
+            split_first_oracle_text: TextStyle {
+                margin_bottom: 30,
+                font: Font::Sansserif,
+                font_size: fonts.rules,
+                wrap_width: 180,
+                ..Default::default()
+            },
+
+            split_second_oracle_text: TextStyle {
+                margin_bottom: 30,
+                font: Font::Sansserif,
+                font_size: fonts.rules,
+                wrap_width: 180,
+                ..Default::default()
+            },
+
+            split_fuse_reminder_text: TextStyle {
+                margin_right: 80,
+                font: Font::Sansserif,
+                font_size: fonts.rules,
+                wrap_width: 360,
                 ..Default::default()
             },
 
