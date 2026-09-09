@@ -326,6 +326,27 @@ impl ElementRenderer for SplitTypeLineRenderer {
             .map(|face| face.type_line.clone())
             .unwrap_or_else(|| card.core.type_line.clone());
 
+        if let Some(first_type_line) = first_type_line_opt {
+            let first_type_style = &layout.split_first_type_line;
+            let first_type_font_data = layout.font_data(first_type_style.font);
+            let first_type_width = layout.text_width(&first_type_line, first_type_style);
+            let first_type_adjusted_y = (layout.height - first_type_style.margin_bottom) as i32;
+
+            let first_type_end_x = draw_text_rotated_270(
+                canvas,
+                &first_type_line,
+                first_type_style.x,
+                // type_style.y,
+                first_type_adjusted_y,
+                // first_type_style.y,
+                first_type_font_data,
+                first_type_style
+                    .small_text_font_size
+                    .unwrap_or(first_type_style.font_size),
+                first_type_style.letter_spacing,
+                first_type_style.wrap_width,
+            );
+        }
         // TODO Write the renderer for Split card type lines
 
         /*

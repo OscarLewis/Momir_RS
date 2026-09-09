@@ -96,6 +96,7 @@ pub struct ArtLayout {
     pub margin_right: Option<i64>,
     pub max_width: u32,
     pub max_height: u32,
+    // TODO Add a Default implementation for ArtLayout
 }
 
 #[derive(Debug, Clone)]
@@ -297,6 +298,7 @@ pub struct Layout {
     pub split_second_cost: TextStyle,
     pub split_first_art: ArtLayout,
     pub split_second_art: ArtLayout,
+    pub split_first_type_line: TextStyle,
 }
 
 impl Default for Layout {
@@ -609,6 +611,18 @@ impl Default for Layout {
                 max_height: 220,
             },
 
+            split_first_type_line: TextStyle {
+                x: 240,
+                margin_bottom: 30,
+                font: Font::Sansserif,
+                font_size: fonts.type_line,
+                // TODO just give this a proper font size for itself
+                small_text_font_size: Some(fonts.small_rules),
+                wrap_width: 150,
+                ..Default::default()
+            },
+
+            // split_type_line_end_y: 20,
             serif_font: fonts::MPLANTIN,
             sanserif_font: fonts::TAHOMA,
         }
