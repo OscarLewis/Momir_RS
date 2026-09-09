@@ -326,6 +326,8 @@ impl ElementRenderer for SplitTypeLineRenderer {
             .map(|face| face.type_line.clone())
             .unwrap_or_else(|| card.core.type_line.clone());
 
+        // TODO Write the renderer for Split card type lines
+
         /*
         let type_line = face
             .and_then(|f| f.type_line.as_ref())
