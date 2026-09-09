@@ -2,11 +2,11 @@ use crate::{
     art::CardArtPipeline,
     card::element_renderers::ElementRenderer,
     layout::Layout,
-    render::{draw_horizontal_line, draw_text_rotated_270},
+    render::{draw_horizontal_line, draw_svg, draw_text_rotated_270},
 };
 use async_trait::async_trait;
 use image::{RgbImage, imageops};
-use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient};
+use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
 use tracing::debug;
 
 const SCRYFALL_USER_AGENT: &str = "oracle_escpos/1.0";
@@ -329,7 +329,7 @@ impl ElementRenderer for SplitTypeLineRenderer {
         if let Some(first_type_line) = first_type_line_opt {
             let first_type_style = &layout.split_first_type_line;
             let first_type_font_data = layout.font_data(first_type_style.font);
-            let first_type_width = layout.text_width(&first_type_line, first_type_style);
+            let first_type_height = layout.wrapped_text_height(&first_type_line, first_type_style);
             let first_type_adjusted_y = (layout.height - first_type_style.margin_bottom) as i32;
 
             let first_type_end_x = draw_text_rotated_270(
@@ -346,12 +346,15 @@ impl ElementRenderer for SplitTypeLineRenderer {
                 first_type_style.letter_spacing,
                 first_type_style.wrap_width,
             );
+            layout.split_first_line_mid_point = first_type_style.x - (first_type_height / 2);
+            layout.split_first_line_end_x = first_type_end_x;
         }
 
         if let Some(second_type_line) = second_type_line_opt {
             let second_type_style = &layout.split_second_type_line;
             let second_type_font_data = layout.font_data(second_type_style.font);
-            let second_type_width = layout.text_width(&second_type_line, second_type_style);
+            let second_type_height =
+                layout.wrapped_text_height(&second_type_line, second_type_style);
             let second_type_adjusted_y =
                 ((layout.height / 2) - second_type_style.margin_bottom) as i32;
 
@@ -369,16 +372,55 @@ impl ElementRenderer for SplitTypeLineRenderer {
                 second_type_style.letter_spacing,
                 second_type_style.wrap_width,
             );
+            layout.split_second_line_mid_point = second_type_style.x - (second_type_height / 2);
+            layout.split_second_line_end_x = second_type_end_x;
         }
 
         // TODO Write the renderer for Split card type lines
 
-        /*
+        Ok(())
+    }
+}
 
-        // Store for oracle text renderer to use
-        layout.meld_type_line_end_x = type_line_end_x;
+/// Renders set icon
+pub struct SplitSetIconRenderer;
+#[async_trait]
+impl ElementRenderer for SplitSetIconRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        _face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if card.core.set_icon_svg_uri.is_some() {
+            debug!("Loading set icon from Scryfall");
+            let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
+            let set = ScryfallSet::from_id(&card.core.set_id, &client).await?;
+            let svg_data = set.get_svg_bytes(&client).await?;
 
-        */
+            let first_set_icon = &layout.split_first_set_icon;
+
+            draw_svg(
+                canvas,
+                &svg_data,
+                layout.split_first_line_mid_point as u32,
+                (layout.height / 2) + first_set_icon.margin_bottom as u32,
+                first_set_icon.max_width,
+                first_set_icon.max_height,
+            )?;
+
+            let second_set_icon = &layout.split_second_set_icon;
+
+            draw_svg(
+                canvas,
+                &svg_data,
+                layout.split_second_line_mid_point as u32,
+                second_set_icon.margin_bottom as u32,
+                second_set_icon.max_width,
+                second_set_icon.max_height,
+            )?;
+        }
 
         Ok(())
     }

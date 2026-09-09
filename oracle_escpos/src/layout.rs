@@ -105,6 +105,20 @@ pub struct SvgLayout {
     pub y: u32,
     pub max_width: u32,
     pub max_height: u32,
+    pub margin_bottom: i32,
+}
+
+impl Default for SvgLayout {
+    /// Provides baseline coordinate presets for standard card layout dimensions.
+    fn default() -> Self {
+        Self {
+            x: 0,
+            y: 0,
+            max_width: 200,
+            max_height: 200,
+            margin_bottom: 0,
+        }
+    }
 }
 
 /// Layout dimensions and coordinate bounds for wrapping text along card borders.
@@ -300,6 +314,12 @@ pub struct Layout {
     pub split_second_art: ArtLayout,
     pub split_first_type_line: TextStyle,
     pub split_second_type_line: TextStyle,
+    pub split_first_line_end_x: i32,
+    pub split_second_line_end_x: i32,
+    pub split_first_set_icon: SvgLayout,
+    pub split_second_set_icon: SvgLayout,
+    pub split_first_line_mid_point: i32,
+    pub split_second_line_mid_point: i32,
 }
 
 impl Default for Layout {
@@ -466,6 +486,7 @@ impl Default for Layout {
                 y: 508,
                 max_width: 40,
                 max_height: 40,
+                ..Default::default()
             },
 
             planeswalker_loyalty_shield: SvgLayout {
@@ -473,6 +494,7 @@ impl Default for Layout {
                 y: 500,
                 max_width: 90,
                 max_height: 50,
+                ..Default::default()
             },
 
             meld_planeswalker_loyalty_shield: SvgLayout {
@@ -480,6 +502,7 @@ impl Default for Layout {
                 y: 20,
                 max_width: 100,
                 max_height: 150,
+                ..Default::default()
             },
 
             set_code: TextStyle {
@@ -488,7 +511,6 @@ impl Default for Layout {
                 font: Font::Sansserif,
                 font_size: fonts.set_code,
                 wrap_width: 372,
-
                 ..Default::default()
             },
 
@@ -634,7 +656,26 @@ impl Default for Layout {
                 ..Default::default()
             },
 
-            // split_type_line_end_y: 20,
+            split_first_set_icon: SvgLayout {
+                x: 230,
+                margin_bottom: 20,
+                max_width: 20,
+                max_height: 20,
+                ..Default::default()
+            },
+
+            split_second_set_icon: SvgLayout {
+                x: 220,
+                margin_bottom: 20,
+                max_width: 20,
+                max_height: 20,
+                ..Default::default()
+            },
+
+            split_first_line_end_x: 240,
+            split_second_line_end_x: 240,
+            split_first_line_mid_point: 0,
+            split_second_line_mid_point: 0,
             serif_font: fonts::MPLANTIN,
             sanserif_font: fonts::TAHOMA,
         }
