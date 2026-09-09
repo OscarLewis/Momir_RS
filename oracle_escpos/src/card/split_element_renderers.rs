@@ -298,3 +298,68 @@ impl ElementRenderer for SplitCardArtRenderer {
         Ok(())
     }
 }
+
+/// Renders type line
+pub struct SplitTypeLineRenderer;
+#[async_trait]
+impl ElementRenderer for SplitTypeLineRenderer {
+    async fn render(
+        &self,
+        card: &OracleScryfallCard,
+        face: Option<&CardFace>,
+        canvas: &mut RgbImage,
+        layout: &mut Layout,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let first_type_line_opt = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(0))
+            .map(|face| face.type_line.clone())
+            .unwrap_or_else(|| card.core.type_line.clone());
+
+        let second_type_line_opt = card
+            .core
+            .card_faces
+            .as_ref()
+            .and_then(|faces| faces.get(1))
+            .map(|face| face.type_line.clone())
+            .unwrap_or_else(|| card.core.type_line.clone());
+
+        /*
+        let type_line = face
+            .and_then(|f| f.type_line.as_ref())
+            .or_else(|| card.core.type_line.as_ref())
+            .cloned()
+            .unwrap_or_default();
+        let type_style = &layout.meld_type_line;
+        let type_font_data = layout.font_data(type_style.font);
+
+        debug!(font_size = type_style.font_size, "Rendering type line");
+        let type_width = layout.text_width(&type_line, type_style);
+
+        // wrapped_text_width
+
+        // Center vertically
+        let center_y = layout.height as i32 / 2;
+        let baseline_y = center_y + (type_width / 2.0).round() as i32;
+
+        let type_line_end_x = draw_text_rotated_270(
+            canvas,
+            &type_line,
+            type_style.x,
+            // type_style.y,
+            baseline_y,
+            type_font_data,
+            type_style.font_size,
+            type_style.letter_spacing,
+            type_style.wrap_width,
+        );
+
+        // Store for oracle text renderer to use
+        layout.meld_type_line_end_x = type_line_end_x;
+        */
+
+        Ok(())
+    }
+}

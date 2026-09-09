@@ -554,7 +554,7 @@ impl Default for Layout {
 
             split_first_name: TextStyle {
                 margin_top: 0,
-                margin_bottom: 40,
+                margin_bottom: 30,
                 x: 50,
                 font: Font::Serif,
                 font_size: fonts.name,

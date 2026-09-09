@@ -225,6 +225,8 @@ async fn render_split_card_face(
         Box::new(SplitNameRenderer),
         Box::new(SplitCostRenderer),
         Box::new(SplitCardArtRenderer),
+        Box::new(SetCodeRenderer),
+        Box::new(ArtistRenderer),
     ];
 
     // TODO Finish implementing Split card horizontal layout rendering
