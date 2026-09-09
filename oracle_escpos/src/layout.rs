@@ -681,7 +681,7 @@ impl Default for Layout {
                 margin_bottom: 30,
                 font: Font::Sansserif,
                 font_size: fonts.rules,
-                wrap_width: 180,
+                wrap_width: 200,
                 ..Default::default()
             },
 
@@ -689,7 +689,7 @@ impl Default for Layout {
                 margin_bottom: 30,
                 font: Font::Sansserif,
                 font_size: fonts.rules,
-                wrap_width: 180,
+                wrap_width: 200,
                 ..Default::default()
             },
 
@@ -697,7 +697,7 @@ impl Default for Layout {
                 margin_right: 80,
                 font: Font::Sansserif,
                 font_size: fonts.rules,
-                wrap_width: 360,
+                wrap_width: 508,
                 ..Default::default()
             },
 

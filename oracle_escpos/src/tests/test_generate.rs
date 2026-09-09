@@ -112,6 +112,23 @@ mod tests {
 
     #[test(tokio::test)]
     #[ignore]
+    async fn test_room() -> Result<(), Box<dyn std::error::Error>> {
+        let card = load_card("./tests/walk_in_closet_test_card.json")?;
+
+        let card_type = match card.core.layout {
+            CardLayout::Split => CardType::Split(card),
+            _ => CardType::Regular(card),
+        };
+
+        let print = CardPrint::new(&card_type);
+        print
+            .render(Some(&PathBuf::from("./renders/walk_in_closet_card.png")))
+            .await?;
+        Ok(())
+    }
+
+    #[test(tokio::test)]
+    #[ignore]
     async fn test_lucy_in_the_sky() -> Result<(), Box<dyn std::error::Error>> {
         let card = load_card("./tests/karolina_test_card.json")?;
         let card_type = CardType::Regular(card);

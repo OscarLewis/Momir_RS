@@ -217,6 +217,13 @@ impl ElementRenderer for SplitCardArtRenderer {
             "CardArtRenderer state"
         );
 
+        /* TODO just render a single piece of artwork for Room type cards
+
+        Example: Walk-In Closet // Forgotten Cellar
+        https://cards.scryfall.io/art/front/0/a/0adcd4e5-d542-4293-8774-ace2305ef820.webp?1783909446
+        https://api.scryfall.com/cards/0adcd4e5-d542-4293-8774-ace2305ef820
+        */
+
         let card_art = if let Some(image_uris) = image_uris {
             let client = ScryfallClient::new(Some(SCRYFALL_USER_AGENT))?;
             Some(image_uris.fetch_art(&client).await?.to_vec())
