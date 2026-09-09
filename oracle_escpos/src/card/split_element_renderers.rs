@@ -347,6 +347,30 @@ impl ElementRenderer for SplitTypeLineRenderer {
                 first_type_style.wrap_width,
             );
         }
+
+        if let Some(second_type_line) = second_type_line_opt {
+            let second_type_style = &layout.split_second_type_line;
+            let second_type_font_data = layout.font_data(second_type_style.font);
+            let second_type_width = layout.text_width(&second_type_line, second_type_style);
+            let second_type_adjusted_y =
+                ((layout.height / 2) - second_type_style.margin_bottom) as i32;
+
+            let second_type_end_x = draw_text_rotated_270(
+                canvas,
+                &second_type_line,
+                second_type_style.x,
+                // type_style.y,
+                second_type_adjusted_y,
+                // first_type_style.y,
+                second_type_font_data,
+                second_type_style
+                    .small_text_font_size
+                    .unwrap_or(second_type_style.font_size),
+                second_type_style.letter_spacing,
+                second_type_style.wrap_width,
+            );
+        }
+
         // TODO Write the renderer for Split card type lines
 
         /*

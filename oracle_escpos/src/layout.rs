@@ -299,6 +299,7 @@ pub struct Layout {
     pub split_first_art: ArtLayout,
     pub split_second_art: ArtLayout,
     pub split_first_type_line: TextStyle,
+    pub split_second_type_line: TextStyle,
 }
 
 impl Default for Layout {
@@ -614,6 +615,17 @@ impl Default for Layout {
             split_first_type_line: TextStyle {
                 x: 240,
                 margin_bottom: 30,
+                font: Font::Sansserif,
+                font_size: fonts.type_line,
+                // TODO just give this a proper font size for itself
+                small_text_font_size: Some(fonts.small_rules),
+                wrap_width: 150,
+                ..Default::default()
+            },
+
+            split_second_type_line: TextStyle {
+                x: 240,
+                margin_bottom: 20,
                 font: Font::Sansserif,
                 font_size: fonts.type_line,
                 // TODO just give this a proper font size for itself
