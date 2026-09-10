@@ -63,6 +63,7 @@ pub struct FontSizes {
     pub loyalty: f32,
     pub meld_type_line: f32,
     pub meld_oracle: f32,
+    pub split_cost: f32,
 }
 
 impl Default for FontSizes {
@@ -87,6 +88,7 @@ impl Default for FontSizes {
             set_code: 16.0,
             small_rules: 15.0,
             type_line: 20.0,
+            split_cost: 14.0,
         }
     }
 }
@@ -325,6 +327,7 @@ pub struct Layout {
     pub split_first_oracle_text: TextStyle,
     pub split_second_oracle_text: TextStyle,
     pub split_fuse_reminder_text: TextStyle,
+    pub split_room_art: ArtLayout,
 }
 
 impl Default for Layout {
@@ -585,21 +588,21 @@ impl Default for Layout {
             split_first_name: TextStyle {
                 margin_top: 0,
                 margin_bottom: 30,
-                x: 50,
+                x: 35,
                 font: Font::Serif,
                 font_size: fonts.name,
                 small_text_font_size: Some(fonts.long_name),
-                wrap_width: 150,
+                wrap_width: 200,
                 ..Default::default()
             },
 
             split_second_name: TextStyle {
                 margin_bottom: 20,
-                x: 50,
+                x: 35,
                 font: Font::Serif,
                 font_size: fonts.name,
                 small_text_font_size: Some(fonts.long_name),
-                wrap_width: 150,
+                wrap_width: 200,
                 ..Default::default()
             },
 
@@ -699,6 +702,14 @@ impl Default for Layout {
                 font_size: fonts.rules,
                 wrap_width: 508,
                 ..Default::default()
+            },
+
+            split_room_art: ArtLayout {
+                x: 70,
+                y: 76,
+                margin_right: None,
+                max_width: 360,
+                max_height: 460,
             },
 
             split_first_line_end_x: 240,

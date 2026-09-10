@@ -25,6 +25,11 @@ impl OracleScryfallCard {
         self.has_type_word("Planeswalker")
     }
 
+    /// Convenience helper specifically for checking if the card is a Room
+    pub fn is_room(&self) -> bool {
+        self.has_type_word("Room")
+    }
+
     /// Checks if the card's `keywords` list contains a specific keyword (case-insensitive)
     pub fn has_keyword(&self, keyword: &str) -> bool {
         self.core

@@ -109,6 +109,7 @@
   "set_name": "Duskmourn: House of Horror",
   "set_type": "expansion",
   "set_uri": "https://api.scryfall.com/sets/a111d8a9-b647-48ec-afab-2b78f92173f5",
+  "set_icon_svg_uri":"https://svgs.scryfall.io/sets/dsk.svg?1788753600",
   "set_search_uri": "https://api.scryfall.com/cards/search?order=set&q=e%3Adsk&unique=prints",
   "scryfall_set_uri": "https://scryfall.com/sets/dsk?utm_source=api",
   "rulings_uri": "https://api.scryfall.com/cards/0adcd4e5-d542-4293-8774-ace2305ef820/rulings",
