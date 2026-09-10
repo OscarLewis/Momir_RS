@@ -5,6 +5,7 @@ use crate::{
     render::{draw_horizontal_line, draw_svg, draw_svg_rotated_270, draw_text_rotated_270},
 };
 use async_trait::async_trait;
+use dithr::core::layout;
 use image::{RgbImage, imageops};
 use scryfall_oracle::{CardFace, OracleScryfallCard, ScryfallClient, sets::sets::ScryfallSet};
 use tracing::debug;
@@ -87,6 +88,21 @@ impl ElementRenderer for SplitNameRenderer {
                     2,
                 );
             }
+        } else {
+            draw_horizontal_line(
+                canvas,
+                20 as i32,
+                (layout.height / 2) as i32,
+                (layout.split_room_art.x - 25) as i32,
+                2,
+            );
+            draw_horizontal_line(
+                canvas,
+                (2.8 * (layout.width / 4) as f32) as i32,
+                (layout.height / 2) as i32,
+                (layout.width as f32 - (2.8 * (layout.width / 4) as f32).round() - 5.0) as i32,
+                2,
+            );
         }
 
         draw_text_rotated_270(

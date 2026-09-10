@@ -14,7 +14,7 @@ const BIG_CARD_IMAGE: &str =
 
 const MDFC_IMAGE: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/miles_morales_card.png";
 
-const USB_TEST_IMG: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/give_take_fuse_card.png";
+const USB_TEST_IMG: &str = "/home/oscar/Documents/Projects/momir_rs_workspace/oracle_escpos/renders/walk_in_closet_card.png";
 
 const PRE_CUT_FEED_LINES: u8 = 4;
 
