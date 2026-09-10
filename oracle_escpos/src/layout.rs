@@ -705,7 +705,7 @@ impl Default for Layout {
             },
 
             split_room_art: ArtLayout {
-                x: 70,
+                x: 60,
                 y: 76,
                 margin_right: None,
                 max_width: 360,

@@ -410,7 +410,9 @@ impl ElementRenderer for SplitTypeLineRenderer {
         if let Some(first_type_line) = first_type_line_opt {
             let first_type_style = &layout.split_first_type_line;
             let first_type_font_data = layout.font_data(first_type_style.font);
-            let first_type_height = layout.wrapped_text_height(&first_type_line, first_type_style);
+            let first_type_line_height =
+                layout.wrapped_text_height(&first_type_line, first_type_style);
+
             let first_type_adjusted_y = (layout.height - first_type_style.margin_bottom) as i32;
 
             let first_type_end_x = draw_text_rotated_270(
@@ -427,7 +429,7 @@ impl ElementRenderer for SplitTypeLineRenderer {
                 first_type_style.letter_spacing,
                 first_type_style.wrap_width,
             );
-            layout.split_first_line_mid_point = first_type_style.x - (first_type_height / 2);
+            layout.split_first_line_mid_point = first_type_style.x - (first_type_line_height / 2);
             layout.split_first_line_end_x = first_type_end_x;
         }
 
@@ -482,22 +484,33 @@ impl ElementRenderer for SplitSetIconRenderer {
 
             let first_set_icon = &layout.split_first_set_icon;
 
+            // Center the SVG box directly over the text line's center axis (X)
+            let first_x = (layout.split_first_line_mid_point
+                + (first_set_icon.max_width as i32 / 2))
+                .max(0) as u32;
+            let first_y = first_set_icon.y + first_set_icon.margin_bottom as u32;
+
             draw_svg_rotated_270(
                 canvas,
                 &svg_data,
-                layout.split_first_line_mid_point as u32,
-                (layout.height / 2) + first_set_icon.margin_bottom as u32,
+                first_x,
+                first_y,
                 first_set_icon.max_width,
                 first_set_icon.max_height,
             )?;
 
             let second_set_icon = &layout.split_second_set_icon;
 
+            let second_x = (layout.split_second_line_mid_point
+                + (second_set_icon.max_width as i32 / 2))
+                .max(0) as u32;
+            let second_y = (layout.height / 2) + second_set_icon.margin_bottom as u32;
+
             draw_svg_rotated_270(
                 canvas,
                 &svg_data,
-                layout.split_second_line_mid_point as u32,
-                second_set_icon.margin_bottom as u32,
+                second_x,
+                second_y,
                 second_set_icon.max_width,
                 second_set_icon.max_height,
             )?;
